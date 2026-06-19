@@ -196,3 +196,27 @@ CREATE INDEX idx_movimientos_tipo ON movimientos_stock(tipo_movimiento);
 -- Demanda y bitácora
 CREATE INDEX idx_demanda_fecha ON demanda_insatisfecha(fecha);
 CREATE INDEX idx_bitacora_fecha ON bitacora_comunicacion(fecha_hora);
+
+
+
+INSERT INTO roles (nombre, descripcion)
+SELECT 'admin', 'Administrador del sistema con acceso total'
+WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'admin');
+
+INSERT INTO roles (nombre, descripcion)
+SELECT 'vendedor', 'Personal de atención al público con acceso restringido'
+WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'vendedor');
+
+INSERT INTO usuarios (rol_id, nombre_completo, usuario, contrasena, activo)
+SELECT 
+    r.id,
+    'Administrador del Sistema',
+    'admin',
+    '$2a$12$PVRsw3SS.wGKwpu5ZKRXWOWszrROx4RHiIL3z6.qJKXVuDE9U.3Xu', -- admin123
+    TRUE
+FROM roles r
+WHERE r.nombre = 'admin'
+AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin');
+
+
+

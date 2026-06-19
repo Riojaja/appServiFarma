@@ -47,7 +47,7 @@ public class Usuario {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relaciones inversas (opcionales pero recomendadas para consistencia)
+    // Relaciones inversas (opcionales)
     @OneToMany(mappedBy = "usuario")
     private List<Venta> ventas;
 
