@@ -132,4 +132,15 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
      */
     @Query("SELECT COUNT(l) FROM Lote l WHERE l.producto.id = :productoId")
     long countByProductoId(@Param("productoId") Integer productoId);
+    
+    
+    /**
+     * Obtiene lotes activos que tienen una cantidad específica (ej. 0 para agotados).
+     */
+    List<Lote> findByEstadoAndCantidad(Lote.EstadoLote estado, int cantidad);
+
+    /**
+     * Obtiene lotes activos con cantidad mayor a un valor específico (ej. > 0 para stock disponible).
+     */
+    List<Lote> findByEstadoAndCantidadGreaterThan(Lote.EstadoLote estado, int cantidad);
 }
