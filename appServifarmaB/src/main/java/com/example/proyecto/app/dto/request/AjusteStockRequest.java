@@ -27,4 +27,5 @@ public class AjusteStockRequest {
 
     @Size(max = 255, message = "La observación no puede exceder los 255 caracteres")
     private String observacion;
+
 }

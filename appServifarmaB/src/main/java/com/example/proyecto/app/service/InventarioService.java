@@ -64,7 +64,7 @@ public interface InventarioService {
      *
      * @return Número de lotes actualizados a estado 'vencido'
      */
-    int actualizarLotesVencidos();
+    int actualizarEstadoLotesVencidos();
 
     /**
      * Actualiza el estado de los lotes a 'agotado' cuando su cantidad llega a 0.
@@ -72,7 +72,7 @@ public interface InventarioService {
      *
      * @return Número de lotes actualizados a estado 'agotado'
      */
-    int actualizarLotesAgotados();
+    int actualizarEstadoLotesAgotados();
 
     // ==============================
     // GENERACIÓN DE ALERTAS (usando ParametroSistema)

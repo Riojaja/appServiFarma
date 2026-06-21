@@ -118,4 +118,23 @@ public interface LoteService {
      * @return Número de lotes actualizados.
      */
     int actualizarLotesVencidos();
+
+    // ==============================
+    // AJUSTE MANUAL DE STOCK
+    // ==============================
+
+    /**
+     * Realiza un ajuste manual del stock de un lote.
+     * Puede ser de tipo 'ajuste' (aumento o reducción) o 'merma' (solo reducción).
+     * Registra el movimiento en la tabla de movimientos_stock para auditoría.
+     * 
+     * @param loteId ID del lote a ajustar
+     * @param cantidad Cantidad a ajustar (positivo para aumentar, negativo para reducir)
+     * @param usuarioId ID del usuario que realiza el ajuste
+     * @param tipoMovimiento Tipo de movimiento ('ajuste' o 'merma')
+     * @param observacion Motivo del ajuste (obligatorio)
+     * @throws ResourceNotFoundException Si el lote o usuario no existen
+     * @throws BusinessException Si la cantidad es inválida o el ajuste resulta en stock negativo
+     */
+    void ajustarStock(Integer loteId, Integer cantidad, Integer usuarioId, String tipoMovimiento, String observacion);
 }

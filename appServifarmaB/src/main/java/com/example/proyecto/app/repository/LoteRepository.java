@@ -143,4 +143,6 @@ public interface LoteRepository extends JpaRepository<Lote, Integer> {
      * Obtiene lotes activos con cantidad mayor a un valor específico (ej. > 0 para stock disponible).
      */
     List<Lote> findByEstadoAndCantidadGreaterThan(Lote.EstadoLote estado, int cantidad);
+    
+    List<Lote> findByProductoId(Integer productoId);
 }

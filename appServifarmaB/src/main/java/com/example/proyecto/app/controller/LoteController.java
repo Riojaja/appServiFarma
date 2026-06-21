@@ -138,7 +138,9 @@ public class LoteController {
 		log.debug("Solicitud de ajuste de stock para lote ID: {}, tipo: {}, cantidad: {}", id,
 				request.getTipoMovimiento(), request.getCantidad());
 
-		// Por ahora, lanzamos excepción indicando que no está implementado
+		// El ajuste manual de stock no está implementado en esta versión.
+		// Para descontar stock usa el endpoint de ventas.
+		// Para aumentar stock registra un nuevo lote.
 		throw new UnsupportedOperationException("Ajuste de stock manual aún no implementado. "
 				+ "Usa el endpoint de ventas para descontar o registra un nuevo lote para aumentar.");
 	}

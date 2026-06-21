@@ -33,6 +33,8 @@ public class LoteServiceImpl implements LoteService {
     private final ProductoRepository productoRepository;
     private final ProveedorRepository proveedorRepository;
     private final LoteMapper loteMapper;
+    private final com.example.proyecto.app.repository.UsuarioRepository usuarioRepository;
+    private final com.example.proyecto.app.repository.MovimientoStockRepository movimientoStockRepository;
 
     // ==============================
     // OPERACIONES CRUD BÁSICAS
@@ -223,10 +225,84 @@ public class LoteServiceImpl implements LoteService {
         log.info("Lote {} marcado como deteriorado", id);
     }
 
+
     @Override
     @Transactional
     public int actualizarLotesVencidos() {
         // Este método usa el método masivo del repositorio
         return loteRepository.marcarLotesVencidos(LocalDate.now(), Lote.EstadoLote.vencido);
+    }
+
+    // ==============================
+    // AJUSTE MANUAL DE STOCK
+    // ==============================
+
+    @Override
+    @Transactional
+    public void ajustarStock(Integer loteId, Integer cantidad, Integer usuarioId, String tipoMovimiento, String observacion) {
+        // 1. Validaciones básicas
+        if (cantidad == 0) {
+            throw new ParametroInvalidoException("La cantidad de ajuste no puede ser cero.");
+        }
+
+        if (observacion == null || observacion.trim().isEmpty()) {
+            throw new ParametroInvalidoException("Debe proporcionar una observación para el ajuste de stock.");
+        }
+
+        // 2. Obtener el lote
+        Lote lote = loteRepository.findById(loteId)
+                .orElseThrow(() -> new ResourceNotFoundException("Lote con ID " + loteId + " no encontrado."));
+
+        // 3. Calcular nueva cantidad
+        int nuevaCantidad = lote.getCantidad() + cantidad;
+
+        // 4. Validar que no resulte en stock negativo
+        if (nuevaCantidad < 0) {
+            throw new ParametroInvalidoException(
+                    "El ajuste resultaría en stock negativo. Stock actual: " + lote.getCantidad() + 
+                    ", ajuste: " + cantidad);
+        }
+
+        // 5. Actualizar cantidad
+        int cantidadAnterior = lote.getCantidad();
+        lote.setCantidad(nuevaCantidad);
+        loteRepository.save(lote);
+
+        // 6. Registrar movimiento de stock
+        com.example.proyecto.app.entity.Usuario usuario = 
+            usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario con ID " + usuarioId + " no encontrado."));
+
+        com.example.proyecto.app.entity.MovimientoStock.TipoMovimiento tipo;
+        if ("merma".equalsIgnoreCase(tipoMovimiento)) {
+            tipo = com.example.proyecto.app.entity.MovimientoStock.TipoMovimiento.merma;
+            if (cantidad > 0) {
+                throw new ParametroInvalidoException("Las mermas solo pueden reducir el stock (cantidad negativa).");
+            }
+        } else {
+            tipo = com.example.proyecto.app.entity.MovimientoStock.TipoMovimiento.ajuste;
+        }
+
+        com.example.proyecto.app.entity.MovimientoStock movimiento = 
+            com.example.proyecto.app.entity.MovimientoStock.builder()
+                .lote(lote)
+                .usuario(usuario)
+                .tipoMovimiento(tipo)
+                .cantidad(Math.abs(cantidad))
+                .costoUnitario(lote.getPrecioCompra())
+                .observacion(observacion + " (Stock anterior: " + cantidadAnterior + ", Stock nuevo: " + nuevaCantidad + ")")
+                .build();
+
+        movimientoStockRepository.save(movimiento);
+
+        log.info("Ajuste de stock realizado en lote ID: {}. Tipo: {}, Cantidad ajustada: {}, Nueva cantidad: {}", 
+                loteId, tipoMovimiento, cantidad, nuevaCantidad);
+
+        // 7. Actualizar estado si es necesario
+        if (nuevaCantidad == 0 && lote.getEstado() == Lote.EstadoLote.activo) {
+            lote.setEstado(Lote.EstadoLote.agotado);
+            loteRepository.save(lote);
+            log.info("Lote ID: {} actualizado a estado 'agotado' tras ajuste", loteId);
+        }
     }
 }

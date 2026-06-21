@@ -131,7 +131,7 @@ public class InventarioServiceImpl implements InventarioService {
 
     @Override
     @Transactional
-    public int actualizarLotesVencidos() {
+    public int actualizarEstadoLotesVencidos() {
         log.info("Iniciando actualización de lotes vencidos");
         int updated = loteRepository.marcarLotesVencidos(LocalDate.now(), Lote.EstadoLote.vencido);
         log.info("Se actualizaron {} lotes a estado 'vencido'", updated);
@@ -140,7 +140,7 @@ public class InventarioServiceImpl implements InventarioService {
 
     @Override
     @Transactional
-    public int actualizarLotesAgotados() {
+    public int actualizarEstadoLotesAgotados() {
         log.info("Iniciando actualización de lotes agotados");
         int count = 0;
         List<Lote> lotesAgotados = loteRepository.findByEstadoAndCantidad(Lote.EstadoLote.activo, 0);
