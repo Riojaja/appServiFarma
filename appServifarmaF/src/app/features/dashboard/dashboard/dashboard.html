@@ -1,0 +1,117 @@
+<div class="dashboard-shell">
+
+  <!-- ============================================================ -->
+  <!-- CONTENIDO PRINCIPAL                                          -->
+  <!-- ============================================================ -->
+  <div class="dashboard-main">
+
+    <!-- ============ PANEL ADMIN ============ -->
+    <ng-container *ngIf="rol === 'ADMIN'">
+      <h2 class="page-title">Dashboard</h2>
+      <p class="page-subtitle">Vista general del sistema</p>
+
+      <!-- KPIs -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-4 col-md-6" *ngFor="let kpi of kpis">
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <span class="kpi-label">{{ kpi.label }}</span>
+              <span class="kpi-value">{{ kpi.displayValue }}</span>
+              <span class="kpi-badge" [class.negative]="!kpi.positive">
+                <i class="bi" [ngClass]="kpi.positive ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                {{ kpi.change }}
+              </span>
+            </div>
+            <div class="kpi-icon" [style.background]="kpi.color">
+              <i class="bi" [ngClass]="kpi.icon"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ventas Recientes + Stock Crítico -->
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="panel-card h-100">
+            <h5 class="panel-title">Ventas Recientes</h5>
+            <div class="venta-row" *ngFor="let venta of ventasRecientes">
+              <div>
+                <div class="venta-cliente">{{ venta.cliente }}</div>
+                <small class="venta-meta">{{ venta.productos }} productos • {{ venta.hora }}</small>
+              </div>
+              <span class="venta-total">S/ {{ venta.total | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="panel-card h-100">
+            <h5 class="panel-title">Stock Crítico</h5>
+            <div class="stock-item" *ngFor="let item of stockCritico">
+              <div class="stock-top">
+                <span class="stock-name">{{ item.producto }}</span>
+                <span class="stock-unid">{{ item.stock }} unid.</span>
+              </div>
+              <div class="stock-bar">
+                <div class="stock-bar-fill" [style.width.%]="(item.stock / item.minimo) * 100"></div>
+              </div>
+              <small class="stock-min">Mínimo: {{ item.minimo }} unidades</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ============ PANEL VENDEDOR ============ -->
+    <ng-container *ngIf="rol === 'VENDEDOR'">
+      <h2 class="page-title">Panel de Vendedor</h2>
+      <p class="page-subtitle">Accesos rápidos a tus funciones principales</p>
+
+      <!-- Accesos rápidos -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6" *ngFor="let acceso of accesosRapidos">
+          <div class="quick-card">
+            <i class="bi" [ngClass]="acceso.icon" [style.color]="acceso.color"></i>
+            <h6 class="quick-title">{{ acceso.titulo }}</h6>
+            <p class="quick-desc">{{ acceso.descripcion }}</p>
+            <button class="quick-btn" [style.color]="acceso.color" [style.border-color]="acceso.color"
+              [routerLink]="acceso.ruta">Ir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actividad Reciente -->
+      <div class="panel-card">
+        <h5 class="panel-title">Actividad Reciente</h5>
+        <div class="venta-row" *ngFor="let act of actividadReciente">
+          <div>
+            <div class="venta-cliente">{{ act.descripcion }}</div>
+            <small class="venta-meta">{{ act.cliente }} - {{ act.hora }}</small>
+          </div>
+          <span class="venta-total" [class.text-muted]="act.monto === 0">S/ {{ act.monto | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </ng-container>
+
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PANEL DE ALERTAS (fijo a la derecha, igual para ambos roles) -->
+  <!-- ============================================================ -->
+  <aside class="dashboard-alerts">
+    <h5 class="alerts-title"><i class="bi bi-bell-fill"></i> Alertas</h5>
+
+    <h6 class="alerts-subtitle">Stock Mínimo</h6>
+    <div class="alert-card alert-red" *ngFor="let alerta of stockMinimoAlertas">
+      <strong>{{ alerta.producto }}</strong>
+      <small>Stock: {{ alerta.stock }} unidades</small>
+    </div>
+
+    <h6 class="alerts-subtitle mt-3">Próximos a Vencer</h6>
+    <div class="alert-card alert-yellow" *ngFor="let alerta of proximosVencerAlertas">
+      <strong>{{ alerta.producto }}</strong>
+      <small>Vence en {{ alerta.dias }} días</small>
+    </div>
+  </aside>
+
+</div>
