@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -56,4 +57,22 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Inte
      */
     @Query("SELECT COALESCE(SUM(d.cantidad), 0) FROM DetalleVenta d WHERE d.lote.id = :loteId")
     Integer sumCantidadByLoteId(@Param("loteId") Integer loteId);
+    
+    
+    @Query("SELECT COALESCE(SUM(d.cantidad * d.precioCompraUnitario), 0) FROM DetalleVenta d WHERE d.createdAt BETWEEN :inicio AND :fin")
+    BigDecimal sumCostoCompraByFechaBetween(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT c.nombre, SUM(d.cantidad * d.precioUnitarioVenta), SUM(d.cantidad * d.precioCompraUnitario) " +
+           "FROM DetalleVenta d JOIN d.lote l JOIN l.producto p JOIN p.categoria c " +
+           "WHERE d.createdAt BETWEEN :inicio AND :fin " +
+           "GROUP BY c.nombre")
+    List<Object[]> findRentabilidadPorCategoria(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin);
+
+    @Query("SELECT p.id, p.nombre, SUM(d.cantidad), SUM(d.cantidad * d.precioUnitarioVenta) " +
+           "FROM DetalleVenta d JOIN d.lote l JOIN l.producto p " +
+           "WHERE d.createdAt BETWEEN :inicio AND :fin " +
+           "GROUP BY p.id, p.nombre " +
+           "ORDER BY SUM(d.cantidad) DESC")
+    List<Object[]> findTopProductosVendidos(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin,
+                                            @Param("limite") int limite);
 }

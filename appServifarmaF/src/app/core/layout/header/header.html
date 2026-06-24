@@ -1,0 +1,35 @@
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+  <div class="container-fluid">
+    <!-- Botón toggle para sidebar (visible en móviles) -->
+    <button class="btn btn-outline-secondary d-md-none" type="button" (click)="toggleSidebar()">
+      <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Marca / Título -->
+    <span class="navbar-brand ms-2">ServiFarma</span>
+
+    <!-- Zona derecha: usuario + dropdown -->
+    <div class="ms-auto d-flex align-items-center">
+      <!-- Dropdown de perfil -->
+      <div class="dropdown">
+        <button class="btn btn-link text-dark text-decoration-none dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="bi bi-person-circle fs-5 me-1"></i>
+          <span class="d-none d-sm-inline">{{ usuario }}</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow">
+          <li>
+            <a class="dropdown-item" href="#">
+              <i class="bi bi-person me-2"></i> Mi Perfil
+            </a>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item text-danger" (click)="logout()" style="cursor: pointer;">
+              <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>

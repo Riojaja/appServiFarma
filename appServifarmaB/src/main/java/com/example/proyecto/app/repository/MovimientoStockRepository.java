@@ -103,4 +103,9 @@ public interface MovimientoStockRepository extends JpaRepository<MovimientoStock
      * Obtiene movimientos con observación que contenga una cadena específica (búsqueda parcial).
      */
     List<MovimientoStock> findByObservacionContainingIgnoreCase(String observacion);
+    
+    /**
+     * Obtiene movimientos de stock de un lote específico, filtrados por tipo.
+     */
+    List<MovimientoStock> findByLoteIdAndTipoMovimiento(Integer loteId, MovimientoStock.TipoMovimiento tipoMovimiento);
 }

@@ -53,4 +53,5 @@ public interface CajaRepository extends JpaRepository<Caja, Integer> {
      */
     @Query("SELECT c FROM Caja c LEFT JOIN FETCH c.ventas WHERE c.id = :id")
     Optional<Caja> findByIdWithVentas(@Param("id") Integer id);
+    
 }

@@ -144,4 +144,24 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
      */
     @Query("SELECT COALESCE(AVG(l.precioVenta), 0) FROM Lote l WHERE l.producto.id = :productoId AND l.estado = 'activo'")
     BigDecimal avgPrecioVentaByProductoId(@Param("productoId") Integer productoId);
+    
+    /**
+     * Verifica si existe un producto con un código de barras específico.
+     * Útil para validar duplicados al crear o actualizar.
+     */
+    boolean existsByCodigoBarras(String codigoBarras);
+
+    /**
+     * Busca un producto por su código de barras (exacto).
+     * Esencial para el lector de códigos de barras en ventas.
+     */
+    
+
+    /**
+     * (Opcional) Productos con stock bajo (consulta personalizada).
+     * Útil para alertas de reposición.
+     */
+   
+   
+
 }

@@ -35,4 +35,5 @@ public interface DemandaInsatisfechaRepository extends JpaRepository<DemandaInsa
      * Cuenta el número de demandas insatisfechas en un rango de fechas (para estadísticas de ventas perdidas).
      */
     long countByFechaBetween(LocalDateTime inicio, LocalDateTime fin);
+    
 }
