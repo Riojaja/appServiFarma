@@ -1,39 +1,102 @@
+<!-- ============================================================ -->
+<!-- CONTENEDOR PRINCIPAL                                         -->
+<!-- ============================================================ -->
 <div class="dashboard-shell">
-
-  <!-- ============================================================ -->
-  <!-- CONTENIDO PRINCIPAL                                          -->
-  <!-- ============================================================ -->
+  <!-- Contenido principal -->
   <div class="dashboard-main">
 
-    <!-- ============ PANEL ADMIN ============ -->
+    <!-- ============================================================ -->
+    <!-- PANEL ADMIN                                                  -->
+    <!-- ============================================================ -->
     <ng-container *ngIf="rol === 'ADMIN'">
-      <h2 class="page-title">Dashboard</h2>
-      <p class="page-subtitle">Vista general del sistema</p>
+      
+      <!-- ========================================================== -->
+      <!-- HEADER: Título + Botón Actualizar                         -->
+      <!-- ========================================================== -->
+      <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+        <div>
+          <h2 class="page-title">Dashboard</h2>
+          <p class="page-subtitle">Resumen general del sistema</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="refrescarDatos()" [disabled]="cargando">
+          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+          {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+      </div>
 
-      <!-- KPIs -->
+      <!-- ========================================================== -->
+      <!-- KPIs (4 tarjetas) - Estilo moderno                        -->
+      <!-- ========================================================== -->
       <div class="row g-3 mb-4">
-        <div class="col-lg-4 col-md-6" *ngFor="let kpi of kpis">
-          <div class="kpi-card">
-            <div class="kpi-info">
-              <span class="kpi-label">{{ kpi.label }}</span>
-              <span class="kpi-value">{{ kpi.displayValue }}</span>
-              <span class="kpi-badge" [class.negative]="!kpi.positive">
-                <i class="bi" [ngClass]="kpi.positive ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
-                {{ kpi.change }}
-              </span>
+        <div class="col-xl-3 col-md-6" *ngFor="let stat of kpis.slice(0,4)">
+          <div class="kpi-card-modern" [style.border-left-color]="stat.color">
+            <div class="kpi-card-modern-icon" [style.background]="stat.color">
+              <i class="bi" [ngClass]="stat.icon"></i>
             </div>
-            <div class="kpi-icon" [style.background]="kpi.color">
-              <i class="bi" [ngClass]="kpi.icon"></i>
+            <div class="kpi-card-modern-info">
+              <span class="kpi-label">{{ stat.label }}</span>
+              <span class="kpi-value">{{ stat.displayValue }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Ventas Recientes + Stock Crítico -->
-      <div class="row g-3">
+      <!-- ========================================================== -->
+      <!-- GRÁFICO + TOP PRODUCTOS                                    -->
+      <!-- ========================================================== -->
+      <div class="row g-3 mb-4">
+        <!-- Gráfico: Ventas vs Inventario -->
         <div class="col-lg-8">
           <div class="panel-card h-100">
-            <h5 class="panel-title">Ventas Recientes</h5>
+            <h5 class="panel-title">Ventas vs Inventario (Últimos 12 meses)</h5>
+            <div class="chart-container">
+              <canvas baseChart
+                [data]="barChartData"
+                [options]="barChartOptions"
+                [type]="barChartType">
+              </canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Productos por Rotación -->
+        <div class="col-lg-4">
+          <div class="panel-card h-100">
+            <h5 class="panel-title">Principales Productos por Rotación</h5>
+            <div class="top-products-list">
+              <div class="top-product-item" *ngFor="let item of topProductos; let i = index">
+                <span class="top-product-rank">{{ i + 1 }}</span>
+                <span class="top-product-name">{{ item.nombre }}</span>
+                <span class="top-product-sales">{{ item.cantidad }} unid.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- VENTAS RECIENTES + STOCK CRÍTICO                           -->
+      <!-- ========================================================== -->
+      <div class="row g-3 mb-4">
+        <!-- Ventas Recientes -->
+        <div class="col-lg-8">
+          <div class="panel-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="panel-title mb-0">Ventas Recientes</h5>
+              <span class="badge bg-primary rounded-pill">{{ ventasRecientes.length }}</span>
+            </div>
+
+            <div *ngIf="cargandoVentas" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <span class="text-muted ms-2">Cargando ventas...</span>
+            </div>
+
+            <div *ngIf="!cargandoVentas && ventasRecientes.length === 0" class="text-center text-muted py-3">
+              No hay ventas recientes
+            </div>
+
             <div class="venta-row" *ngFor="let venta of ventasRecientes">
               <div>
                 <div class="venta-cliente">{{ venta.cliente }}</div>
@@ -44,9 +107,25 @@
           </div>
         </div>
 
+        <!-- Stock Crítico -->
         <div class="col-lg-4">
           <div class="panel-card h-100">
-            <h5 class="panel-title">Stock Crítico</h5>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="panel-title mb-0">Stock Crítico</h5>
+              <span class="badge bg-danger rounded-pill">{{ stockCritico.length }}</span>
+            </div>
+
+            <div *ngIf="cargandoStock" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <span class="text-muted ms-2">Cargando stock...</span>
+            </div>
+
+            <div *ngIf="!cargandoStock && stockCritico.length === 0" class="text-center text-muted py-3">
+              No hay productos con stock crítico
+            </div>
+
             <div class="stock-item" *ngFor="let item of stockCritico">
               <div class="stock-top">
                 <span class="stock-name">{{ item.producto }}</span>
@@ -60,12 +139,136 @@
           </div>
         </div>
       </div>
-    </ng-container>
 
-    <!-- ============ PANEL VENDEDOR ============ -->
+      <!-- ========================================================== -->
+      <!-- INVENTARIO GENERAL (TABLA)                                 -->
+      <!-- ========================================================== -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">Inventario General - Estado Actual</h5>
+          <span class="badge bg-primary rounded-pill">{{ inventarioGeneral.length }} productos</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Código</th>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th>Stock Actual</th>
+                  <th>Stock Mínimo</th>
+                  <th>Ubicación</th>
+                  <th>Estado</th>
+                  <th>Última Compra</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of inventarioGeneral">
+                  <td><code>{{ item.codigoBarras || 'N/A' }}</code></td>
+                  <td class="fw-semibold">{{ item.nombre }}</td>
+                  <td>{{ item.categoriaNombre || 'Sin categoría' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': (item.stockActual || 0) > item.stockMinimo,
+                      'bg-warning': (item.stockActual || 0) <= item.stockMinimo && (item.stockActual || 0) > 0,
+                      'bg-danger': (item.stockActual || 0) === 0
+                    }">
+                      {{ item.stockActual || 0 }} unid.
+                    </span>
+                  </td>
+                  <td>{{ item.stockMinimo }}</td>
+                  <td>{{ item.ubicacion || 'N/A' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': (item.stockActual || 0) > item.stockMinimo,
+                      'bg-warning': (item.stockActual || 0) <= item.stockMinimo && (item.stockActual || 0) > 0,
+                      'bg-danger': (item.stockActual || 0) === 0
+                    }">
+                      {{ (item.stockActual || 0) > item.stockMinimo ? 'Normal' :
+                         (item.stockActual || 0) > 0 ? 'Bajo' : 'Crítico' }}
+                    </span>
+                  </td>
+                  <td>{{ item.ultimaCompra || 'N/A' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========================================================== -->
+      <!-- ALERTAS CRÍTICAS + BOTONES DE ACCIÓN                       -->
+      <!-- ========================================================== -->
+      <div class="row g-3">
+        <!-- Alertas Críticas -->
+        <div class="col-lg-8">
+          <div class="panel-card">
+            <h5 class="panel-title">Alertas Críticas y Caducidad</h5>
+            <div *ngIf="alertasCriticas.length === 0" class="text-center text-muted py-4">
+              <i class="bi bi-check-circle fs-1 d-block mb-2"></i>
+              No hay alertas pendientes
+            </div>
+            <div class="alerts-grid" *ngIf="alertasCriticas.length > 0">
+              <div class="alert-item" *ngFor="let alerta of alertasCriticas">
+                <div class="alert-item-icon" [ngClass]="{
+                  'alert-danger': alerta.tipo === 'stock',
+                  'alert-warning': alerta.tipo === 'vencimiento'
+                }">
+                  <i class="bi" [ngClass]="{
+                    'bi-exclamation-triangle': alerta.tipo === 'stock',
+                    'bi-clock': alerta.tipo === 'vencimiento'
+                  }"></i>
+                </div>
+                <div class="alert-item-content">
+                  <div class="alert-item-title">{{ alerta.titulo }}</div>
+                  <div class="alert-item-desc">{{ alerta.descripcion }}</div>
+                  <div class="alert-item-meta">{{ alerta.fecha }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botones de Acción Rápida -->
+        <div class="col-lg-4">
+          <div class="panel-card">
+            <h5 class="panel-title">Acciones Rápidas</h5>
+            <div class="d-grid gap-2">
+              <a routerLink="/productos/crear" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i> Registrar Nuevo Producto
+              </a>
+              <a routerLink="/lotes/crear" class="btn btn-success">
+                <i class="bi bi-cart-plus me-2"></i> Registrar Compra/Ingreso
+              </a>
+              <a routerLink="/ventas/registrar" class="btn btn-info text-white">
+                <i class="bi bi-cart me-2"></i> Registrar Salida/Venta
+              </a>
+              <a routerLink="/reportes" class="btn btn-warning text-dark">
+                <i class="bi bi-file-earmark-text me-2"></i> Generar Reporte
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </ng-container> <!-- /PANEL ADMIN -->
+
+    <!-- ============================================================ -->
+    <!-- PANEL VENDEDOR                                               -->
+    <!-- ============================================================ -->
     <ng-container *ngIf="rol === 'VENDEDOR'">
-      <h2 class="page-title">Panel de Vendedor</h2>
-      <p class="page-subtitle">Accesos rápidos a tus funciones principales</p>
+      <!-- Encabezado + Botón de actualización -->
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 class="page-title">Panel de Vendedor</h2>
+          <p class="page-subtitle">Accesos rápidos a tus funciones principales</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="refrescarDatos()" [disabled]="cargando">
+          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+          {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+      </div>
 
       <!-- Accesos rápidos -->
       <div class="row g-3 mb-4">
@@ -82,36 +285,74 @@
 
       <!-- Actividad Reciente -->
       <div class="panel-card">
-        <h5 class="panel-title">Actividad Reciente</h5>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="panel-title mb-0">Actividad Reciente</h5>
+          <span class="badge bg-primary rounded-pill">{{ actividadReciente.length }}</span>
+        </div>
+
+        <div *ngIf="cargandoActividad" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <span class="text-muted ms-2">Cargando actividad...</span>
+        </div>
+
+        <div *ngIf="!cargandoActividad && actividadReciente.length === 0" class="text-center text-muted py-3">
+          No hay actividad reciente
+        </div>
+
         <div class="venta-row" *ngFor="let act of actividadReciente">
           <div>
             <div class="venta-cliente">{{ act.descripcion }}</div>
             <small class="venta-meta">{{ act.cliente }} - {{ act.hora }}</small>
           </div>
-          <span class="venta-total" [class.text-muted]="act.monto === 0">S/ {{ act.monto | number:'1.2-2' }}</span>
+          <span class="venta-total" [class.text-muted]="act.monto === 0">
+            S/ {{ act.monto | number:'1.2-2' }}
+          </span>
         </div>
       </div>
     </ng-container>
 
-  </div>
+    <!-- ============================================================ -->
+    <!-- MENSAJE DE ERROR GENERAL                                     -->
+    <!-- ============================================================ -->
+    <div *ngIf="errorGeneral" class="alert alert-danger mt-3" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      {{ errorGeneral }}
+    </div>
+
+  </div> <!-- /dashboard-main -->
 
   <!-- ============================================================ -->
-  <!-- PANEL DE ALERTAS (fijo a la derecha, igual para ambos roles) -->
+  <!-- PANEL DE ALERTAS LATERAL (compartido para ambos roles)       -->
   <!-- ============================================================ -->
   <aside class="dashboard-alerts">
     <h5 class="alerts-title"><i class="bi bi-bell-fill"></i> Alertas</h5>
 
+    <!-- Stock Mínimo -->
     <h6 class="alerts-subtitle">Stock Mínimo</h6>
-    <div class="alert-card alert-red" *ngFor="let alerta of stockMinimoAlertas">
+    <div *ngIf="cargandoAlertas" class="text-center py-2">
+      <div class="spinner-border spinner-border-sm text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+    <div *ngIf="!cargandoAlertas && alertasStock.length === 0" class="text-muted small text-center py-2">
+      Sin alertas de stock
+    </div>
+    <div class="alert-card alert-red" *ngFor="let alerta of alertasStock">
       <strong>{{ alerta.producto }}</strong>
       <small>Stock: {{ alerta.stock }} unidades</small>
     </div>
 
+    <!-- Próximos a Vencer -->
     <h6 class="alerts-subtitle mt-3">Próximos a Vencer</h6>
-    <div class="alert-card alert-yellow" *ngFor="let alerta of proximosVencerAlertas">
+    <div *ngIf="!cargandoAlertas && alertasVencimiento.length === 0" class="text-muted small text-center py-2">
+      Sin vencimientos próximos
+    </div>
+    <div class="alert-card alert-yellow" *ngFor="let alerta of alertasVencimiento">
       <strong>{{ alerta.producto }}</strong>
       <small>Vence en {{ alerta.dias }} días</small>
     </div>
   </aside>
 
-</div>
+</div> <!-- /dashboard-shell -->

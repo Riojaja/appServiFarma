@@ -1,0 +1,20 @@
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-body text-center">
+          <div *ngIf="cargando" class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Procesando...</span>
+          </div>
+          <div *ngIf="mensaje" class="alert alert-success">
+            {{ mensaje }}
+          </div>
+          <div *ngIf="error" class="alert alert-danger">
+            {{ error }}
+          </div>
+          <a routerLink="/ventas/listar" class="btn btn-primary">Volver a Ventas</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

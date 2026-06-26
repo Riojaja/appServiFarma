@@ -1,0 +1,147 @@
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h4 class="card-title mb-0">Editar Lote</h4>
+        </div>
+        <div class="card-body">
+          <div *ngIf="cargando" class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+
+          <form *ngIf="!cargando" [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label class="form-label">Producto <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="productoId">
+                <option value="">Seleccione un producto...</option>
+                <option *ngFor="let p of productos" [value]="p.id">{{ p.nombre }}</option>
+              </select>
+              <div *ngIf="form.get('productoId')?.invalid && form.get('productoId')?.touched" class="text-danger">
+                <small>El producto es obligatorio</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Proveedor <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="proveedorId">
+                <option value="">Seleccione un proveedor...</option>
+                <option *ngFor="let prov of proveedores" [value]="prov.id">{{ prov.razonSocial }}</option>
+              </select>
+              <div *ngIf="form.get('proveedorId')?.invalid && form.get('proveedorId')?.touched" class="text-danger">
+                <small>El proveedor es obligatorio</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Número de Lote <span class="text-danger">*</span></label>
+              <input 
+                type="text" 
+                class="form-control" 
+                formControlName="lote"
+                placeholder="Número de lote"
+              >
+              <div *ngIf="form.get('lote')?.invalid && form.get('lote')?.touched" class="text-danger">
+                <small *ngIf="form.get('lote')?.errors?.['required']">El número de lote es obligatorio</small>
+                <small *ngIf="form.get('lote')?.errors?.['maxlength']">Máximo 50 caracteres</small>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Fecha de Ingreso <span class="text-danger">*</span></label>
+                  <input 
+                    type="date" 
+                    class="form-control" 
+                    formControlName="fechaIngreso"
+                  >
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Fecha de Vencimiento <span class="text-danger">*</span></label>
+                  <input 
+                    type="date" 
+                    class="form-control" 
+                    formControlName="fechaVencimiento"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+              <input 
+                type="number" 
+                class="form-control" 
+                formControlName="cantidad"
+                placeholder="0"
+                min="1"
+              >
+              <div *ngIf="form.get('cantidad')?.invalid && form.get('cantidad')?.touched" class="text-danger">
+                <small *ngIf="form.get('cantidad')?.errors?.['required']">La cantidad es obligatoria</small>
+                <small *ngIf="form.get('cantidad')?.errors?.['min']">Debe ser mayor a 0</small>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Precio de Compra <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text">S/</span>
+                    <input 
+                      type="number" 
+                      class="form-control" 
+                      formControlName="precioCompra"
+                      placeholder="0.00"
+                      step="0.01"
+                    >
+                  </div>
+                  <div *ngIf="form.get('precioCompra')?.invalid && form.get('precioCompra')?.touched" class="text-danger">
+                    <small *ngIf="form.get('precioCompra')?.errors?.['required']">El precio de compra es obligatorio</small>
+                    <small *ngIf="form.get('precioCompra')?.errors?.['min']">Debe ser mayor a 0</small>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Precio de Venta <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <span class="input-group-text">S/</span>
+                    <input 
+                      type="number" 
+                      class="form-control" 
+                      formControlName="precioVenta"
+                      placeholder="0.00"
+                      step="0.01"
+                    >
+                  </div>
+                  <div *ngIf="form.get('precioVenta')?.invalid && form.get('precioVenta')?.touched" class="text-danger">
+                    <small *ngIf="form.get('precioVenta')?.errors?.['required']">El precio de venta es obligatorio</small>
+                    <small *ngIf="form.get('precioVenta')?.errors?.['min']">Debe ser mayor a 0</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button 
+                type="submit" 
+                class="btn btn-primary"
+                [disabled]="form.invalid || enviando"
+              >
+                <span *ngIf="enviando" class="spinner-border spinner-border-sm me-2"></span>
+                Actualizar
+              </button>
+              <a routerLink="/lotes" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 .dashboard-shell {
   display: flex;
-  gap: 0;
   align-items: flex-start;
+  min-height: 100vh;
 }
 
 .dashboard-main {
@@ -27,7 +27,7 @@
 .kpi-card {
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   padding: 20px;
   display: flex;
   justify-content: space-between;
@@ -44,27 +44,26 @@
 .kpi-label {
   font-size: 0.82rem;
   color: #6c757d;
+  font-weight: 500;
 }
 
 .kpi-value {
   font-size: 1.6rem;
   font-weight: 700;
   color: #1a1a2e;
+  line-height: 1.1;
 }
 
 .kpi-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 0.78rem;
   font-weight: 600;
   color: #16a34a;
-  width: fit-content;
 }
 
-.kpi-badge.negative {
-  color: #dc2626;
-}
+.kpi-badge.negative { color: #dc2626; }
 
 .kpi-icon {
   width: 48px;
@@ -78,220 +77,211 @@
   flex-shrink: 0;
 }
 
-/* ===== Panel genérico (Ventas Recientes / Stock Crítico / Actividad) ===== */
+/* ===== Panel Cards ===== */
 .panel-card {
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
   padding: 20px;
 }
 
 .panel-title {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 600;
   color: #1a1a2e;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
+/* Ventas recientes */
 .venta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f6f7fb;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
 }
+.venta-row:last-child { border-bottom: none; }
 
 .venta-cliente {
+  font-size: 0.92rem;
   font-weight: 600;
   color: #1a1a2e;
-  font-size: 0.92rem;
 }
 
 .venta-meta {
-  color: #8a8f98;
   font-size: 0.78rem;
+  color: #9ca3af;
 }
 
 .venta-total {
+  font-size: 0.95rem;
   font-weight: 700;
   color: #16a34a;
-  font-size: 0.95rem;
 }
 
 /* Stock crítico */
-.stock-item {
-  background: #fef2f2;
-  border-radius: 10px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
-}
+.stock-item { margin-bottom: 14px; }
+.stock-item:last-child { margin-bottom: 0; }
 
 .stock-top {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .stock-name {
+  font-size: 0.88rem;
   font-weight: 600;
   color: #1a1a2e;
-  font-size: 0.9rem;
 }
 
 .stock-unid {
+  font-size: 0.84rem;
   font-weight: 700;
   color: #dc2626;
-  font-size: 0.85rem;
 }
 
 .stock-bar {
   height: 6px;
-  background: #fcd5d4;
+  background: #fee2e2;
   border-radius: 4px;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 3px;
 }
 
 .stock-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ef4444, #dc2626);
+  background: #ef4444;
   border-radius: 4px;
+  max-width: 100%;
 }
 
 .stock-min {
-  color: #b91c1c;
-  font-size: 0.75rem;
+  font-size: 0.74rem;
+  color: #9ca3af;
 }
 
-/* ===== Accesos rápidos (Vendedor) ===== */
+/* ===== Vendedor: Quick cards ===== */
 .quick-card {
   background: #fff;
-  border: 1px solid #eceef2;
   border-radius: 14px;
-  padding: 26px 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  padding: 20px;
   text-align: center;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
-.quick-card i {
-  font-size: 1.8rem;
-  margin-bottom: 12px;
+.quick-card > .bi {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  display: block;
 }
 
 .quick-title {
+  font-size: 0.95rem;
   font-weight: 700;
   color: #1a1a2e;
   margin-bottom: 4px;
-  font-size: 0.95rem;
 }
 
 .quick-desc {
-  color: #8a8f98;
-  font-size: 0.8rem;
-  margin-bottom: 16px;
+  font-size: 0.78rem;
+  color: #6c757d;
+  margin-bottom: 12px;
 }
 
 .quick-btn {
-  background: #fff;
   border: 1.5px solid;
-  border-radius: 50px;
-  padding: 4px 22px;
+  background: none;
+  border-radius: 6px;
+  padding: 5px 16px;
+  font-size: 0.82rem;
   font-weight: 600;
-  font-size: 0.85rem;
-  margin-top: auto;
+  cursor: pointer;
 }
 
-.quick-btn:hover {
-  opacity: 0.85;
-}
-
-/* ===== Panel de Alertas (fijo a la derecha) ===== */
+/* ===== Alertas (right panel) ===== */
 .dashboard-alerts {
-  width: 280px;
+  width: 240px;
   flex-shrink: 0;
-  background: #fff;
-  border-left: 1px solid #eceef2;
+  padding: 28px 16px;
+  border-left: 1px solid #e9ecef;
   min-height: 100vh;
-  padding: 28px 20px;
+  background: #fff;
 }
 
 .alerts-title {
+  font-size: 0.95rem;
   font-weight: 700;
-  font-size: 1rem;
   color: #1a1a2e;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
-
-.alerts-title i {
-  color: #dc2626;
-  margin-right: 6px;
-}
+.alerts-title i { color: #ea580c; }
 
 .alerts-subtitle {
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: #6c757d;
-  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 12px 0 7px;
 }
 
 .alert-card {
-  border-radius: 10px;
-  padding: 10px 14px;
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
+  border-radius: 8px;
+  padding: 9px 11px;
+  margin-bottom: 7px;
 }
 
 .alert-card strong {
-  font-size: 0.85rem;
-  color: #1a1a2e;
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
 }
 
 .alert-card small {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
 }
 
-.alert-red {
-  background: #fef2f2;
+.alert-red { background: #fee2e2; }
+.alert-red strong { color: #991b1b; }
+.alert-red small { color: #dc2626; }
+
+.alert-yellow { background: #fef9c3; }
+.alert-yellow strong { color: #92400e; }
+.alert-yellow small { color: #a16207; }
+
+@media (max-width: 991px) {
+  .dashboard-shell { flex-direction: column; }
+  .dashboard-alerts { display: none; }
 }
 
-.alert-red small {
-  color: #b91c1c;
+.spin {
+  animation: spin 1s linear infinite;
 }
 
-.alert-yellow {
-  background: #fffbeb;
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.alert-yellow small {
-  color: #92400e;
+.kpi-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  height: 100%; /* Para que ocupe todo el alto de la columna */
 }
 
-/* ===== Responsive ===== */
-@media (max-width: 1199.98px) {
-  .dashboard-shell {
-    flex-direction: column;
-  }
-
-  .dashboard-alerts {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid #eceef2;
-    min-height: auto;
-  }
+.kpi-link:hover {
+  transform: translateY(-3px);
+  text-decoration: none;
+  color: inherit;
 }
 
-@media (max-width: 767.98px) {
-  .dashboard-main {
-    padding: 20px 16px;
-  }
-
-  .page-title {
-    font-size: 1.4rem;
-  }
+.kpi-link:hover .kpi-card {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
 }

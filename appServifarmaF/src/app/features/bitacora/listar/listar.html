@@ -1,0 +1,65 @@
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Bitácora de Comunicación</h2>
+    <a routerLink="/bitacora/crear" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Nuevo Mensaje
+    </a>
+  </div>
+
+  <div class="row">
+    <div class="col-md-8">
+      <div class="table-responsive">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Mensaje</th>
+              <th>Tipo</th>
+              <th>Usuario</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="cargando"><td colspan="7" class="text-center"><div class="spinner-border"></div></td></tr>
+            <tr *ngIf="!cargando && mensajes.length === 0">
+              <td colspan="7" class="text-muted text-center">No hay mensajes</td>
+            </tr>
+            <tr *ngFor="let m of mensajes">
+              <td>{{ m.id }}</td>
+              <td>{{ m.mensaje }}</td>
+              <td><span class="badge" [ngClass]="{'bg-info': m.tipo==='novedad', 'bg-warning': m.tipo==='recordatorio', 'bg-danger': m.tipo==='incidencia'}">{{ m.tipo }}</span></td>
+              <td>{{ m.usuarioNombre || 'Usuario #' + m.usuarioId }}</td>
+              <td>{{ m.fechaHora | date:'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span *ngIf="m.leido" class="badge bg-success">Leído</span>
+                <span *ngIf="!m.leido" class="badge bg-secondary">No leído</span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="marcarLeido(m.id!)" *ngIf="!m.leido">
+                  <i class="bi bi-check2"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" (click)="eliminar(m.id!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h5 class="card-title mb-0">Resumen</h5>
+        </div>
+        <div class="card-body">
+          <p><strong>Total mensajes:</strong> {{ mensajes.length }}</p>
+          <p><strong>No leídos:</strong> {{ mensajes.filter(m => !m.leido).length }}</p>
+          <p><strong>Leídos:</strong> {{ mensajes.filter(m => m.leido).length }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

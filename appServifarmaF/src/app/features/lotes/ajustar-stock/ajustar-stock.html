@@ -1,0 +1,108 @@
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+
+      <div *ngIf="cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <div class="card shadow-sm" *ngIf="!cargando && lote">
+        <div class="card-header bg-white">
+          <h4 class="card-title mb-0">Ajustar Stock</h4>
+        </div>
+        <div class="card-body">
+
+          <!-- Info del lote -->
+          <div class="lote-info mb-4">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Producto</span>
+              <strong>{{ lote.productoNombre || 'Producto #' + lote.productoId }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Número de Lote</span>
+              <strong>{{ lote.lote }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Vencimiento</span>
+              <strong>{{ lote.fechaVencimiento | date:'dd/MM/yyyy' }}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Stock Actual</span>
+              <strong class="fs-5 text-primary">{{ lote.cantidad }} unidades</strong>
+            </div>
+          </div>
+
+          <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+            <div class="mb-3">
+              <label class="form-label">Tipo de Movimiento <span class="text-danger">*</span></label>
+              <div class="btn-group w-100" role="group">
+                <input type="radio" class="btn-check" formControlName="tipoMovimiento" value="ajuste" id="tipoAjuste" autocomplete="off">
+                <label class="btn btn-outline-success" for="tipoAjuste">
+                  <i class="bi bi-plus-circle"></i> Ajuste (sumar)
+                </label>
+
+                <input type="radio" class="btn-check" formControlName="tipoMovimiento" value="merma" id="tipoMerma" autocomplete="off">
+                <label class="btn btn-outline-danger" for="tipoMerma">
+                  <i class="bi bi-dash-circle"></i> Merma (restar)
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Cantidad <span class="text-danger">*</span></label>
+              <input
+                type="number"
+                class="form-control"
+                formControlName="cantidad"
+                placeholder="0"
+                min="1"
+              >
+              <div *ngIf="form.get('cantidad')?.invalid && form.get('cantidad')?.touched" class="text-danger">
+                <small *ngIf="form.get('cantidad')?.errors?.['required']">La cantidad es obligatoria</small>
+                <small *ngIf="form.get('cantidad')?.errors?.['min']">Debe ser mayor a 0</small>
+              </div>
+            </div>
+
+            <!-- Vista previa del resultado -->
+            <div class="alert alert-light border d-flex justify-content-between align-items-center" *ngIf="form.get('cantidad')?.value">
+              <span>Stock resultante:</span>
+              <strong [class.text-danger]="stockResultante !== null && stockResultante < 0">
+                {{ stockResultante }} unidades
+              </strong>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Observación <span class="text-danger">*</span></label>
+              <textarea
+                class="form-control"
+                formControlName="observacion"
+                rows="3"
+                maxlength="255"
+                placeholder="Ej: Conteo físico encontró 5 unidades menos / Se encontraron 3 unidades adicionales en bodega"
+              ></textarea>
+              <div *ngIf="form.get('observacion')?.invalid && form.get('observacion')?.touched" class="text-danger">
+                <small *ngIf="form.get('observacion')?.errors?.['required']">La observación es obligatoria (queda registrada en auditoría)</small>
+              </div>
+            </div>
+
+            <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center">
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              <span>{{ errorMessage }}</span>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary" [disabled]="form.invalid || enviando">
+                <span *ngIf="enviando" class="spinner-border spinner-border-sm me-2"></span>
+                Registrar Ajuste
+              </button>
+              <a routerLink="/lotes" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

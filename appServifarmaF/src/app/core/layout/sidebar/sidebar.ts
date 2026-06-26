@@ -11,16 +11,19 @@ import { AuthService } from '../../auth';
   styleUrls: ['./sidebar.css']
 })
 export class SidebarComponent implements OnInit {
+  nombreCompleto: string = '';
   usuario: string = '';
   rol: string = '';
   isAdmin: boolean = false;
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(private authService: AuthService, private router: Router) {}
 
   ngOnInit(): void {
-    this.usuario = this.authService.getUsuario() || 'Usuario';
-    this.rol = this.authService.getRol() || 'Sin rol';
-    this.isAdmin = this.authService.isAdmin();
+    this.usuario = this.authService.getUsuario() || '';
+    this.nombreCompleto = this.authService.getNombreCompleto?.() || this.usuario;
+    const rolRaw = this.authService.getRol() || '';
+    this.rol = rolRaw.charAt(0).toUpperCase() + rolRaw.slice(1).toLowerCase();
+    this.isAdmin = rolRaw.toUpperCase() === 'ADMIN';
   }
 
   logout(): void {
