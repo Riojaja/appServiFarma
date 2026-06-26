@@ -1,0 +1,9 @@
+.container-fluid {
+  padding-bottom: 2rem;
+}
+
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: #6c757d;
+}

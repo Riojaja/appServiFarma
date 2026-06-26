@@ -1,0 +1,9 @@
+.badge.rounded-pill {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  min-width: 70px;
+}
+
+.table > :not(caption) > * > * {
+  padding: 0.8rem 0.6rem;
+}

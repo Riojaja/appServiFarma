@@ -1,0 +1,94 @@
+<div class="container-fluid mt-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <h4 class="card-title mb-0">Nuevo Cliente</h4>
+        </div>
+        <div class="card-body">
+          <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <div class="mb-3">
+              <label class="form-label">Nombre <span class="text-danger">*</span></label>
+              <input 
+                type="text" 
+                class="form-control" 
+                formControlName="nombre"
+                placeholder="Nombre completo del cliente"
+              >
+              <div *ngIf="form.get('nombre')?.invalid && form.get('nombre')?.touched" class="text-danger">
+                <small *ngIf="form.get('nombre')?.errors?.['required']">El nombre es obligatorio</small>
+                <small *ngIf="form.get('nombre')?.errors?.['maxlength']">Máximo 100 caracteres</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Tipo de Documento <span class="text-danger">*</span></label>
+              <select class="form-select" formControlName="documentoTipo">
+                <option *ngFor="let tipo of tiposDocumento" [value]="tipo">{{ tipo }}</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Número de Documento <span class="text-danger">*</span></label>
+              <input 
+                type="text" 
+                class="form-control" 
+                formControlName="documentoNumero"
+                placeholder="Número de documento"
+              >
+              <div *ngIf="form.get('documentoNumero')?.invalid && form.get('documentoNumero')?.touched" class="text-danger">
+                <small *ngIf="form.get('documentoNumero')?.errors?.['required']">El número de documento es obligatorio</small>
+                <small *ngIf="form.get('documentoNumero')?.errors?.['maxlength']">Máximo 20 caracteres</small>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Teléfono</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                formControlName="telefono"
+                placeholder="Teléfono de contacto"
+              >
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Dirección</label>
+              <input 
+                type="text" 
+                class="form-control" 
+                formControlName="direccion"
+                placeholder="Dirección del cliente"
+              >
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Email</label>
+              <input 
+                type="email" 
+                class="form-control" 
+                formControlName="email"
+                placeholder="correo@cliente.com"
+              >
+              <div *ngIf="form.get('email')?.invalid && form.get('email')?.touched" class="text-danger">
+                <small *ngIf="form.get('email')?.errors?.['email']">Ingresa un email válido</small>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button 
+                type="submit" 
+                class="btn btn-primary"
+                [disabled]="form.invalid || enviando"
+              >
+                <span *ngIf="enviando" class="spinner-border spinner-border-sm me-2"></span>
+                Guardar
+              </button>
+              <a routerLink="/clientes" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

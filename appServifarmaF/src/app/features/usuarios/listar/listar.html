@@ -1,0 +1,90 @@
+<div class="container-fluid mt-4">
+
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        <i class="bi bi-people-fill text-primary me-2"></i>Usuarios del Sistema
+      </h2>
+      <p class="text-muted small mb-0">Listado de todos los usuarios registrados</p>
+    </div>
+    <span class="badge bg-light text-dark p-2 shadow-sm">
+      <i class="bi bi-database me-1"></i> {{ usuariosFiltrados.length }} registros
+    </span>
+  </div>
+
+  <!-- ======== FILTRO ======== -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="input-group shadow-sm">
+        <span class="input-group-text bg-white border-end-0">
+          <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" class="form-control border-start-0" 
+               placeholder="Buscar por nombre, usuario o rol..."
+               [(ngModel)]="filtroTexto" (keyup)="aplicarFiltro()">
+        <button class="btn btn-outline-danger" type="button" (click)="limpiarFiltro()">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    </div>
+    <div class="col-md-6 text-md-end">
+      <span class="badge bg-info text-white p-2">
+        <i class="bi bi-info-circle me-1"></i> Solo administradores pueden ver esta lista
+      </span>
+    </div>
+  </div>
+
+  <!-- ======== TABLA ======== -->
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light" style="border-bottom: 2px solid #dee2e6;">
+            <tr>
+              <th style="width: 60px;">#</th>
+              <th>Nombre Completo</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Fecha Registro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="cargando">
+              <td colspan="6" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="!cargando && usuariosFiltrados.length === 0">
+              <td colspan="6" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                No hay usuarios registrados
+              </td>
+            </tr>
+            <tr *ngFor="let u of usuariosFiltrados; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td><span class="fw-semibold">{{ u.nombreCompleto }}</span></td>
+              <td><code>{{ u.usuario }}</code></td>
+              <td>
+                <span class="badge rounded-pill px-3 py-2" [ngClass]="getRolBadge(u.rol)">
+                  {{ u.rol | titlecase }}
+                </span>
+              </td>
+              <td>
+                <span class="badge rounded-pill px-3 py-2" 
+                      [ngClass]="u.activo ? 'bg-success' : 'bg-danger'">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>{{ u.createdAt | date:'dd/MM/yyyy' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>

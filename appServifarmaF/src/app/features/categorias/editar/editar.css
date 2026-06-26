@@ -1,0 +1,23 @@
+.card {
+  border-radius: 16px;
+  border: none;
+}
+
+.card-header {
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+}
+
+.card-title {
+  font-weight: 600;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.btn {
+  border-radius: 50px;
+  padding: 0.5rem 2rem;
+}

@@ -1,0 +1,185 @@
+<div class="container mt-4">
+
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        <i class="bi bi-clipboard-data text-primary me-2"></i>Demanda Insatisfecha
+      </h2>
+      <p class="text-muted small mb-0">Productos solicitados no disponibles en stock</p>
+    </div>
+    <button class="btn btn-primary rounded-pill px-4" (click)="abrirOffcanvas()">
+      <i class="bi bi-plus-circle me-1"></i> Registrar Demanda
+    </button>
+  </div>
+
+  <!-- ======== FILTRO ======== -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="input-group shadow-sm">
+        <span class="input-group-text bg-white border-end-0">
+          <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" class="form-control border-start-0" 
+               placeholder="Buscar por producto o documento..."
+               [(ngModel)]="filtroTexto" (keyup)="aplicarFiltro()">
+        <button class="btn btn-outline-danger" type="button" (click)="limpiarFiltro()">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    </div>
+    <div class="col-md-6 text-md-end">
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-database me-1"></i> {{ demandasFiltradas.length }} registros
+      </span>
+    </div>
+  </div>
+
+  <!-- ======== FILA: TABLA + GRÁFICO ======== -->
+  <div class="row g-4">
+
+    <!-- ===== TABLA DE SOLICITUDES ===== -->
+    <div class="col-lg-7">
+      <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light" style="border-bottom: 2px solid #dee2e6;">
+                <tr>
+                  <th>Producto</th>
+                  <th>Fecha</th>
+                  <th>Documento</th>
+                  <th class="text-center" style="width: 80px;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="cargando">
+                  <td colspan="4" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                      <span class="visually-hidden">Cargando...</span>
+                    </div>
+                  </td>
+                </tr>
+                <tr *ngIf="!cargando && demandasFiltradas.length === 0">
+                  <td colspan="4" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox display-4 d-block mb-2"></i>
+                    No hay solicitudes registradas
+                  </td>
+                </tr>
+                <tr *ngFor="let d of demandasFiltradas">
+                  <td><span class="fw-semibold">{{ d.productoSolicitado }}</span></td>
+                  <td>{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+                  <td>{{ d.clienteDocumento || 'Anónimo' }}</td>
+                  <td>
+                    <button class="btn btn-outline-danger btn-sm rounded-circle"
+                            title="Eliminar" style="width: 32px; height: 32px; padding: 0;"
+                            (click)="eliminar(d.id!)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== GRÁFICO DE PRODUCTOS MÁS SOLICITADOS ===== -->
+    <div class="col-lg-5">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-header bg-white border-0 pt-4">
+          <h5 class="fw-bold mb-0">
+            <i class="bi bi-bar-chart-fill text-success me-2"></i>Productos Más Solicitados
+          </h5>
+        </div>
+        <div class="card-body d-flex flex-column align-items-center">
+          <!-- Canvas con referencia #chartCanvas -->
+          <div *ngIf="topProductos.length > 0; else sinDatos" style="width: 100%; min-height: 250px;">
+            <canvas #chartCanvas></canvas>
+            <!-- Lista de productos debajo del gráfico -->
+            <div class="mt-3 w-100">
+              <div *ngFor="let p of topProductos" class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                <span class="fw-semibold">{{ p.nombre }}</span>
+                <span class="badge bg-primary rounded-pill">{{ p.cantidad }} veces</span>
+              </div>
+            </div>
+          </div>
+          <ng-template #sinDatos>
+            <div class="text-center py-5 text-muted">
+              <i class="bi bi-inbox display-4 d-block mb-2"></i>
+              No hay datos suficientes
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ======== RECOMENDACIÓN ======== -->
+  <div *ngIf="topProductos.length > 0" class="mt-4">
+    <div class="card border-0 shadow-sm rounded-4 bg-light">
+      <div class="card-body">
+        <p class="mb-0 text-muted">
+          <i class="bi bi-lightbulb text-warning me-2"></i>
+          <strong>Recomendación:</strong> Los productos más solicitados deberán incluirse en el próximo pedido a proveedores para satisfacer la demanda del mercado.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- ======== OFFCANVAS REGISTRAR DEMANDA ======== -->
+<!-- ============================================================ -->
+<div class="offcanvas offcanvas-end" tabindex="-1" 
+     [class.show]="offcanvasAbierto" 
+     style="width: 450px; visibility: visible; background-color: white; 
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1); position: fixed; top:0; right:0; height:100%; z-index: 1050;"
+     *ngIf="offcanvasAbierto">
+  <div class="offcanvas-header border-bottom">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-plus-circle-fill text-primary me-2" style="font-size: 2rem;"></i>
+      <div>
+        <h5 class="offcanvas-title fw-bold">Registrar Demanda</h5>
+        <p class="text-muted small mb-0">Producto no disponible solicitado por cliente</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close" (click)="cerrarOffcanvas()"></button>
+  </div>
+  <div class="offcanvas-body">
+    <div *ngIf="errorRegistro" class="alert alert-danger">{{ errorRegistro }}</div>
+
+    <form [formGroup]="formRegistro" (ngSubmit)="registrarDemanda()">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Producto Solicitado *</label>
+        <input type="text" class="form-control shadow-sm" formControlName="productoSolicitado"
+               placeholder="Ej: Aspirina 100mg">
+        <div *ngIf="formRegistro.get('productoSolicitado')?.invalid && formRegistro.get('productoSolicitado')?.touched" 
+             class="text-danger small">
+          El nombre del producto es obligatorio.
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Documento del Cliente (opcional)</label>
+        <input type="text" class="form-control shadow-sm" formControlName="clienteDocumento"
+               placeholder="DNI, RUC, etc.">
+      </div>
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-4" (click)="cerrarOffcanvas()">Cancelar</button>
+        <button type="submit" class="btn btn-primary rounded-pill px-4" [disabled]="enviando || formRegistro.invalid">
+          <span *ngIf="enviando" class="spinner-border spinner-border-sm me-1"></span>
+          <i class="bi bi-check-circle me-1" *ngIf="!enviando"></i> Guardar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Fondo oscuro para el offcanvas -->
+<div *ngIf="offcanvasAbierto" 
+     style="position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.4); z-index: 1040;"
+     (click)="cerrarOffcanvas()">
+</div>
