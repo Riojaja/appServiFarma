@@ -1,0 +1,93 @@
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Lotes</h2>
+    <a routerLink="/lotes/crear" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Nuevo Lote
+    </a>
+  </div>
+
+  <!-- Buscador -->
+  <div class="row mb-3">
+    <div class="col-md-4">
+      <div class="input-group">
+        <input type="text" class="form-control" placeholder="Buscar por producto (ID) o número de lote..."
+          [(ngModel)]="filtroProducto" (keyup.enter)="buscar()">
+        <button class="btn btn-outline-secondary" type="button" (click)="buscar()">
+          <i class="bi bi-search"></i>
+        </button>
+        <button class="btn btn-outline-danger" type="button" (click)="filtroProducto=''; cargarLotes()">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Producto</th>
+          <th>Lote</th>
+          <th>Vencimiento</th>
+          <th>Cantidad</th>
+          <th>Precio Venta</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="cargando">
+          <td colspan="8" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="!cargando && lotes.length === 0">
+          <td colspan="8" class="text-center text-muted">No hay lotes registrados</td>
+        </tr>
+        <tr *ngFor="let lote of lotes">
+          <td>{{ lote.id }}</td>
+          <td>{{ lote.productoNombre || 'Producto #' + lote.productoId }}</td>
+          <td><strong>{{ lote.lote }}</strong></td>
+          <td>{{ lote.fechaVencimiento | date:'dd/MM/yyyy' }}</td>
+          <td>{{ lote.cantidad }}</td>
+          <td>S/ {{ lote.precioVenta | number:'1.2-2' }}</td>
+          <td><span class="badge {{ getEstadoBadge(lote.estado!) }}">{{ lote.estado }}</span></td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <a [routerLink]="['/lotes/editar', lote.id]" class="btn btn-outline-primary" title="Editar">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <button *ngIf="lote.estado === 'activo'" class="btn btn-outline-warning" title="Marcar como deteriorado"
+                (click)="marcarDeteriorado(lote.id!)">
+                <i class="bi bi-exclamation-triangle"></i>
+              </button>
+              <button class="btn btn-outline-danger" title="Eliminar" (click)="eliminar(lote.id!)">
+                <i class="bi bi-trash"></i>
+              </button>
+
+              <div class="btn-group btn-group-sm">
+                <a [routerLink]="['/lotes/editar', lote.id]" class="btn btn-outline-primary" title="Editar">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <a [routerLink]="['/lotes/ajustar-stock', lote.id]" class="btn btn-outline-info" title="Ajustar stock">
+                  <i class="bi bi-arrow-down-up"></i>
+                </a>
+                <button *ngIf="lote.estado === 'activo'" class="btn btn-outline-warning" title="Marcar como deteriorado"
+                  (click)="marcarDeteriorado(lote.id!)">
+                  <i class="bi bi-exclamation-triangle"></i>
+                </button>
+                <button class="btn btn-outline-danger" title="Eliminar" (click)="eliminar(lote.id!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

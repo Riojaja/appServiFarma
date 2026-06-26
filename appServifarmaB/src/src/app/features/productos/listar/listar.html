@@ -1,0 +1,138 @@
+<div class="container-fluid mt-4">
+  <!-- Encabezado con título y botón de nuevo producto -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold text-primary">Productos</h2>
+      <p class="text-muted">Gestiona el catálogo de productos de la botica</p>
+    </div>
+    <a routerLink="/productos/crear" class="btn btn-primary rounded-pill px-4">
+      <i class="bi bi-plus-circle me-2"></i> Nuevo Producto
+    </a>
+  </div>
+
+  <!-- Barra de búsqueda con filtros -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="input-group shadow-sm">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-primary"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Buscar por nombre o código..."
+          [(ngModel)]="filtroTexto" (keyup.enter)="buscar()">
+        <button class="btn btn-primary" type="button" (click)="buscar()">
+          <i class="bi bi-arrow-right"></i>
+        </button>
+        <button class="btn btn-outline-secondary" type="button" (click)="filtroTexto=''; cargarProductos()">
+          <i class="bi bi-x-circle"></i>
+        </button>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select shadow-sm" [(ngModel)]="filtroCategoria" (change)="aplicarFiltros()">
+        <option value="">Todas las categorías</option>
+        <option *ngFor="let cat of categorias" [value]="cat.id">{{ cat.nombre }}</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select shadow-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option value="con-stock">Con stock</option>
+        <option value="sin-stock">Sin stock</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-outline-secondary w-100 shadow-sm" (click)="limpiarFiltros()">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla de productos (modernizada) -->
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped mb-0">
+          <thead class="table-light">
+            <tr>
+              <th class="py-3 ps-3">ID</th>
+              <th class="py-3">Nombre</th>
+              <th class="py-3">Código</th>
+              <th class="py-3">Precio</th>
+              <th class="py-3">Stock</th>
+              <th class="py-3">Categoría</th>
+              <th class="py-3 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Estado de carga -->
+            <tr *ngIf="cargando">
+              <td colspan="7" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Cargando...</span>
+                </div>
+              </td>
+            </tr>
+            <!-- Sin resultados -->
+            <tr *ngIf="!cargando && productos.length === 0">
+              <td colspan="7" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                No hay productos registrados
+              </td>
+            </tr>
+            <!-- Filas de productos -->
+            <tr *ngFor="let producto of productos">
+              <td class="ps-3 fw-semibold">{{ producto.id }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                  <div class="product-thumbnail me-2" *ngIf="producto.imagen">
+                    <img [src]="producto.imagen" alt="Producto" class="rounded-circle" width="40" height="40">
+                  </div>
+                  <div>
+                    <div class="fw-semibold">{{ producto.nombre }}</div>
+                    <small class="text-muted">{{ producto.principioActivo || 'Sin principio activo' }}</small>
+                  </div>
+                </div>
+              </td>
+              <td><code>{{ producto.codigoBarras || 'N/A' }}</code></td>
+              <td class="fw-bold text-success">S/ {{ producto.precioVentaActual | number:'1.2-2' }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                      'bg-success': getStock(producto) > producto.stockMinimo,
+                      'bg-warning': getStock(producto) <= producto.stockMinimo && getStock(producto) > 0,
+                      'bg-danger': getStock(producto) === 0
+                    }">
+                  {{ getStock(producto) }} unid.
+                </span>
+              </td>
+              <td>
+                <span class="badge bg-secondary">{{ producto.categoriaNombre || 'Sin categoría' }}</span>
+              </td>
+              <td class="text-center">
+                <div class="btn-group" role="group">
+                  <a [routerLink]="['/productos/editar', producto.id]"
+                    class="btn btn-sm btn-outline-primary rounded-pill me-1">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <button class="btn btn-sm btn-outline-danger rounded-pill" (click)="eliminar(producto.id!)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Footer con paginación (opcional) -->
+    <div class="card-footer bg-white d-flex justify-content-between align-items-center py-2">
+      <span class="text-muted small">Mostrando {{ productos.length }} productos</span>
+      <nav aria-label="Paginación">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+          <li class="page-item active"><a class="page-link" href="#">1</a></li>
+          <li class="page-item"><a class="page-link" href="#">2</a></li>
+          <li class="page-item"><a class="page-link" href="#">3</a></li>
+          <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

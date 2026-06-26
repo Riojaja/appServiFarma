@@ -1,0 +1,81 @@
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Listado de Ventas</h2>
+    <a routerLink="/ventas/registrar" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Nueva Venta
+    </a>
+  </div>
+
+  <!-- Filtros -->
+  <div class="row g-3 mb-3">
+    <div class="col-md-2">
+      <input type="date" class="form-control" placeholder="Fecha inicio" [(ngModel)]="filtros.fechaInicio">
+    </div>
+    <div class="col-md-2">
+      <input type="date" class="form-control" placeholder="Fecha fin" [(ngModel)]="filtros.fechaFin">
+    </div>
+    <div class="col-md-2">
+      <input type="text" class="form-control" placeholder="Cliente" [(ngModel)]="filtros.cliente">
+    </div>
+    <div class="col-md-2">
+      <input type="text" class="form-control" placeholder="Usuario" [(ngModel)]="filtros.usuario">
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" [(ngModel)]="filtros.estado">
+        <option value="">Todos</option>
+        <option value="completada">Completada</option>
+        <option value="anulada">Anulada</option>
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-2">
+      <button class="btn btn-primary" (click)="aplicarFiltros()">
+        <i class="bi bi-funnel"></i> Filtrar
+      </button>
+      <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Vendedor</th>
+          <th>Total</th>
+          <th>Pago</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="cargando">
+          <td colspan="8" class="text-center"><div class="spinner-border text-primary"></div></td>
+        </tr>
+        <tr *ngIf="!cargando && ventas.length === 0">
+          <td colspan="8" class="text-center text-muted">No hay ventas registradas</td>
+        </tr>
+        <tr *ngFor="let v of ventas">
+          <td>{{ v.id }}</td>
+          <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ v.clienteNombre || 'Anónimo' }}</td>
+          <td>{{ v.usuarioNombre || 'Usuario #' + v.usuarioId }}</td>
+          <td>S/ {{ v.total | number:'1.2-2' }}</td>
+          <td>{{ v.medioPago }}</td>
+          <td><span class="badge {{ getEstadoBadge(v.estado) }}">{{ v.estado }}</span></td>
+          <td>
+            <div class="btn-group btn-group-sm">
+              <a [routerLink]="['/ventas/anular', v.id]" class="btn btn-outline-danger" *ngIf="v.estado === 'completada'">
+                <i class="bi bi-x-circle"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,45 @@
+<div class="container-fluid mt-4">
+  <h2>Ventas Anuladas</h2>
+
+  <div class="row g-3 mb-3">
+    <div class="col-md-3">
+      <label class="form-label">Fecha Inicio</label>
+      <input type="date" class="form-control" [(ngModel)]="filtros.fechaInicio">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">Fecha Fin</label>
+      <input type="date" class="form-control" [(ngModel)]="filtros.fechaFin">
+    </div>
+    <div class="col-md-2 d-flex align-items-end gap-2">
+      <button class="btn btn-primary" (click)="cargarVentas()">Filtrar</button>
+      <button class="btn btn-outline-secondary" (click)="filtros={fechaInicio:'',fechaFin:''}; cargarVentas()">Limpiar</button>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Fecha</th>
+          <th>Cliente</th>
+          <th>Vendedor</th>
+          <th>Total</th>
+          <th>Medio Pago</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="cargando"><td colspan="6" class="text-center"><div class="spinner-border"></div></td></tr>
+        <tr *ngIf="!cargando && ventas.length === 0"><td colspan="6" class="text-center text-muted">No hay ventas anuladas</td></tr>
+        <tr *ngFor="let v of ventas">
+          <td>{{ v.id }}</td>
+          <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ v.clienteNombre || 'Anónimo' }}</td>
+          <td>{{ v.usuarioNombre || 'Usuario #' + v.usuarioId }}</td>
+          <td>S/ {{ v.total | number:'1.2-2' }}</td>
+          <td>{{ v.medioPago }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

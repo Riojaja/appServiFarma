@@ -1,0 +1,41 @@
+<div class="container-fluid mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Demandas Insatisfechas</h2>
+    <a routerLink="/demanda/registrar" class="btn btn-primary">
+      <i class="bi bi-plus-circle"></i> Registrar Demanda
+    </a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Producto</th>
+          <th>Fecha</th>
+          <th>Cliente Documento</th>
+          <th>Usuario</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="cargando"><td colspan="6" class="text-center"><div class="spinner-border text-primary"></div></td></tr>
+        <tr *ngIf="!cargando && demandas.length === 0">
+          <td colspan="6" class="text-center text-muted">No hay demandas registradas</td>
+        </tr>
+        <tr *ngFor="let d of demandas">
+          <td>{{ d.id }}</td>
+          <td>{{ d.productoSolicitado }}</td>
+          <td>{{ d.fecha | date:'dd/MM/yyyy' }}</td>
+          <td>{{ d.clienteDocumento || '-' }}</td>
+          <td>{{ d.usuarioNombre || 'Usuario #' + d.usuarioId }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger" (click)="eliminar(d.id!)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

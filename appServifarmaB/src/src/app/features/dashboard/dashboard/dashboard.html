@@ -1,0 +1,233 @@
+<!-- ============================================================ -->
+<!-- CONTENEDOR PRINCIPAL                                         -->
+<!-- ============================================================ -->
+<div class="dashboard-shell">
+  <!-- Contenido principal -->
+  <div class="dashboard-main">
+
+    <!-- ============================================================ -->
+    <!-- PANEL ADMIN                                                  -->
+    <!-- ============================================================ -->
+    <ng-container *ngIf="rol === 'ADMIN'">
+      <!-- Encabezado + Botón de actualización -->
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 class="page-title">Dashboard</h2>
+          <p class="page-subtitle">Vista general del sistema</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="refrescarDatos()" [disabled]="cargando">
+          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+          {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+      </div>
+
+      <!-- KPIs clickeables -->
+      <div class="row g-3 mb-4">
+        <!-- Mostrar spinner mientras carga -->
+        <div *ngIf="cargando && kpis.length === 0" class="col-12 text-center py-4">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando KPIs...</span>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="col-lg-4 col-md-6" *ngFor="let kpi of kpis">
+          <a [routerLink]="kpi.ruta" class="kpi-link">
+            <div class="kpi-card">
+              <div class="kpi-info">
+                <span class="kpi-label">{{ kpi.label }}</span>
+                <span class="kpi-value">{{ kpi.displayValue }}</span>
+                <span class="kpi-badge" *ngIf="kpi.change" [class.negative]="!kpi.positive">
+                  <i class="bi" [ngClass]="kpi.positive ? 'bi-arrow-up' : 'bi-arrow-down'"></i>
+                  {{ kpi.change }}
+                </span>
+              </div>
+              <div class="kpi-icon" [style.background]="kpi.color">
+                <i class="bi" [ngClass]="kpi.icon"></i>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <!-- Mensaje si no hay KPIs -->
+        <div *ngIf="!cargando && kpis.length === 0" class="col-12 text-center text-muted py-4">
+          No se pudieron cargar los indicadores
+        </div>
+      </div>
+
+      <!-- Ventas Recientes + Stock Crítico -->
+      <div class="row g-3">
+        <!-- Ventas Recientes -->
+        <div class="col-lg-8">
+          <div class="panel-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="panel-title mb-0">Ventas Recientes</h5>
+              <span class="badge bg-primary rounded-pill">{{ ventasRecientes.length }}</span>
+            </div>
+
+            <!-- Estado de carga -->
+            <div *ngIf="cargandoVentas" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <span class="text-muted ms-2">Cargando ventas...</span>
+            </div>
+
+            <!-- Sin ventas -->
+            <div *ngIf="!cargandoVentas && ventasRecientes.length === 0" class="text-center text-muted py-3">
+              No hay ventas recientes
+            </div>
+
+            <!-- Lista de ventas -->
+            <div class="venta-row" *ngFor="let venta of ventasRecientes">
+              <div>
+                <div class="venta-cliente">{{ venta.cliente }}</div>
+                <small class="venta-meta">{{ venta.productos }} productos • {{ venta.hora }}</small>
+              </div>
+              <span class="venta-total">S/ {{ venta.total | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Crítico -->
+        <div class="col-lg-4">
+          <div class="panel-card h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="panel-title mb-0">Stock Crítico</h5>
+              <span class="badge bg-danger rounded-pill">{{ stockCritico.length }}</span>
+            </div>
+
+            <!-- Estado de carga -->
+            <div *ngIf="cargandoStock" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+              </div>
+              <span class="text-muted ms-2">Cargando stock...</span>
+            </div>
+
+            <!-- Sin stock crítico -->
+            <div *ngIf="!cargandoStock && stockCritico.length === 0" class="text-center text-muted py-3">
+              No hay productos con stock crítico
+            </div>
+
+            <!-- Lista de stock crítico -->
+            <div class="stock-item" *ngFor="let item of stockCritico">
+              <div class="stock-top">
+                <span class="stock-name">{{ item.producto }}</span>
+                <span class="stock-unid">{{ item.stock }} unid.</span>
+              </div>
+              <div class="stock-bar">
+                <div class="stock-bar-fill" [style.width.%]="(item.stock / item.minimo) * 100"></div>
+              </div>
+              <small class="stock-min">Mínimo: {{ item.minimo }} unidades</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ============================================================ -->
+    <!-- PANEL VENDEDOR                                               -->
+    <!-- ============================================================ -->
+    <ng-container *ngIf="rol === 'VENDEDOR'">
+      <!-- Encabezado + Botón de actualización -->
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h2 class="page-title">Panel de Vendedor</h2>
+          <p class="page-subtitle">Accesos rápidos a tus funciones principales</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="refrescarDatos()" [disabled]="cargando">
+          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+          {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+        </button>
+      </div>
+
+      <!-- Accesos rápidos -->
+      <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6" *ngFor="let acceso of accesosRapidos">
+          <div class="quick-card">
+            <i class="bi" [ngClass]="acceso.icon" [style.color]="acceso.color"></i>
+            <h6 class="quick-title">{{ acceso.titulo }}</h6>
+            <p class="quick-desc">{{ acceso.descripcion }}</p>
+            <button class="quick-btn" [style.color]="acceso.color" [style.border-color]="acceso.color"
+              [routerLink]="acceso.ruta">Ir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actividad Reciente -->
+      <div class="panel-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="panel-title mb-0">Actividad Reciente</h5>
+          <span class="badge bg-primary rounded-pill">{{ actividadReciente.length }}</span>
+        </div>
+
+        <!-- Estado de carga -->
+        <div *ngIf="cargandoActividad" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <span class="text-muted ms-2">Cargando actividad...</span>
+        </div>
+
+        <!-- Sin actividad -->
+        <div *ngIf="!cargandoActividad && actividadReciente.length === 0" class="text-center text-muted py-3">
+          No hay actividad reciente
+        </div>
+
+        <!-- Lista de actividad -->
+        <div class="venta-row" *ngFor="let act of actividadReciente">
+          <div>
+            <div class="venta-cliente">{{ act.descripcion }}</div>
+            <small class="venta-meta">{{ act.cliente }} - {{ act.hora }}</small>
+          </div>
+          <span class="venta-total" [class.text-muted]="act.monto === 0">
+            S/ {{ act.monto | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ============================================================ -->
+    <!-- MENSAJE DE ERROR GENERAL                                     -->
+    <!-- ============================================================ -->
+    <div *ngIf="errorGeneral" class="alert alert-danger mt-3" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      {{ errorGeneral }}
+    </div>
+
+  </div> <!-- /dashboard-main -->
+
+  <!-- ============================================================ -->
+  <!-- PANEL DE ALERTAS LATERAL (compartido para ambos roles)       -->
+  <!-- ============================================================ -->
+  <aside class="dashboard-alerts">
+    <h5 class="alerts-title"><i class="bi bi-bell-fill"></i> Alertas</h5>
+
+    <!-- Stock Mínimo -->
+    <h6 class="alerts-subtitle">Stock Mínimo</h6>
+    <div *ngIf="cargandoAlertas" class="text-center py-2">
+      <div class="spinner-border spinner-border-sm text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+    <div *ngIf="!cargandoAlertas && alertasStock.length === 0" class="text-muted small text-center py-2">
+      Sin alertas de stock
+    </div>
+    <div class="alert-card alert-red" *ngFor="let alerta of alertasStock">
+      <strong>{{ alerta.producto }}</strong>
+      <small>Stock: {{ alerta.stock }} unidades</small>
+    </div>
+
+    <!-- Próximos a Vencer -->
+    <h6 class="alerts-subtitle mt-3">Próximos a Vencer</h6>
+    <div *ngIf="!cargandoAlertas && alertasVencimiento.length === 0" class="text-muted small text-center py-2">
+      Sin vencimientos próximos
+    </div>
+    <div class="alert-card alert-yellow" *ngFor="let alerta of alertasVencimiento">
+      <strong>{{ alerta.producto }}</strong>
+      <small>Vence en {{ alerta.dias }} días</small>
+    </div>
+  </aside>
+
+</div> <!-- /dashboard-shell -->
