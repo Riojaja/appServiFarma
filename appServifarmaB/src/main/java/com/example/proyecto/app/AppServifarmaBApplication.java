@@ -10,4 +10,6 @@ public class AppServifarmaBApplication {
 		SpringApplication.run(AppServifarmaBApplication.class, args);
 		System.out.println("Aplicación ServiFarma iniciada correctamente");
 	}
+	
+	 
 }

@@ -1,6 +1,5 @@
 package com.example.proyecto.app.dto.request;
 
-import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -32,8 +31,10 @@ public class LoteRequest {
     @NotNull(message = "La fecha de ingreso es obligatoria")
     private LocalDate fechaIngreso;
 
+    // NOTA: se quitó @Future de aquí porque este DTO se reutiliza en actualizarLote().
+    // La validación de "debe ser futura" ahora se hace SOLO en LoteServiceImpl.crearLote(),
+    // así se puede editar un lote ya vencido sin que la validación lo rechace.
     @NotNull(message = "La fecha de vencimiento es obligatoria")
-    @Future(message = "La fecha de vencimiento debe ser una fecha futura")
     private LocalDate fechaVencimiento;
 
     @NotNull(message = "La cantidad es obligatoria")

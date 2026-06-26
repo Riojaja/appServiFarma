@@ -61,11 +61,12 @@ public class LoteServiceImpl implements LoteService {
             throw new ParametroInvalidoException("La fecha de ingreso no puede ser una fecha futura.");
         }
 
+        // 4.b. Validar que la fecha de vencimiento SÍ sea futura (solo aplica al crear un lote nuevo)
+        if (!request.getFechaVencimiento().isAfter(LocalDate.now())) {
+            throw new ParametroInvalidoException("La fecha de vencimiento debe ser una fecha futura.");
+        }
+
         // 5. Verificar duplicado (mismo número de lote para el mismo producto)
-        //    Nota: Si la lógica de negocio lo permite, puedes buscar por producto y lote.
-        //    Por simplicidad, asumimos que el número de lote es único globalmente.
-        //    Si no es así, puedes usar una consulta personalizada en el repositorio.
-        //    Ejemplo: loteRepository.findByLoteAndProductoId(request.getLote(), producto.getId())
         if (loteRepository.findByLote(request.getLote()).isPresent()) {
             throw new DuplicadoException("Ya existe un lote con el número: " + request.getLote());
         }
@@ -89,7 +90,7 @@ public class LoteServiceImpl implements LoteService {
                 .orElseThrow(() -> new ResourceNotFoundException("Lote con ID " + id + " no encontrado."));
 
         // 2. Validar que el producto exista (si se cambia)
-        Producto producto = null;
+        Producto producto;
         if (!lote.getProducto().getId().equals(request.getProductoId())) {
             producto = productoRepository.findById(request.getProductoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + request.getProductoId() + " no encontrado."));
@@ -98,7 +99,7 @@ public class LoteServiceImpl implements LoteService {
         }
 
         // 3. Validar que el proveedor exista (si se cambia)
-        Proveedor proveedor = null;
+        Proveedor proveedor;
         if (!lote.getProveedor().getId().equals(request.getProveedorId())) {
             proveedor = proveedorRepository.findById(request.getProveedorId())
                     .orElseThrow(() -> new ResourceNotFoundException("Proveedor con ID " + request.getProveedorId() + " no encontrado."));
@@ -106,7 +107,8 @@ public class LoteServiceImpl implements LoteService {
             proveedor = lote.getProveedor();
         }
 
-        // 4. Validar fechas
+        // 4. Validar fechas (nota: aquí NO se exige que fechaVencimiento sea futura,
+        //    porque editar un lote ya vencido debe seguir siendo posible)
         if (request.getFechaVencimiento().isBefore(request.getFechaIngreso())) {
             throw new ParametroInvalidoException("La fecha de vencimiento no puede ser anterior a la fecha de ingreso.");
         }
@@ -148,9 +150,6 @@ public class LoteServiceImpl implements LoteService {
     public void eliminarLote(Integer id) {
         Lote lote = loteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lote con ID " + id + " no encontrado."));
-
-        // Si quieres mantener integridad, puedes verificar si tiene movimientos asociados
-        // (la BD ya tiene RESTRICT, pero puedes agregar validación adicional aquí)
 
         loteRepository.deleteById(id);
         log.info("Lote eliminado: {} - Número: {}", id, lote.getLote());
@@ -203,8 +202,6 @@ public class LoteServiceImpl implements LoteService {
     @Override
     public List<LoteResponse> obtenerLotesVencidos() {
         LocalDate hoy = LocalDate.now();
-        // Buscamos lotes activos con fecha de vencimiento anterior a hoy
-        // (los que deberían estar vencidos pero aún no se actualizaron)
         List<Lote> vencidos = loteRepository.findByFechaVencimientoBeforeAndEstadoNot(hoy, Lote.EstadoLote.vencido);
         return vencidos.stream()
                 .map(loteMapper::toResponse)
@@ -225,11 +222,9 @@ public class LoteServiceImpl implements LoteService {
         log.info("Lote {} marcado como deteriorado", id);
     }
 
-
     @Override
     @Transactional
     public int actualizarLotesVencidos() {
-        // Este método usa el método masivo del repositorio
         return loteRepository.marcarLotesVencidos(LocalDate.now(), Lote.EstadoLote.vencido);
     }
 
@@ -240,7 +235,6 @@ public class LoteServiceImpl implements LoteService {
     @Override
     @Transactional
     public void ajustarStock(Integer loteId, Integer cantidad, Integer usuarioId, String tipoMovimiento, String observacion) {
-        // 1. Validaciones básicas
         if (cantidad == 0) {
             throw new ParametroInvalidoException("La cantidad de ajuste no puede ser cero.");
         }
@@ -249,27 +243,22 @@ public class LoteServiceImpl implements LoteService {
             throw new ParametroInvalidoException("Debe proporcionar una observación para el ajuste de stock.");
         }
 
-        // 2. Obtener el lote
         Lote lote = loteRepository.findById(loteId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lote con ID " + loteId + " no encontrado."));
 
-        // 3. Calcular nueva cantidad
         int nuevaCantidad = lote.getCantidad() + cantidad;
 
-        // 4. Validar que no resulte en stock negativo
         if (nuevaCantidad < 0) {
             throw new ParametroInvalidoException(
-                    "El ajuste resultaría en stock negativo. Stock actual: " + lote.getCantidad() + 
+                    "El ajuste resultaría en stock negativo. Stock actual: " + lote.getCantidad() +
                     ", ajuste: " + cantidad);
         }
 
-        // 5. Actualizar cantidad
         int cantidadAnterior = lote.getCantidad();
         lote.setCantidad(nuevaCantidad);
         loteRepository.save(lote);
 
-        // 6. Registrar movimiento de stock
-        com.example.proyecto.app.entity.Usuario usuario = 
+        com.example.proyecto.app.entity.Usuario usuario =
             usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario con ID " + usuarioId + " no encontrado."));
 
@@ -283,7 +272,7 @@ public class LoteServiceImpl implements LoteService {
             tipo = com.example.proyecto.app.entity.MovimientoStock.TipoMovimiento.ajuste;
         }
 
-        com.example.proyecto.app.entity.MovimientoStock movimiento = 
+        com.example.proyecto.app.entity.MovimientoStock movimiento =
             com.example.proyecto.app.entity.MovimientoStock.builder()
                 .lote(lote)
                 .usuario(usuario)
@@ -295,10 +284,9 @@ public class LoteServiceImpl implements LoteService {
 
         movimientoStockRepository.save(movimiento);
 
-        log.info("Ajuste de stock realizado en lote ID: {}. Tipo: {}, Cantidad ajustada: {}, Nueva cantidad: {}", 
+        log.info("Ajuste de stock realizado en lote ID: {}. Tipo: {}, Cantidad ajustada: {}, Nueva cantidad: {}",
                 loteId, tipoMovimiento, cantidad, nuevaCantidad);
 
-        // 7. Actualizar estado si es necesario
         if (nuevaCantidad == 0 && lote.getEstado() == Lote.EstadoLote.activo) {
             lote.setEstado(Lote.EstadoLote.agotado);
             loteRepository.save(lote);

@@ -2,9 +2,11 @@ package com.example.proyecto.app.service.impl;
 
 import com.example.proyecto.app.dto.request.DetalleVentaRequest;
 import com.example.proyecto.app.dto.request.VentaRequest;
+import com.example.proyecto.app.dto.response.DetalleVentaResponse;
 import com.example.proyecto.app.dto.response.VentaResponse;
 import com.example.proyecto.app.entity.*;
 import com.example.proyecto.app.exception.*;
+import com.example.proyecto.app.mapper.DetalleVentaMapper;
 import com.example.proyecto.app.mapper.VentaMapper;
 import com.example.proyecto.app.repository.*;
 import com.example.proyecto.app.service.InventarioService;
@@ -34,7 +36,7 @@ public class VentaServiceImpl implements VentaService {
     private final ProductoRepository productoRepository;
     private final InventarioService inventarioService;
     private final VentaMapper ventaMapper;
-
+    private final DetalleVentaMapper detalleVentaMapper;
     // ==============================
     // OPERACIÓN PRINCIPAL: REGISTRAR VENTA
     // ==============================
@@ -261,4 +263,13 @@ public class VentaServiceImpl implements VentaService {
         // Se debe implementar si no existe.
         throw new UnsupportedOperationException("Método pendiente de implementar: obtenerTotalVentasPorMedioPagoYPeriodo");
     }
+    
+    @Override
+    public List<DetalleVentaResponse> obtenerDetallesVenta(Integer ventaId) {
+        List<DetalleVenta> detalles = detalleVentaRepository.findByVentaId(ventaId);
+        return detalles.stream()
+                .map(detalleVentaMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
 }

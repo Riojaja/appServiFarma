@@ -132,4 +132,9 @@ public interface VentaRepository extends JpaRepository<Venta, Integer> {
 
     boolean existsByCajaIdAndEstado(Integer cajaId, EstadoVenta estado);
     
+    @Query("SELECT COALESCE(SUM(v.total), 0) FROM Venta v WHERE v.caja.id = :cajaId AND v.medioPago = :medioPago AND v.estado = :estado")
+    BigDecimal sumTotalByCajaIdAndMedioPagoAndEstado(@Param("cajaId") Integer cajaId,
+                                                      @Param("medioPago") MedioPago medioPago,
+                                                      @Param("estado") EstadoVenta estado);
+    
 }

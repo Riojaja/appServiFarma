@@ -1,6 +1,7 @@
 package com.example.proyecto.app.service;
 
 import com.example.proyecto.app.dto.request.VentaRequest;
+import com.example.proyecto.app.dto.response.DetalleVentaResponse;
 import com.example.proyecto.app.dto.response.VentaResponse;
 import com.example.proyecto.app.entity.Venta;
 
@@ -131,4 +132,6 @@ public interface VentaService {
      * @return Lista de Object[] donde cada elemento contiene [medioPago, total].
      */
     List<Object[]> obtenerTotalVentasPorMedioPagoYPeriodo(LocalDateTime inicio, LocalDateTime fin);
+    
+    List<DetalleVentaResponse> obtenerDetallesVenta(Integer ventaId);
 }

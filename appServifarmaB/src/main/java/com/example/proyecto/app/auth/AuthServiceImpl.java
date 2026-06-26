@@ -48,12 +48,13 @@ public class AuthServiceImpl implements AuthService {
 
         // 5. Construir respuesta
         return AuthResponse.builder()
-                .token(token)
-                .refreshToken(null) // Opcional: si implementas refresh token, aquí lo generarías
-                .usuario(usuario.getUsuario())
-                .nombreCompleto(usuario.getNombreCompleto())
-                .rol(usuario.getRol().getNombre().toUpperCase())
-                .build();
+        	    .id(usuario.getId())   // <--- Agregar esta línea
+        	    .token(token)
+        	    .refreshToken(null)
+        	    .usuario(usuario.getUsuario())
+        	    .nombreCompleto(usuario.getNombreCompleto())
+        	    .rol(usuario.getRol().getNombre().toUpperCase())
+        	    .build();
     }
 
     @Override

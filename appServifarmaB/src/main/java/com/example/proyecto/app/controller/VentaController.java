@@ -1,9 +1,13 @@
 package com.example.proyecto.app.controller;
 
+import com.example.proyecto.app.dto.request.CorreoRequest;
 import com.example.proyecto.app.dto.request.VentaRequest;
+import com.example.proyecto.app.dto.response.DetalleVentaResponse;
 import com.example.proyecto.app.dto.response.MensajeResponse;
 import com.example.proyecto.app.dto.response.VentaResponse;
 import com.example.proyecto.app.entity.Venta;
+import com.example.proyecto.app.service.EmailService;
+import com.example.proyecto.app.service.PdfGeneratorService;
 import com.example.proyecto.app.service.VentaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +28,8 @@ import java.util.List;
 public class VentaController {
 
     private final VentaService ventaService;
+    private final PdfGeneratorService pdfGeneratorService;
+    private final EmailService emailService;
 
     // ==============================
     // OPERACIÓN PRINCIPAL: REGISTRAR VENTA
@@ -130,5 +136,62 @@ public class VentaController {
         log.debug("Solicitud de total de ventas por medio de pago entre {} y {}", inicio, fin);
         List<Object[]> resultados = ventaService.obtenerTotalVentasPorMedioPagoYPeriodo(inicio, fin);
         return ResponseEntity.ok(resultados);
+    }
+
+    // ==============================
+    // NUEVO ENDPOINT: ENVIAR BOLETA POR CORREO
+    // ==============================
+
+    @PostMapping("/{id}/enviar-boleta")
+    public ResponseEntity<MensajeResponse> enviarBoletaPorCorreo(
+            @PathVariable Integer id,
+            @Valid @RequestBody CorreoRequest request) {
+        log.debug("Solicitud de envío de boleta de venta ID: {} al correo: {}", id, request.getDestino());
+
+        try {
+            // 1. Obtener la venta con sus datos
+            VentaResponse ventaResponse = ventaService.obtenerVentaPorId(id);
+
+            // 2. Obtener los detalles de la venta
+            List<DetalleVentaResponse> detalles = ventaService.obtenerDetallesVenta(id);
+
+            // 3. Generar el PDF de la boleta
+            byte[] pdfBytes = pdfGeneratorService.generarBoleta(ventaResponse, detalles);
+
+            // 4. Construir el mensaje del correo
+            String asunto = "Boleta de Venta N° " + id;
+            String mensaje = String.format("""
+                    Estimado cliente,
+
+                    Adjunto encontrará la boleta de su compra.
+
+                    N° Venta: %d
+                    Fecha: %s
+                    Total: S/ %.2f
+
+                    ¡Gracias por su preferencia!
+                    """,
+                    id,
+                    ventaResponse.getFecha() != null ? ventaResponse.getFecha().toString() : "N/A",
+                    ventaResponse.getTotal() != null ? ventaResponse.getTotal() : BigDecimal.ZERO
+            );
+
+            // 5. Enviar el correo con el PDF adjunto
+            emailService.enviarCorreoConAdjunto(
+                    request.getDestino(),
+                    asunto,
+                    mensaje,
+                    pdfBytes,
+                    "boleta_" + id + ".pdf"
+            );
+
+            log.info("Boleta de venta ID {} enviada exitosamente a {}", id, request.getDestino());
+            return ResponseEntity.ok(new MensajeResponse("Boleta enviada exitosamente al correo " + request.getDestino()));
+
+        } catch (Exception e) {
+            log.error("Error al enviar boleta de venta ID {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new MensajeResponse("Error al enviar la boleta: " + e.getMessage()));
+        }
     }
 }

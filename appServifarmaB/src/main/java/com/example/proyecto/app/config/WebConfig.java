@@ -3,6 +3,7 @@ package com.example.proyecto.app.config;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.standard.DateTimeFormatterRegistrar;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -49,5 +50,14 @@ public class WebConfig implements WebMvcConfigurer {
         // Los interceptores se añaden aquí si es necesario en el futuro.
         // Por ahora se deja vacío, pero la estructura está preparada.
         // Ejemplo: registry.addInterceptor(new LogInterceptor()).addPathPatterns("/api/**");
+    }
+    
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("http://localhost:4200")  // URL de tu frontend Angular
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*")
+                .allowCredentials(true);
     }
 }
