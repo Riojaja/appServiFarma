@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ClienteService } from '../../../core/services/cliente';
 import { Cliente } from '../../../core/models/cliente.model';
+import { AuthService } from '../../../core/auth';
 
 @Component({
   selector: 'app-listar-clientes',
@@ -18,7 +19,10 @@ export class ListarComponent implements OnInit {
   filtroTexto: string = '';
   cargando: boolean = false;
 
-  constructor(private clienteService: ClienteService) { }
+  constructor(
+    private clienteService: ClienteService,
+    public auth: AuthService
+  ) { }
 
   ngOnInit(): void {
     this.cargarClientes();

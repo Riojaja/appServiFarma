@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ProveedorService } from '../../../core/services/proveedor';
 import { Proveedor } from '../../../core/models/proveedor.model';
+import { AuthService } from '../../../core/auth';
 
 @Component({
   selector: 'app-listar-proveedores',
@@ -35,7 +36,8 @@ export class ListarComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private proveedorService: ProveedorService
+    private proveedorService: ProveedorService,
+    public auth: AuthService
   ) {
     this.formCrear = this.fb.group({
       ruc: ['', [Validators.required, Validators.minLength(11), Validators.maxLength(11)]],
@@ -161,7 +163,7 @@ export class ListarComponent implements OnInit {
     this.errorEditar = '';
     this.enviandoEditar = false;
 
-    // ✅ Reseteamos el formulario antes de cargar
+    // Reseteamos el formulario antes de cargar
     this.formEditar.reset({
       ruc: '',
       razonSocial: '',
@@ -172,7 +174,7 @@ export class ListarComponent implements OnInit {
       region: ''
     });
 
-    // ✅ Buscar el proveedor en la lista local
+    // Buscar el proveedor en la lista local
     const proveedor = this.proveedores.find(p => p.id === id);
     
     if (proveedor) {
@@ -220,4 +222,4 @@ export class ListarComponent implements OnInit {
       }
     });
   }
-} 
+}

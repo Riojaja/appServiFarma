@@ -8,6 +8,7 @@ import { FabricanteService } from '../../../core/services/fabricante';
 import { Producto } from '../../../core/models/producto.model';
 import { Categoria } from '../../../core/models/categoria.model';
 import { Fabricante } from '../../../core/models/fabricante.model';
+import { AuthService } from '../../../core/auth';
 
 @Component({
   selector: 'app-listar-productos',
@@ -44,7 +45,8 @@ export class ListarComponent implements OnInit {
     private fabricanteService: FabricanteService,
     private fb: FormBuilder,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    public auth: AuthService
   ) {
     // Formulario de creación
     this.formCrear = this.fb.group({

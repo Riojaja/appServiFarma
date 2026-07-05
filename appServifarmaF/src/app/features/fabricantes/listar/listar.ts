@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { FabricanteService } from '../../../core/services/fabricante';
 import { Fabricante } from '../../../core/models/fabricante.model';
+import { AuthService } from '../../../core/auth';
 
 @Component({
   selector: 'app-listar-fabricantes',
@@ -17,7 +18,10 @@ export class ListarComponent implements OnInit {
   filtroNombre: string = '';
   cargando: boolean = false;
 
-  constructor(private fabricanteService: FabricanteService) { }
+  constructor(
+    private fabricanteService: FabricanteService,
+    public auth: AuthService
+  ) { }
 
   ngOnInit(): void {
     this.cargarFabricantes();

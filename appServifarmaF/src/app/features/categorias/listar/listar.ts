@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-// Importamos desde las carpetas centralizadas
 import { CategoriaService } from '../../../core/services/categoria';
 import { Categoria } from '../../../core/models/categoria.model';
+import { AuthService } from '../../../core/auth';
 
 @Component({
   selector: 'app-listar-categorias',
@@ -18,7 +18,10 @@ export class ListarComponent implements OnInit {
   filtroNombre: string = '';
   cargando: boolean = false;
 
-  constructor(private categoriaService: CategoriaService) { }
+  constructor(
+    private categoriaService: CategoriaService,
+    public auth: AuthService
+  ) { }
 
   ngOnInit(): void {
     this.cargarCategorias();
