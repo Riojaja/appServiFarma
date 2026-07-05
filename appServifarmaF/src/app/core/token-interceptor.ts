@@ -10,11 +10,16 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { AuthService } from './auth';
 import { Router } from '@angular/router';
+import { NotificacionService } from './services/notificacion';
 
 @Injectable()
 export class TokenInterceptor implements HttpInterceptor {
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+    private notificacionService: NotificacionService
+  ) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Obtener el token del servicio de autenticación
@@ -33,10 +38,16 @@ export class TokenInterceptor implements HttpInterceptor {
     // Continuar con la petición y manejar errores
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
-        // Si el error es 401 (No autorizado) y no estamos en login, cerrar sesión
+        // 401: sesión inválida o expirada -> cerrar sesión y redirigir a login
         if (error.status === 401 && !req.url.includes('/auth/login')) {
           this.authService.logout();
           this.router.navigate(['/login']);
+          this.notificacionService.advertencia('Tu sesión expiró. Inicia sesión de nuevo.');
+        }
+        // 403: el backend rechazó la acción por rol/permisos (@PreAuthorize)
+        else if (error.status === 403) {
+          const mensaje = error.error?.mensaje || 'No tienes permisos para realizar esta acción.';
+          this.notificacionService.error(mensaje);
         }
         return throwError(() => error);
       })

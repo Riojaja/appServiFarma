@@ -1,0 +1,17 @@
+<div class="toast-container">
+  <div
+    *ngFor="let n of notificacionService.notificaciones$ | async"
+    class="toast-item"
+    [ngClass]="'toast-' + n.tipo"
+  >
+    <span class="toast-mensaje">{{ n.mensaje }}</span>
+    <button
+      class="toast-cerrar"
+      type="button"
+      (click)="notificacionService.cerrar(n.id)"
+      aria-label="Cerrar notificación"
+    >
+      &times;
+    </button>
+  </div>
+</div>

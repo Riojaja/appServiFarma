@@ -10,13 +10,12 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
+  id: number;
   token: string;
   refreshToken?: string;
   usuario: string;
   nombreCompleto: string;
   rol: string;
-  // Si el backend devuelve el ID del usuario, agregarlo aquí
-  // id?: number;
 }
 
 @Injectable({
@@ -26,8 +25,9 @@ export class AuthService {
   private readonly TOKEN_KEY = 'token';
   private readonly USER_KEY = 'usuario';
   private readonly ROL_KEY = 'rol';
-  private readonly USER_ID_KEY = 'usuarioId'; // Nueva clave para el ID
-  private readonly NOMBRE_KEY = 'nombreCompleto'
+  private readonly USER_ID_KEY = 'usuarioId';
+  private readonly NOMBRE_KEY = 'nombreCompleto';
+
   constructor(private http: HttpClient) { }
 
   /**
@@ -46,16 +46,15 @@ export class AuthService {
 
   /**
    * Guarda los datos de la sesión en localStorage.
+   * El backend (AuthResponse.java) ya devuelve el id real del usuario
+   * desde el login, así que ya no se usa ningún valor por defecto.
    * @param authResult Respuesta del login.
    */
   private setSession(authResult: AuthResponse): void {
     localStorage.setItem(this.TOKEN_KEY, authResult.token);
     localStorage.setItem(this.USER_KEY, authResult.usuario);
     localStorage.setItem(this.ROL_KEY, authResult.rol);
-    // Guardar el ID del usuario. Si el backend no lo devuelve, usamos un valor por defecto (1)
-    // Para pruebas, asignamos 1. En producción, si el backend envía el ID, usar authResult.id
-    const userId = (authResult as any).id ? (authResult as any).id : 1;
-    localStorage.setItem(this.USER_ID_KEY, userId.toString());
+    localStorage.setItem(this.USER_ID_KEY, authResult.id.toString());
     localStorage.setItem(this.NOMBRE_KEY, authResult.nombreCompleto);
   }
 
@@ -67,6 +66,7 @@ export class AuthService {
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.ROL_KEY);
     localStorage.removeItem(this.USER_ID_KEY);
+    localStorage.removeItem(this.NOMBRE_KEY);
   }
 
   /**
@@ -126,6 +126,6 @@ export class AuthService {
   }
 
   getNombreCompleto(): string | null {
-  return localStorage.getItem(this.NOMBRE_KEY);
-}
+    return localStorage.getItem(this.NOMBRE_KEY);
+  }
 }

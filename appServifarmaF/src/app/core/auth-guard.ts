@@ -22,10 +22,9 @@ export class AuthGuard implements CanActivate {
     // 2. Verificar roles si se especifican en la ruta
     const requiredRoles = route.data['roles'] as string[];
     if (requiredRoles && requiredRoles.length > 0) {
-      const userRole = this.authService.getRol()?.toLowerCase(); // ✅ Convertir a minúsculas
-      // También soportar 'administrador'
+      const userRole = this.authService.getRol()?.toLowerCase();
       const normalizedUserRole = userRole === 'administrador' ? 'admin' : userRole;
-      
+
       if (!normalizedUserRole || !requiredRoles.includes(normalizedUserRole)) {
         this.router.navigate(['/dashboard']);
         return false;
