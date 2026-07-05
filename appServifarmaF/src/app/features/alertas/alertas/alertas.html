@@ -1,1 +1,142 @@
-<p>alertas works!</p>
+<div class="container-fluid mt-4">
+
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0">
+        <i class="bi bi-bell text-primary me-2"></i>Alertas de Inventario
+      </h2>
+      <p class="text-muted small mb-0">Productos con stock bajo y lotes próximos a vencer</p>
+    </div>
+    <button class="btn btn-outline-primary rounded-pill px-4" (click)="cargarAlertas()">
+      <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+    </button>
+  </div>
+
+  <!-- ======== CARGANDO ======== -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- ======== ERROR ======== -->
+  <div *ngIf="!cargando && error" class="alert alert-danger">
+    <i class="bi bi-exclamation-triangle me-2"></i>
+    No se pudieron cargar las alertas de inventario. Intenta actualizar.
+  </div>
+
+  <div *ngIf="!cargando && !error">
+
+    <!-- ======== TARJETAS DE RESUMEN ======== -->
+    <div class="row g-3 mb-4" *ngIf="resumen">
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-box-seam text-warning" style="font-size: 1.8rem;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ resumen.totalProductosStockBajo }}</div>
+            <div class="text-muted small">Stock bajo</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-x-circle text-danger" style="font-size: 1.8rem;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ resumen.totalProductosSinStock }}</div>
+            <div class="text-muted small">Sin stock</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-hourglass-split text-info" style="font-size: 1.8rem;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ resumen.totalLotesProximosAVencer }}</div>
+            <div class="text-muted small">Próximos a vencer</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+          <div class="card-body text-center">
+            <i class="bi bi-check-circle text-success" style="font-size: 1.8rem;"></i>
+            <div class="fs-3 fw-bold mt-1">{{ resumen.totalLotesActivosConStock }}</div>
+            <div class="text-muted small">Lotes activos con stock</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======== FILTROS ======== -->
+    <div class="btn-group mb-3" role="group">
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="filtroActivo === 'todas'"
+        [class.btn-outline-primary]="filtroActivo !== 'todas'"
+        (click)="cambiarFiltro('todas')">
+        Todas ({{ alertasStockBajo.length + alertasProximosVencer.length }})
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="filtroActivo === 'proximo_vencer'"
+        [class.btn-outline-primary]="filtroActivo !== 'proximo_vencer'"
+        (click)="cambiarFiltro('proximo_vencer')">
+        Próximos a vencer ({{ alertasProximosVencer.length }})
+      </button>
+      <button
+        type="button"
+        class="btn btn-sm"
+        [class.btn-primary]="filtroActivo === 'stock_bajo'"
+        [class.btn-outline-primary]="filtroActivo !== 'stock_bajo'"
+        (click)="cambiarFiltro('stock_bajo')">
+        Stock bajo ({{ alertasStockBajo.length }})
+      </button>
+    </div>
+
+    <!-- ======== LISTA DE ALERTAS ======== -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+      <div class="card-body p-0">
+
+        <div *ngIf="alertasVisibles.length === 0" class="text-center py-5 text-muted">
+          <i class="bi bi-check2-circle display-4 d-block mb-2 text-success"></i>
+          No hay alertas en esta categoría. Todo en orden.
+        </div>
+
+        <div class="list-group list-group-flush">
+          <div *ngFor="let alerta of alertasVisibles" class="list-group-item d-flex align-items-center gap-3 py-3">
+            <span
+              class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+              [ngClass]="claseUrgencia(alerta)"
+              style="width: 42px; height: 42px;">
+              <i class="bi" [ngClass]="iconoAlerta(alerta)"></i>
+            </span>
+
+            <div class="flex-grow-1">
+              <div class="fw-semibold">{{ alerta.productoNombre }}</div>
+              <div class="text-muted small">{{ alerta.mensaje }}</div>
+            </div>
+
+            <div class="text-end" *ngIf="alerta.tipo === 'proximo_vencer'">
+              <span class="badge rounded-pill" [ngClass]="claseUrgencia(alerta)">
+                {{ alerta.diasRestantes }} día(s)
+              </span>
+              <div class="text-muted small mt-1">Cant: {{ alerta.cantidad }}</div>
+            </div>
+            <a>
+              *ngIf="alerta.tipo === 'stock_bajo'"
+              class="btn btn-sm btn-outline-primary"
+              [routerLink]="['/productos', 'editar', alerta.productoId]">
+              Ver producto
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</div>

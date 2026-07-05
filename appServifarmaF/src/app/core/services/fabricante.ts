@@ -35,4 +35,9 @@ export class FabricanteService {
   buscarPorNombre(nombre: string): Observable<Fabricante[]> {
     return this.http.get<Fabricante[]>(`${this.apiUrl}/buscar?nombre=${nombre}`);
   }
+
+  /** Útil para validar en vivo si ya existe un fabricante con ese nombre antes de enviar el formulario. */
+  existePorNombre(nombre: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/existe?nombre=${nombre}`);
+  }
 }

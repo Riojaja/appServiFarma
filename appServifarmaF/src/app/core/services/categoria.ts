@@ -35,4 +35,9 @@ export class CategoriaService {
   buscarPorNombre(nombre: string): Observable<Categoria[]> {
     return this.http.get<Categoria[]>(`${this.apiUrl}/buscar?nombre=${nombre}`);
   }
+
+  /** Útil para validar en vivo si ya existe una categoría con ese nombre antes de enviar el formulario. */
+  existePorNombre(nombre: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/existe?nombre=${nombre}`);
+  }
 }

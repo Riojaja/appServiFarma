@@ -48,4 +48,18 @@ export class CajaService {
     return this.http.get<number>(`${this.apiUrl}/${cajaId}/total-ventas/${medioPago}`);
   }
 
+  /** Historial de cajas abiertas por un usuario específico (útil para un reporte por cajero). */
+  listarPorUsuarioApertura(usuarioId: number): Observable<Caja[]> {
+    return this.http.get<Caja[]>(`${this.apiUrl}/usuario/${usuarioId}`);
+  }
+
+  /** Cajas cerradas en un rango de fechas (fechas en formato ISO, ej. 2026-07-01T00:00:00). */
+  listarPorFechasCierre(inicio: string, fin: string): Observable<Caja[]> {
+    return this.http.get<Caja[]>(`${this.apiUrl}/fechas?inicio=${inicio}&fin=${fin}`);
+  }
+
+  /** estado: 'abierta' | 'cerrada' */
+  listarPorEstado(estado: string): Observable<Caja[]> {
+    return this.http.get<Caja[]>(`${this.apiUrl}/estado/${estado}`);
+  }
 }

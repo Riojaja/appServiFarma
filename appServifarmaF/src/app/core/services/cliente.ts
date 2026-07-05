@@ -43,4 +43,9 @@ export class ClienteService {
   buscarPorTipoDocumento(tipo: string): Observable<Cliente[]> {
     return this.http.get<Cliente[]>(`${this.apiUrl}/tipo?tipo=${tipo}`);
   }
+
+  /** Útil para validar en vivo si ya existe un cliente con ese documento antes de enviar el formulario. */
+  existePorDocumento(documento: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/existe?documento=${documento}`);
+  }
 }

@@ -47,4 +47,13 @@ export class ProveedorService {
   obtenerRegiones(): Observable<string[]> {
     return this.http.get<string[]>(`${this.apiUrl}/regiones`);
   }
+
+  buscarPorContacto(contacto: string): Observable<Proveedor[]> {
+    return this.http.get<Proveedor[]>(`${this.apiUrl}/buscar/contacto?contacto=${contacto}`);
+  }
+
+  /** Útil para validar en vivo si ya existe un proveedor con ese RUC antes de enviar el formulario. */
+  existePorRuc(ruc: string): Observable<boolean> {
+    return this.http.get<boolean>(`${this.apiUrl}/existe?ruc=${ruc}`);
+  }
 }

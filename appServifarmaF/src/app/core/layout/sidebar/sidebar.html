@@ -29,9 +29,19 @@
       <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
     </a>
 
+    <!-- Alertas de inventario -->
+    <a routerLink="/alertas" routerLinkActive="active" class="nav-item">
+      <i class="bi bi-bell"></i> <span>Alertas</span>
+    </a>
+
     <!-- Inventario (Lotes) -->
     <a routerLink="/lotes" routerLinkActive="active" class="nav-item">
       <i class="bi bi-box-seam"></i> <span>Inventario</span>
+    </a>
+
+    <!-- Movimientos de stock -->
+    <a routerLink="/movimientos-stock" routerLinkActive="active" class="nav-item">
+      <i class="bi bi-arrow-left-right"></i> <span>Movimientos de Stock</span>
     </a>
 
     <!-- Productos -->
@@ -59,13 +69,33 @@
       <i class="bi bi-graph-down-arrow"></i> <span>Demanda Insatisfecha</span>
     </a>
 
+    <!-- Bitácora de comunicación -->
+    <a routerLink="/bitacora" routerLinkActive="active" class="nav-item">
+      <i class="bi bi-journal-text"></i> <span>Bitácora</span>
+    </a>
+
     <!-- ======================== -->
     <!-- ADMINISTRADOR            -->
     <!-- ======================== -->
     <ng-container *ngIf="isAdmin">
-      <!-- Proveedores (movido aquí) -->
+      <!-- Categorías -->
+      <a routerLink="/categorias" routerLinkActive="active" class="nav-item">
+        <i class="bi bi-tags"></i> <span>Categorías</span>
+      </a>
+
+      <!-- Fabricantes -->
+      <a routerLink="/fabricantes" routerLinkActive="active" class="nav-item">
+        <i class="bi bi-building"></i> <span>Fabricantes</span>
+      </a>
+
+      <!-- Proveedores -->
       <a routerLink="/proveedores" routerLinkActive="active" class="nav-item">
         <i class="bi bi-truck"></i> <span>Proveedores</span>
+      </a>
+
+      <!-- Estadísticas (backend restringido a ADMIN con @PreAuthorize) -->
+      <a routerLink="/estadisticas" routerLinkActive="active" class="nav-item">
+        <i class="bi bi-graph-up"></i> <span>Estadísticas</span>
       </a>
 
       <!-- Reporte DIGEMIT -->
@@ -78,10 +108,15 @@
         <i class="bi bi-bar-chart-line-fill"></i> <span>Rentabilidad</span>
       </a>
 
+      <!-- Auditoría (backend restringido a ADMIN con @PreAuthorize) -->
+      <a routerLink="/auditoria" routerLinkActive="active" class="nav-item">
+        <i class="bi bi-shield-check"></i> <span>Auditoría</span>
+      </a>
+
       <!-- Usuarios -->
-        <a routerLink="/usuarios" routerLinkActive="active" class="nav-item">
-    <i class="bi bi-people-fill"></i> <span>Usuarios</span>
-  </a>
+      <a routerLink="/usuarios" routerLinkActive="active" class="nav-item">
+        <i class="bi bi-people-fill"></i> <span>Usuarios</span>
+      </a>
     </ng-container>
   </nav>
 

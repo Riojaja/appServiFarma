@@ -51,6 +51,11 @@ export class LoteService {
     return this.http.get<Lote>(`${this.apiUrl}/numero/${numero}`);
   }
 
+  /** Búsqueda parcial (LIKE %numero%), útil para autocompletado en un buscador de lotes. */
+  buscarPorLoteContaining(numero: string): Observable<Lote[]> {
+    return this.http.get<Lote[]>(`${this.apiUrl}/numero/contiene/${numero}`);
+  }
+
   obtenerProximosAVencer(dias: number): Observable<Lote[]> {
     return this.http.get<Lote[]>(`${this.apiUrl}/proximos-a-vencer?diasAnticipacion=${dias}`);
   }
@@ -66,5 +71,14 @@ export class LoteService {
   /** Ajuste manual de stock: 'ajuste' aumenta, 'merma' reduce. La cantidad siempre va positiva. */
   ajustarStock(id: number, data: AjusteStockRequest): Observable<{ mensaje: string }> {
     return this.http.patch<{ mensaje: string }>(`${this.apiUrl}/${id}/stock`, data);
+  }
+
+  /**
+   * Dispara manualmente la tarea que marca como 'vencido' a los lotes cuya
+   * fecha de vencimiento ya pasó. En el backend está pensada para un scheduler,
+   * pero aquí se expone por si quieres un botón "Actualizar vencidos" manual.
+   */
+  actualizarLotesVencidos(): Observable<{ mensaje: string }> {
+    return this.http.post<{ mensaje: string }>(`${this.apiUrl}/actualizar-vencidos`, {});
   }
 }

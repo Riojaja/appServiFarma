@@ -37,6 +37,11 @@ export class EstadisticaService {
     return this.http.get<any[]>(`${this.apiUrl}/distribucion-pagos?inicio=${inicio}&fin=${fin}`);
   }
 
+  /** Distribución de medios de pago, pero solo del día actual (sin rango de fechas). */
+  obtenerDistribucionPagosDiario(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/distribucion-pagos/diario`);
+  }
+
   // Ventas por hora
   obtenerVentasPorHora(fecha: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/ventas-por-hora/${fecha}`);
