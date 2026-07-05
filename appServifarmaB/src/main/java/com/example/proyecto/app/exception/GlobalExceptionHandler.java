@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -66,7 +67,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Maneja excepciones de permiso denegado (PermisoDenegadoException).
+     * Maneja excepciones de permiso denegado propias del negocio (PermisoDenegadoException).
      * Retorna HTTP 403 FORBIDDEN.
      */
     @ExceptionHandler(PermisoDenegadoException.class)
@@ -76,6 +77,20 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(ex.getMessage()));
     }
 
+    /**
+     * Maneja el rechazo de Spring Security cuando un @PreAuthorize bloquea el acceso
+     * (ej. un "vendedor" intentando eliminar un producto o entrar a /api/auditoria).
+     * Sin este handler, la excepción caía en handleGenericException() y el usuario
+     * recibía un 500 genérico en vez de un 403 con mensaje claro.
+     * Retorna HTTP 403 FORBIDDEN.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<MensajeResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        log.warn("Acceso denegado: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(new MensajeResponse("No tienes permisos para realizar esta acción."));
+    }
+
     // ==============================
     // EXCEPCIONES DE VALIDACIÓN (HTTP 400)
     // ==============================
@@ -83,7 +98,6 @@ public class GlobalExceptionHandler {
     /**
      * Maneja errores de validación de DTOs con @Valid.
      * Retorna HTTP 400 BAD REQUEST con un mapa de errores por campo.
-     * Ejemplo: { "usuario": "El nombre de usuario es obligatorio", "contrasena": "La contraseña es muy corta" }
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
@@ -115,7 +129,6 @@ public class GlobalExceptionHandler {
     /**
      * Maneja cualquier otra excepción no capturada por los handlers específicos.
      * Retorna HTTP 500 INTERNAL SERVER ERROR con un mensaje genérico.
-     * (No se expone el detalle de la excepción al cliente por seguridad).
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MensajeResponse> handleGenericException(Exception ex) {
