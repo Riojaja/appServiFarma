@@ -1,30 +1,25 @@
-<div class="login-wrapper">
-  <div class="login-container">
+<div class="login-page">
 
-    <!-- ===== COLUMNA IZQUIERDA: FORMULARIO ===== -->
-    <div class="login-left">
-      <div class="login-content">
+  <!-- ===== COLUMNA IZQUIERDA: FORMULARIO ===== -->
+  <div class="login-left">
+    <div class="login-content">
 
-        <!-- Logo -->
-        <div class="text-center">
-          <div class="login-logo">
-            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50" cy="32" r="14" fill="#2b2470"/>
-              <path d="M50 46c-16 0-28 10-28 24v6h56v-6c0-14-12-24-28-24z" fill="#5b4fc7"/>
-              <circle cx="38" cy="40" r="9" fill="#3aa0e0"/>
-              <rect x="44" y="56" width="12" height="28" rx="2" fill="#e53935"/>
-              <rect x="36" y="64" width="28" height="12" rx="2" fill="#e53935"/>
-            </svg>
-          </div>
-          <h1 class="login-title">ServiFarma</h1>
-          <p class="login-subtitle">Sistema de Gestión Farmacéutica</p>
-        </div>
+      <!-- Logo real -->
+      <div class="text-center login-brand">
+        <img src="logoServifarma.jpeg" alt="ServiFarma" class="login-logo-img">
+        <h1 class="login-title">ServiFarma</h1>
+        <p class="login-subtitle">Sistema de Gestión Farmacéutica</p>
+      </div>
 
-        <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate>
+      <div class="login-divider"></div>
 
-          <!-- Usuario -->
-          <div class="mb-3">
-            <label for="usuario" class="form-label">Usuario</label>
+      <form (ngSubmit)="onSubmit()" #loginForm="ngForm" novalidate>
+
+        <!-- Usuario -->
+        <div class="mb-3">
+          <label for="usuario" class="form-label">Usuario</label>
+          <div class="input-with-icon">
+            <i class="bi bi-person"></i>
             <input
               type="text"
               class="form-control"
@@ -37,79 +32,80 @@
               placeholder="Ingrese su usuario"
             >
           </div>
-
-          <!-- Contraseña -->
-          <div class="mb-3">
-            <label for="contrasena" class="form-label">Contraseña</label>
-            <div class="password-field">
-              <input
-                [type]="showPassword ? 'text' : 'password'"
-                class="form-control"
-                id="contrasena"
-                name="contrasena"
-                [(ngModel)]="loginData.contrasena"
-                required
-                autocomplete="current-password"
-                placeholder="Ingrese su contraseña"
-              >
-              <button
-                type="button"
-                class="password-toggle-btn"
-                (click)="togglePassword()"
-                tabindex="-1"
-                aria-label="Mostrar u ocultar contraseña"
-              >
-                <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Error -->
-          <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center py-2" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <span>{{ errorMessage }}</span>
-          </div>
-
-          <!-- Botón -->
-          <button
-            type="submit"
-            class="btn btn-primary w-100 login-btn"
-            [disabled]="isLoading"
-          >
-            <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-            {{ isLoading ? 'Ingresando...' : 'Ingresar' }}
-          </button>
-        </form>
-
-        <div class="text-center mt-3">
-          <a href="javascript:void(0)" class="forgot-link">¿Olvidó su contraseña?</a>
         </div>
 
-        <hr class="my-4">
-
-        <!-- Credenciales de prueba -->
-        <div class="test-credentials text-center">
-          <p class="mb-1">Credenciales de prueba:</p>
-          <p class="mb-0">admin / admin123 &nbsp;|&nbsp; vendedor / vendedor123</p>
+        <!-- Contraseña -->
+        <div class="mb-3">
+          <label for="contrasena" class="form-label">Contraseña</label>
+          <div class="input-with-icon password-field">
+            <i class="bi bi-lock"></i>
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              class="form-control"
+              id="contrasena"
+              name="contrasena"
+              [(ngModel)]="loginData.contrasena"
+              required
+              autocomplete="current-password"
+              placeholder="Ingrese su contraseña"
+            >
+            <button
+              type="button"
+              class="password-toggle-btn"
+              (click)="togglePassword()"
+              tabindex="-1"
+              aria-label="Mostrar u ocultar contraseña"
+            >
+              <i class="bi" [ngClass]="showPassword ? 'bi-eye-slash' : 'bi-eye'"></i>
+            </button>
+          </div>
         </div>
 
+        <!-- Error -->
+        <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center py-2 login-error" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <!-- Botón -->
+        <button
+          type="submit"
+          class="btn btn-primary w-100 login-btn"
+          [disabled]="isLoading"
+        >
+          <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          <i class="bi bi-box-arrow-in-right me-2" *ngIf="!isLoading"></i>
+          {{ isLoading ? 'Ingresando...' : 'Ingresar' }}
+        </button>
+      </form>
+
+      <div class="text-center mt-3">
+        <a href="javascript:void(0)" class="forgot-link">¿Olvidó su contraseña?</a>
       </div>
-    </div>
 
-    <!-- ===== COLUMNA DERECHA: IMAGEN ===== -->
-    <div class="login-right">
-      <div class="login-image-content">
-        <div class="image-overlay">
-          <h2>Bienvenido</h2>
-          <p>Accede a tu panel de control para gestionar tu farmacia de manera eficiente y segura.</p>
-          <div class="image-features">
-            <span><i class="bi bi-shield-check"></i> Seguro</span>
-            <span><i class="bi bi-graph-up"></i> Eficiente</span>
-            <span><i class="bi bi-clock"></i> 24/7</span>
-          </div>
-        </div>
+      <div class="login-footer">
+        <span>© 2026 ServiFarma</span>
+        <span class="dot-sep"></span>
+        <span>v1.0</span>
       </div>
-    </div>
 
+    </div>
   </div>
+
+  <!-- ===== COLUMNA DERECHA: IMAGEN/MARCA ===== -->
+  <div class="login-right">
+    <div class="login-image-content">
+      <span class="brand-pill">
+        <i class="bi bi-capsule"></i> Gestión Farmacéutica
+      </span>
+      <h2>Bienvenido de vuelta</h2>
+      <p>Accede a tu panel de control para gestionar tu farmacia de manera eficiente y segura.</p>
+      <div class="image-features">
+        <span><i class="bi bi-shield-check"></i> Seguro</span>
+        <span><i class="bi bi-graph-up"></i> Eficiente</span>
+        <span><i class="bi bi-clock"></i> 24/7</span>
+      </div>
+    </div>
+  </div>
+
 </div>

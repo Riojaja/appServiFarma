@@ -24,7 +24,7 @@
 
   <!-- Menú de navegación -->
   <nav class="sidebar-nav">
-    <!-- Dashboard -->
+    <!-- Dashboard (siempre visible) -->
     <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
       <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
     </a>
@@ -34,24 +34,9 @@
       <i class="bi bi-bell"></i> <span>Alertas</span>
     </a>
 
-    <!-- Inventario (Lotes) -->
-    <a routerLink="/lotes" routerLinkActive="active" class="nav-item">
-      <i class="bi bi-box-seam"></i> <span>Inventario</span>
-    </a>
-
     <!-- Movimientos de stock -->
     <a routerLink="/movimientos-stock" routerLinkActive="active" class="nav-item">
       <i class="bi bi-arrow-left-right"></i> <span>Movimientos de Stock</span>
-    </a>
-
-    <!-- Productos -->
-    <a routerLink="/productos" routerLinkActive="active" class="nav-item">
-      <i class="bi bi-box-seam"></i> <span>Productos</span>
-    </a>
-
-    <!-- Ventas -->
-    <a routerLink="/ventas" routerLinkActive="active" class="nav-item">
-      <i class="bi bi-cart3"></i> <span>Ventas</span>
     </a>
 
     <!-- Clientes -->
@@ -93,14 +78,9 @@
         <i class="bi bi-truck"></i> <span>Proveedores</span>
       </a>
 
-      <!-- Estadísticas (backend restringido a ADMIN con @PreAuthorize) -->
+      <!-- Estadísticas -->
       <a routerLink="/estadisticas" routerLinkActive="active" class="nav-item">
         <i class="bi bi-graph-up"></i> <span>Estadísticas</span>
-      </a>
-
-      <!-- Reporte DIGEMIT -->
-      <a routerLink="/reportes/digemit" routerLinkActive="active" class="nav-item">
-        <i class="bi bi-file-earmark-bar-graph"></i> <span>Reporte DIGEMIT</span>
       </a>
 
       <!-- Rentabilidad -->
@@ -108,7 +88,7 @@
         <i class="bi bi-bar-chart-line-fill"></i> <span>Rentabilidad</span>
       </a>
 
-      <!-- Auditoría (backend restringido a ADMIN con @PreAuthorize) -->
+      <!-- Auditoría -->
       <a routerLink="/auditoria" routerLinkActive="active" class="nav-item">
         <i class="bi bi-shield-check"></i> <span>Auditoría</span>
       </a>

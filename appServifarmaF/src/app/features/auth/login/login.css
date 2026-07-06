@@ -1,62 +1,59 @@
 /* ==============================
-   LOGIN - ESTILOS ACTUALIZADOS
+   LOGIN - VERSIÓN PROFESIONAL PULIDA
+   (formulario a la derecha, marca a la izquierda)
    ============================== */
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+:host {
+  display: block;
 }
 
-.login-wrapper {
+.login-page {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ===== FORMULARIO (ahora a la derecha) ===== */
+.login-left {
+  order: 2;
+  flex: 0 0 440px;
+  max-width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  padding: 20px;
-}
-
-.login-container {
-  display: flex;
-  max-width: 1100px;
-  width: 100%;
   background: #ffffff;
-  border-radius: 24px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
-  overflow: hidden;
-  min-height: 600px;
-}
-
-/* ===== COLUMNA IZQUIERDA: FORMULARIO ===== */
-.login-left {
-  flex: 1;
-  padding: 50px 48px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: #ffffff;
+  padding: 40px;
+  overflow-y: auto;
+  z-index: 2;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08);
 }
 
 .login-content {
-  max-width: 400px;
-  margin: 0 auto;
   width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  justify-content: center;
 }
 
-.login-logo {
-  width: 70px;
-  height: 70px;
-  margin: 0 auto 12px;
+.login-brand {
+  margin-bottom: 8px;
 }
 
-.login-logo svg {
-  width: 100%;
-  height: 100%;
+.login-logo-img {
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+  border-radius: 18px;
+  margin: 0 auto 16px;
+  display: block;
+  box-shadow: 0 6px 18px rgba(27, 42, 107, 0.22);
 }
 
 .login-title {
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   color: #1b2a6b;
   margin-bottom: 2px;
@@ -64,9 +61,15 @@
 }
 
 .login-subtitle {
-  font-size: 14px;
+  font-size: 13px;
   color: #6b7a9f;
-  margin-bottom: 30px;
+  margin-bottom: 0;
+}
+
+.login-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent);
+  margin: 28px 0 24px;
 }
 
 .form-label {
@@ -76,22 +79,43 @@
   margin-bottom: 6px;
 }
 
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon > .bi {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #a0aec0;
+  font-size: 16px;
+  pointer-events: none;
+  transition: color 0.2s ease;
+}
+
+.input-with-icon:focus-within > .bi {
+  color: #5b4fc7;
+}
+
+.input-with-icon .form-control {
+  padding-left: 42px;
+}
+
 .form-control {
   height: 48px;
   border-radius: 10px;
   border: 1.5px solid #e2e8f0;
   padding: 0 16px;
   font-size: 14px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #f9fafc;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .form-control:focus {
   border-color: #5b4fc7;
+  background: #ffffff;
   box-shadow: 0 0 0 3px rgba(91, 79, 199, 0.15);
-}
-
-.password-field {
-  position: relative;
 }
 
 .password-field .form-control {
@@ -110,10 +134,27 @@
   cursor: pointer;
   padding: 4px;
   line-height: 1;
+  transition: color 0.2s ease;
 }
 
 .password-toggle-btn:hover {
   color: #4a5568;
+}
+
+/* ===== ERROR: aparece al toque, con sacudida ===== */
+.login-error {
+  border: none;
+  background: #fdeaea;
+  color: #c0392b;
+  border-radius: 10px;
+  font-size: 13.5px;
+  animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }
 
 .login-btn {
@@ -123,12 +164,17 @@
   font-size: 16px;
   background: linear-gradient(135deg, #5b4fc7, #3aa0e0);
   border: none;
+  margin-top: 4px;
   transition: transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .login-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(91, 79, 199, 0.35);
+  box-shadow: 0 10px 24px rgba(91, 79, 199, 0.35);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .login-btn:disabled {
@@ -147,28 +193,36 @@
   text-decoration: underline;
 }
 
-.test-credentials {
-  font-size: 13px;
-  color: #718096;
+.login-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 32px;
+  font-size: 11.5px;
+  color: #a0aec0;
 }
 
-.test-credentials p {
-  margin-bottom: 2px;
+.dot-sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbd5e0;
 }
 
-/* ===== COLUMNA DERECHA: IMAGEN ===== */
+/* ===== MARCA (ahora a la izquierda, sin foto por ahora, solo degradado) ===== */
 .login-right {
-  flex: 1.2;
+  order: 1;
+  flex: 1;
+  position: relative;
   background: linear-gradient(135deg, #1b2a6b 0%, #3aa0e0 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 48px;
-  position: relative;
   overflow: hidden;
 }
 
-/* Fondo decorativo con patrón de puntos */
 .login-right::before {
   content: '';
   position: absolute;
@@ -178,16 +232,15 @@
   pointer-events: none;
 }
 
-/* Círculo decorativo */
 .login-right::after {
   content: '';
   position: absolute;
-  width: 400px;
-  height: 400px;
+  width: 420px;
+  height: 420px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
-  top: -100px;
-  right: -100px;
+  background: rgba(255, 255, 255, 0.05);
+  bottom: -140px;
+  right: -140px;
   pointer-events: none;
 }
 
@@ -196,26 +249,44 @@
   z-index: 1;
   color: #ffffff;
   text-align: center;
-  max-width: 380px;
+  max-width: 440px;
+}
+
+.brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 7px 16px;
+  border-radius: 30px;
+  backdrop-filter: blur(6px);
+  margin-bottom: 20px;
 }
 
 .login-image-content h2 {
-  font-size: 36px;
+  font-size: 40px;
   font-weight: 700;
   margin-bottom: 16px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
 }
 
 .login-image-content p {
   font-size: 16px;
-  line-height: 1.6;
-  opacity: 0.85;
-  margin-bottom: 28px;
+  line-height: 1.65;
+  opacity: 0.92;
+  margin-bottom: 30px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.2);
 }
 
 .image-features {
   display: flex;
   justify-content: center;
-  gap: 24px;
+  gap: 20px;
   flex-wrap: wrap;
 }
 
@@ -225,11 +296,17 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 500;
-  background: rgba(255, 255, 255, 0.12);
-  padding: 8px 18px;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 9px 18px;
   border-radius: 30px;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.image-features span:hover {
+  background: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
 }
 
 .image-features span i {
@@ -237,20 +314,40 @@
 }
 
 /* ===== RESPONSIVE ===== */
-@media (max-width: 992px) {
-  .login-container {
+
+@media (max-width: 1100px) {
+  .login-left {
+    flex-basis: 380px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-page {
     flex-direction: column;
-    max-width: 520px;
+    height: auto;
+    min-height: 100vh;
+    overflow-y: auto;
+  }
+
+  /* En mobile, el formulario siempre va primero (es lo que el usuario necesita ver de inmediato) */
+  .login-left {
+    order: 1;
+    flex: none;
+    width: 100%;
+    box-shadow: none;
+    padding: 32px 24px;
+  }
+
+  .login-content {
     min-height: auto;
   }
 
-  .login-left {
-    padding: 40px 32px;
-  }
-
   .login-right {
-    padding: 40px 32px;
-    min-height: 200px;
+    order: 2;
+    flex: none;
+    width: 100%;
+    min-height: 260px;
+    padding: 32px 24px;
   }
 
   .login-right::after {
@@ -258,38 +355,39 @@
   }
 
   .login-image-content h2 {
-    font-size: 28px;
+    font-size: 26px;
   }
 
   .login-image-content p {
     font-size: 14px;
   }
+
+  .brand-pill {
+    font-size: 11px;
+    padding: 6px 14px;
+  }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 400px) {
   .login-left {
-    padding: 28px 20px;
+    padding: 24px 16px;
   }
 
-  .login-right {
-    padding: 32px 20px;
-    min-height: 160px;
+  .login-logo-img {
+    width: 64px;
+    height: 64px;
   }
 
   .login-title {
     font-size: 22px;
   }
 
-  .login-image-content h2 {
-    font-size: 22px;
-  }
-
   .image-features {
-    gap: 12px;
+    gap: 10px;
   }
 
   .image-features span {
     font-size: 12px;
-    padding: 6px 14px;
+    padding: 7px 12px;
   }
 }
