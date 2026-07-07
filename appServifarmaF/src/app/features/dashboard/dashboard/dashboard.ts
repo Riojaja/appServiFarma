@@ -38,10 +38,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   // KPIs
   kpis: any[] = [
-    { label: 'Ventas del Día', displayValue: 'S/ 0.00', icon: 'bi-cart3', color: '#16a34a' },
-    { label: 'Caja Actual', displayValue: 'S/ 0.00', icon: 'bi-wallet2', color: '#2563eb' },
-    { label: 'Productos Críticos', displayValue: '0', icon: 'bi-exclamation-triangle-fill', color: '#dc2626' },
-    { label: 'Próximos a Vencer', displayValue: '0', icon: 'bi-archive-fill', color: '#f59e0b' }
+    { label: 'Ventas del Día', displayValue: 'S/ 0.00', icon: 'bi-cart3', color: '#16a34a', ruta: '/ventas' },
+    { label: 'Caja Actual', displayValue: 'S/ 0.00', icon: 'bi-wallet2', color: '#2563eb', ruta: '/caja' },
+    { label: 'Productos Críticos', displayValue: '0', icon: 'bi-exclamation-triangle-fill', color: '#dc2626', ruta: '/productos' },
+    { label: 'Próximos a Vencer', displayValue: '0', icon: 'bi-archive-fill', color: '#f59e0b', ruta: '/lotes/proximos-a-vencer' }
   ];
 
   // VENTAS RECIENTES (todas, scroll en CSS)
@@ -53,16 +53,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // TOP PRODUCTOS
   topProductos: any[] = [];
 
-  // ALERTAS LATERALES
+  // ALERTAS LATERALES (compartidas para ambos roles)
   alertasStock: any[] = [];
   alertasVencimiento: any[] = [];
-
-  // ACCESOS RÁPIDOS (VENDEDOR)
-  accesosRapidos = [
-    { titulo: 'Buscar Producto', descripcion: 'Búsqueda visual de productos', icon: 'bi-search', color: '#16a34a', ruta: '/productos' },
-    { titulo: 'Consultar Stock', descripcion: 'Ver inventario disponible', icon: 'bi-box-seam', color: '#f59e0b', ruta: '/lotes' },
-    { titulo: 'Demanda Insatisfecha', descripcion: 'Registrar solicitudes', icon: 'bi-exclamation-diamond-fill', color: '#dc2626', ruta: '/demanda/registrar' },
-  ];
 
   // ACTIVIDAD RECIENTE (VENDEDOR)
   actividadReciente: any[] = [];
@@ -114,24 +107,19 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private productoService: ProductoService,
     private estadisticaService: EstadisticaService,
     private loteService: LoteService,
-    private cdr: ChangeDetectorRef   // <--- Inyectamos ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
-    // Obtener usuario y rol
     this.usuario = this.authService.getUsuario() || 'Usuario';
     this.rol = this.authService.getRol() || '';
     this.isAdmin = this.rol.toUpperCase() === 'ADMIN';
 
-    // Si el rol ya está disponible, cargar directamente
     if (this.isAdmin) {
       this.cargarDatosAdmin();
     } else if (this.rol) {
-      // Si es VENDEDOR u otro rol, cargar su vista
       this.cargarDatosVendedor();
     } else {
-      // Si aún no hay rol, esperar un breve momento y reintentar
-      // (esto soluciona el problema del doble clic)
       setTimeout(() => {
         this.rol = this.authService.getRol() || '';
         this.isAdmin = this.rol.toUpperCase() === 'ADMIN';
@@ -140,16 +128,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
         } else if (this.rol) {
           this.cargarDatosVendedor();
         } else {
-          // Si sigue sin rol, mostrar error o redirigir
           this.errorGeneral = 'No se pudo obtener el rol del usuario.';
           this.cargando = false;
           this.cdr.detectChanges();
         }
-      }, 100); // 100ms es suficiente para que el servicio se inicialice
+      }, 100);
     }
   }
 
-  ngOnDestroy(): void {}
+  ngOnDestroy(): void { }
 
   private cargarDatosAdmin(): void {
     this.cargando = true;
@@ -167,13 +154,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
       productosCriticos: this.productoService.obtenerProductosConStockBajo().pipe(catchError(() => of([]))),
       proximosVencer: this.loteService.obtenerProximosAVencer(30).pipe(catchError(() => of([]))),
       ventasRecientes: this.ventaService.obtenerUltimas(20).pipe(catchError(() => of([]))),
-      stockBajo: this.productoService.obtenerProductosConStockBajo().pipe(catchError(() => of([]))),
       topVentas: this.ventaService.obtenerUltimas(200).pipe(catchError(() => of([]))),
       datosGrafico: this.ventaService.listar().pipe(catchError(() => of([])))
     }).pipe(
       finalize(() => {
         this.cargando = false;
-        this.cdr.detectChanges(); // <--- Forzar detección de cambios al finalizar
+        this.cdr.detectChanges();
       })
     ).subscribe({
       next: (resultados) => {
@@ -206,7 +192,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         }));
 
         // Stock crítico
-        this.stockCritico = (resultados.stockBajo || []).map(p => ({
+        this.stockCritico = criticos.map(p => ({
           producto: p.nombre,
           stock: p.stockMinimo || 0,
           minimo: p.stockMinimo || 5
@@ -228,39 +214,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
         // Gráfico
         const todasVentas = resultados.datosGrafico || [];
-        const hoyDate = new Date();
-        const mesesMap = new Map<string, number>();
-        const labelsPorKey = new Map<string, string>();
-        const ordenKeys: string[] = [];
+        this.armarDatosGrafico(todasVentas);
 
-        for (let i = 11; i >= 0; i--) {
-          const fecha = new Date(hoyDate.getFullYear(), hoyDate.getMonth() - i, 1);
-          const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-          const label = fecha.toLocaleDateString('es-PE', { month: 'short', year: 'numeric' });
-          mesesMap.set(key, 0);
-          labelsPorKey.set(key, label);
-          ordenKeys.push(key);
-        }
+        // Alertas laterales (mismo helper que usa el vendedor)
+        this.mapearAlertasLaterales(criticos, proximos);
 
-        todasVentas.forEach(v => {
-          const fecha = new Date(v.fecha);
-          const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
-          if (mesesMap.has(key)) {
-            mesesMap.set(key, (mesesMap.get(key) || 0) + (v.total || 0));
-          }
-        });
-
-        this.barChartData.labels = ordenKeys.map(key => labelsPorKey.get(key) || key);
-        this.barChartData.datasets[0].data = ordenKeys.map(key => mesesMap.get(key) || 0);
-
-        // Alertas laterales
-        this.alertasStock = criticos.map(p => ({ producto: p.nombre, stock: p.stockMinimo || 0 }));
-        this.alertasVencimiento = proximos.map(l => ({
-          producto: l.productoNombre || `Producto #${l.productoId}`,
-          dias: this.calcularDiasRestantes(l.fechaVencimiento)
-        })).sort((a, b) => a.dias - b.dias).slice(0, 5);
-
-        // Forzar detección de cambios después de actualizar todas las propiedades
         this.cdr.detectChanges();
       },
       error: (err) => {
@@ -272,10 +230,83 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Antes este método estaba prácticamente vacío (solo apagaba el spinner),
+   * por eso "Actividad Reciente" y el panel lateral de "Alertas" (Stock Mínimo
+   * y Próximos a Vencer) nunca se llenaban para el rol vendedor, aunque el
+   * HTML los muestra igual que para el admin.
+   */
   private cargarDatosVendedor(): void {
-    this.cargando = false;
+    this.cargando = true;
     this.errorGeneral = '';
-    this.cdr.detectChanges();
+
+    forkJoin({
+      ventasRecientes: this.ventaService.obtenerUltimas(20).pipe(catchError(() => of([]))), // antes: 10
+      productosCriticos: this.productoService.obtenerProductosConStockBajo().pipe(catchError(() => of([]))),
+      proximosVencer: this.loteService.obtenerProximosAVencer(30).pipe(catchError(() => of([])))
+    }).pipe(
+      finalize(() => {
+        this.cargando = false;
+        this.cdr.detectChanges();
+      })
+    ).subscribe({
+      next: (resultados) => {
+        this.actividadReciente = (resultados.ventasRecientes || []).map(v => ({
+          descripcion: 'Venta registrada',
+          cliente: v.clienteNombre || 'Anónimo',
+          hora: new Date(v.fecha).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }),
+          monto: v.total || 0
+        }));
+
+        this.mapearAlertasLaterales(resultados.productosCriticos || [], resultados.proximosVencer || []);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error cargando dashboard del vendedor:', err);
+        this.errorGeneral = 'Error al cargar los datos. Intente de nuevo.';
+        this.cargando = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  /** Lógica compartida por admin y vendedor para llenar el panel lateral de alertas. */
+  private mapearAlertasLaterales(criticos: any[], proximos: any[]): void {
+    this.alertasStock = criticos.map(p => ({ producto: p.nombre, stock: p.stockMinimo || 0 }));
+    this.alertasVencimiento = proximos
+      .map(l => ({
+        producto: l.productoNombre || `Producto #${l.productoId}`,
+        dias: this.calcularDiasRestantes(l.fechaVencimiento)
+      }))
+      .sort((a, b) => a.dias - b.dias)
+      .slice(0, 5);
+  }
+
+  private armarDatosGrafico(todasVentas: any[]): void {
+    const hoyDate = new Date();
+    const mesesMap = new Map<string, number>();
+    const labelsPorKey = new Map<string, string>();
+    const ordenKeys: string[] = [];
+
+    for (let i = 11; i >= 0; i--) {
+      const fecha = new Date(hoyDate.getFullYear(), hoyDate.getMonth() - i, 1);
+      const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+      const label = fecha.toLocaleDateString('es-PE', { month: 'short', year: 'numeric' });
+      mesesMap.set(key, 0);
+      labelsPorKey.set(key, label);
+      ordenKeys.push(key);
+    }
+
+    todasVentas.forEach(v => {
+      const fecha = new Date(v.fecha);
+      const key = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}`;
+      if (mesesMap.has(key)) {
+        mesesMap.set(key, (mesesMap.get(key) || 0) + (v.total || 0));
+      }
+    });
+
+    this.barChartData.labels = ordenKeys.map(key => labelsPorKey.get(key) || key);
+    this.barChartData.datasets[0].data = ordenKeys.map(key => mesesMap.get(key) || 0);
   }
 
   refrescarDatos(): void {

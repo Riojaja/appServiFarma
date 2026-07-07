@@ -39,9 +39,9 @@
         <!-- ========================================================== -->
         <!-- ACCIONES RÁPIDAS (ARRIBA, REDUCIDO)                       -->
         <!-- ========================================================== -->
-        <div class="row g-2 mb-4"> <!-- g-2 reduce espacio entre botones -->
+        <div class="row g-2 mb-4">
           <div class="col-12">
-            <div class="panel-card" style="padding: 12px 20px;"> <!-- padding reducido -->
+            <div class="panel-card" style="padding: 12px 20px;">
               <div class="d-flex align-items-center gap-2 mb-2">
                 <i class="bi bi-lightning-fill text-warning" style="font-size:1rem;"></i>
                 <h5 class="panel-title mb-0" style="font-size:0.95rem;">Acciones Rápidas</h5>
@@ -49,7 +49,8 @@
               </div>
 
               <div class="acciones-rapidas-grid" style="gap: 8px;">
-                <a routerLink="/productos" class="accion-btn btn-productos" style="padding: 10px 8px; border-radius: 10px;">
+                <a routerLink="/productos" class="accion-btn btn-productos"
+                  style="padding: 10px 8px; border-radius: 10px;">
                   <i class="bi bi-box-seam" style="font-size:1.3rem;"></i>
                   <span style="font-size:0.8rem;">Productos</span>
                   <small style="font-size:0.6rem;">Inventario</small>
@@ -67,10 +68,17 @@
                   <small style="font-size:0.6rem;">Registro</small>
                 </a>
 
-                <a routerLink="/reportes" class="accion-btn btn-reportes" style="padding: 10px 8px; border-radius: 10px;">
+                <a routerLink="/reportes" class="accion-btn btn-reportes"
+                  style="padding: 10px 8px; border-radius: 10px;">
                   <i class="bi bi-file-earmark-text" style="font-size:1.3rem;"></i>
                   <span style="font-size:0.8rem;">Reportes</span>
                   <small style="font-size:0.6rem;">Estadísticas</small>
+                </a>
+
+                <a routerLink="/demanda" class="accion-btn btn-demanda" style="padding: 10px 8px; border-radius: 10px;">
+                  <i class="bi bi-exclamation-diamond-fill" style="font-size:1.3rem;"></i>
+                  <span style="font-size:0.8rem;">Demanda</span>
+                  <small style="font-size:0.6rem;">Insatisfecha</small>
                 </a>
               </div>
             </div>
@@ -107,7 +115,6 @@
                 Sin datos de rotación
               </div>
 
-              <!-- Contenedor con scroll para Top Productos (igual que Ventas) -->
               <div class="top-productos-scroll">
                 <div class="top-product-item" *ngFor="let item of topProductos; let i = index">
                   <span class="top-product-rank" [ngClass]="{
@@ -124,7 +131,7 @@
         </div>
 
         <!-- ========================================================== -->
-        <!-- KPIs (4 tarjetas) - debajo de Top Productos               -->
+        <!-- KPIs (4 tarjetas)                                          -->
         <!-- ========================================================== -->
         <div class="row g-3 mb-4">
           <div class="col-xl-3 col-md-6" *ngFor="let stat of kpis">
@@ -144,10 +151,9 @@
         <!-- VENTAS RECIENTES + STOCK CRÍTICO                           -->
         <!-- ========================================================== -->
         <div class="row g-3">
-          <!-- Ventas Recientes (con scroll) -->
+          <!-- Ventas Recientes (con scroll, muestra ~5) -->
           <div class="col-lg-8">
             <div class="panel-card h-100">
-              <!-- Encabezado mejorado -->
               <div class="ventas-header">
                 <div class="ventas-header-left">
                   <i class="bi bi-receipt-cutoff text-primary me-2"></i>
@@ -159,13 +165,11 @@
                 </div>
               </div>
 
-              <!-- Mensaje si no hay ventas -->
               <div *ngIf="ventasRecientes.length === 0" class="text-center text-muted py-4">
                 <i class="bi bi-inbox display-6 d-block mb-2"></i>
                 No hay ventas recientes
               </div>
 
-              <!-- Contenedor con scroll -->
               <div class="ventas-scroll-container">
                 <div class="venta-row-modern" *ngFor="let venta of ventasRecientes">
                   <div class="venta-info">
@@ -221,7 +225,7 @@
     <!-- PANEL VENDEDOR                                               -->
     <!-- ============================================================ -->
     <ng-container *ngIf="rol === 'VENDEDOR'">
-      <!-- (igual que antes, sin cambios) -->
+
       <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
           <h2 class="page-title">Panel de Vendedor</h2>
@@ -234,36 +238,99 @@
         </button>
       </div>
 
-      <div class="row g-3 mb-4">
-        <div class="col-lg-3 col-md-6" *ngFor="let acceso of accesosRapidos">
-          <div class="quick-card">
-            <i class="bi" [ngClass]="acceso.icon" [style.color]="acceso.color"></i>
-            <h6 class="quick-title">{{ acceso.titulo }}</h6>
-            <p class="quick-desc">{{ acceso.descripcion }}</p>
-            <button class="quick-btn" [style.color]="acceso.color" [style.border-color]="acceso.color"
-              [routerLink]="acceso.ruta">Ir</button>
-          </div>
+      <!-- SPINNER DE CARGA -->
+      <div *ngIf="cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
         </div>
+        <p class="text-muted mt-2">Cargando datos...</p>
       </div>
 
-      <div class="panel-card">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="panel-title mb-0">Actividad Reciente</h5>
-          <span class="badge bg-primary rounded-pill">{{ actividadReciente.length }}</span>
-        </div>
-        <div *ngIf="actividadReciente.length === 0" class="text-center text-muted py-3">
-          No hay actividad reciente
-        </div>
-        <div class="venta-row" *ngFor="let act of actividadReciente">
-          <div>
-            <div class="venta-cliente">{{ act.descripcion }}</div>
-            <small class="venta-meta">{{ act.cliente }} - {{ act.hora }}</small>
+      <ng-container *ngIf="!cargando">
+
+        <!-- ========================================================== -->
+        <!-- ACCIONES RÁPIDAS (misma barra compacta que el admin)      -->
+        <!-- ========================================================== -->
+        <div class="row g-2 mb-4">
+          <div class="col-12">
+            <div class="panel-card" style="padding: 12px 20px;">
+              <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-lightning-fill text-warning" style="font-size:1rem;"></i>
+                <h5 class="panel-title mb-0" style="font-size:0.95rem;">Acciones Rápidas</h5>
+                <span class="badge bg-light text-muted ms-1" style="font-size:0.6rem;">accesos</span>
+              </div>
+
+              <div class="acciones-rapidas-grid" style="gap: 8px;">
+                <a routerLink="/productos" class="accion-btn btn-productos"
+                  style="padding: 10px 8px; border-radius: 10px;">
+                  <i class="bi bi-box-seam" style="font-size:1.3rem;"></i>
+                  <span style="font-size:0.8rem;">Productos</span>
+                  <small style="font-size:0.6rem;">Solo consulta</small>
+                </a>
+
+                <a routerLink="/ventas" class="accion-btn btn-ventas" style="padding: 10px 8px; border-radius: 10px;">
+                  <i class="bi bi-cart" style="font-size:1.3rem;"></i>
+                  <span style="font-size:0.8rem;">Ventas</span>
+                  <small style="font-size:0.6rem;">Registrar</small>
+                </a>
+
+                <a routerLink="/lotes" class="accion-btn btn-lotes" style="padding: 10px 8px; border-radius: 10px;">
+                  <i class="bi bi-cart-plus" style="font-size:1.3rem;"></i>
+                  <span style="font-size:0.8rem;">Inventario</span>
+                  <small style="font-size:0.6rem;">Consultar</small>
+                </a>
+
+                <a routerLink="/demanda" class="accion-btn btn-reportes"
+                  style="padding: 10px 8px; border-radius: 10px;">
+                  <i class="bi bi-exclamation-diamond-fill" style="font-size:1.3rem;"></i>
+                  <span style="font-size:0.8rem;">Demanda</span>
+                  <small style="font-size:0.6rem;">Insatisfecha</small>
+                </a>
+              </div>
+            </div>
           </div>
-          <span class="venta-total" [class.text-muted]="act.monto === 0">
-            S/ {{ act.monto | number:'1.2-2' }}
-          </span>
         </div>
-      </div>
+
+        <!-- Actividad Reciente: misma estructura moderna que "Ventas Recientes" del admin, mostrando 6 -->
+        <div class="panel-card">
+          <div class="ventas-header">
+            <div class="ventas-header-left">
+              <i class="bi bi-receipt-cutoff text-primary me-2"></i>
+              <h5 class="panel-title mb-0">Actividad Reciente</h5>
+            </div>
+            <div class="ventas-header-right">
+              <span class="ventas-badge">{{ actividadReciente.length }}</span>
+              <small class="text-muted ms-2">últimas</small>
+            </div>
+          </div>
+
+          <div *ngIf="actividadReciente.length === 0" class="text-center text-muted py-4">
+            <i class="bi bi-inbox display-6 d-block mb-2"></i>
+            No hay actividad reciente
+          </div>
+
+          <div class="actividad-scroll-container">
+            <div class="venta-row-modern" *ngFor="let act of actividadReciente">
+              <div class="venta-info">
+                <div class="venta-cliente-modern">{{ act.descripcion }}</div>
+                <div class="venta-detalles">
+                  <span class="venta-productos">
+                    <i class="bi bi-person me-1"></i>{{ act.cliente }}
+                  </span>
+                  <span class="venta-hora">
+                    <i class="bi bi-clock me-1"></i>{{ act.hora }}
+                  </span>
+                </div>
+              </div>
+              <div class="venta-total-modern" [class.venta-total-cero]="act.monto === 0">
+                S/ {{ act.monto | number:'1.2-2' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </ng-container>
+
     </ng-container>
 
     <!-- MENSAJE DE ERROR -->
@@ -275,7 +342,7 @@
   </div> <!-- /dashboard-main -->
 
   <!-- ============================================================ -->
-  <!-- PANEL DE ALERTAS LATERAL                                     -->
+  <!-- PANEL DE ALERTAS LATERAL (compartido para ambos roles)       -->
   <!-- ============================================================ -->
   <aside class="dashboard-alerts">
     <h5 class="alerts-title"><i class="bi bi-bell-fill"></i> Alertas</h5>
