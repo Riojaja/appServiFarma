@@ -1,5 +1,5 @@
 <div class="sidebar">
-  <!-- Logo real -->
+  <!-- Logo -->
   <div class="sidebar-brand">
     <div class="brand-icon">
       <img src="logoServifarma.jpeg" alt="ServiFarma">
@@ -18,73 +18,71 @@
 
   <!-- Menú de navegación -->
   <nav class="sidebar-nav">
-    <!-- Dashboard (siempre visible) -->
+
+    <!-- ===== SECCIÓN PRINCIPAL (todos) ===== -->
     <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
       <i class="bi bi-grid-1x2-fill"></i> <span>Dashboard</span>
     </a>
 
-    <!-- ======== ALERTAS ELIMINADA DEL MENÚ ======== -->
-    <!-- La opción "Alertas" ahora se accede desde el panel lateral del Dashboard -->
-
-    <!-- Movimientos de stock -->
     <a routerLink="/movimientos-stock" routerLinkActive="active" class="nav-item">
       <i class="bi bi-arrow-left-right"></i> <span>Movimientos de Stock</span>
     </a>
 
-    <!-- Clientes -->
     <a routerLink="/clientes" routerLinkActive="active" class="nav-item">
       <i class="bi bi-person-badge"></i> <span>Clientes</span>
     </a>
 
-    <!-- Caja -->
     <a routerLink="/caja" routerLinkActive="active" class="nav-item">
       <i class="bi bi-cash-stack"></i> <span>Caja</span>
     </a>
 
-    <!-- Bitácora de comunicación -->
     <a routerLink="/bitacora" routerLinkActive="active" class="nav-item">
       <i class="bi bi-journal-text"></i> <span>Comunicaciones</span>
     </a>
 
-    <!-- ======================== -->
-    <!-- ADMINISTRADOR            -->
-    <!-- ======================== -->
+    <!-- ========================================== -->
+    <!-- ✅ FABRICANTES (visible para TODOS)       -->
+    <!-- ========================================== -->
+    <a routerLink="/fabricantes" routerLinkActive="active" class="nav-item">
+      <i class="bi bi-building"></i> <span>Fabricantes</span>
+    </a>
+
+    <!-- ========================================== -->
+    <!-- SOLO ADMINISTRADOR                        -->
+    <!-- ========================================== -->
     <ng-container *ngIf="isAdmin">
-      <!-- Categorías -->
+
+      <!-- Categorías (solo admin) -->
       <a routerLink="/categorias" routerLinkActive="active" class="nav-item">
         <i class="bi bi-tags"></i> <span>Categorías</span>
       </a>
 
-      <!-- Fabricantes -->
-      <a routerLink="/fabricantes" routerLinkActive="active" class="nav-item">
-        <i class="bi bi-building"></i> <span>Fabricantes</span>
-      </a>
-
-      <!-- Proveedores -->
+      <!-- Proveedores (solo admin) -->
       <a routerLink="/proveedores" routerLinkActive="active" class="nav-item">
         <i class="bi bi-truck"></i> <span>Proveedores</span>
       </a>
 
-      <!-- Estadísticas -->
+      <!-- Estadísticas (solo admin) -->
       <a routerLink="/estadisticas" routerLinkActive="active" class="nav-item">
         <i class="bi bi-graph-up"></i> <span>Estadísticas</span>
       </a>
 
-      <!-- Rentabilidad -->
+      <!-- Rentabilidad (solo admin) -->
       <a routerLink="/reportes/rentabilidad" routerLinkActive="active" class="nav-item">
         <i class="bi bi-bar-chart-line-fill"></i> <span>Rentabilidad</span>
       </a>
 
-      <!-- Auditoría -->
+      <!-- Auditoría (solo admin) -->
       <a routerLink="/auditoria" routerLinkActive="active" class="nav-item">
         <i class="bi bi-shield-check"></i> <span>Auditoría</span>
       </a>
 
-      <!-- Usuarios -->
+      <!-- Usuarios (solo admin) -->
       <a routerLink="/usuarios" routerLinkActive="active" class="nav-item">
         <i class="bi bi-people-fill"></i> <span>Usuarios</span>
       </a>
     </ng-container>
+
   </nav>
 
   <!-- Cerrar Sesión (siempre visible) -->

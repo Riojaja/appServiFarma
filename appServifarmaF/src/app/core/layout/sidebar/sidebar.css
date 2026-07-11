@@ -129,3 +129,17 @@
 .logout-item i {
   color: inherit;
 }
+
+.sidebar-divider {
+  border-color: rgba(255,255,255,0.1);
+  margin: 0.75rem 1rem;
+}
+
+.sidebar-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.4);
+  padding: 0.5rem 1.5rem 0.25rem;
+  font-weight: 700;
+}

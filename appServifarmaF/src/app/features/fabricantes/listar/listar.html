@@ -1,74 +1,245 @@
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Fabricantes</h2>
-    <a routerLink="/fabricantes/crear" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Nuevo Fabricante
-    </a>
+
+  <!-- Encabezado -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-building" style="color: #0d9488;"></i> Fabricantes
+      </h2>
+      <p class="text-muted small mb-0" style="font-weight: 400;">Gestión de fabricantes de productos</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn-farma-refrescar" (click)="cargarFabricantes()" [disabled]="cargando">
+        <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+        {{ cargando ? 'Cargando...' : 'Actualizar' }}
+      </button>
+      <button *ngIf="isAdmin" class="btn-farma-nuevo" [disabled]="showModal" (click)="abrirModalCrear()">
+        <i class="bi bi-plus-circle me-1"></i> Nuevo Fabricante
+      </button>
+    </div>
   </div>
 
-  <!-- Buscador -->
-  <div class="row mb-3">
+  <!-- Filtro -->
+  <div class="row g-3 mb-4 align-items-center">
+    <div class="col-md-8 d-flex flex-wrap gap-2">
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-database me-1"></i> {{ fabricantes.length }} fabricantes
+      </span>
+      <span class="badge bg-light text-dark p-2 shadow-sm" *ngIf="filtroNombre">
+        <i class="bi bi-funnel me-1"></i> {{ totalFiltrados }} mostrados
+      </span>
+    </div>
     <div class="col-md-4">
-      <div class="input-group">
-        <input 
-          type="text" 
-          class="form-control" 
-          placeholder="Buscar por nombre..." 
-          [(ngModel)]="filtroNombre"
-          (keyup.enter)="buscar()"
-        >
-        <button class="btn btn-outline-secondary" type="button" (click)="buscar()">
-          <i class="bi bi-search"></i>
-        </button>
-        <button class="btn btn-outline-danger" type="button" (click)="filtroNombre=''; cargarFabricantes()">
+      <div class="input-group input-group-sm shadow-sm">
+        <span class="input-group-text bg-white border-end-0">
+          <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" class="form-control border-start-0"
+               placeholder="Buscar fabricante..."
+               [(ngModel)]="filtroNombre"
+               (ngModelChange)="filtrarInstantaneo()">
+        <button *ngIf="filtroNombre" class="btn btn-outline-secondary" type="button" (click)="limpiarFiltro()">
           <i class="bi bi-x-circle"></i>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Tabla -->
-  <div class="table-responsive">
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Contacto</th>
-          <th>Teléfono</th>
-          <th>Email</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngIf="cargando">
-          <td colspan="6" class="text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Cargando...</span>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="!cargando && fabricantes.length === 0">
-          <td colspan="6" class="text-center text-muted">No hay fabricantes registrados</td>
-        </tr>
-        <tr *ngFor="let fabricante of fabricantes">
-          <td>{{ fabricante.id }}</td>
-          <td><strong>{{ fabricante.nombre }}</strong></td>
-          <td>{{ fabricante.contacto || '-' }}</td>
-          <td>{{ fabricante.telefono || '-' }}</td>
-          <td>{{ fabricante.email || '-' }}</td>
-          <td>
-            <div class="btn-group btn-group-sm">
-              <a [routerLink]="['/fabricantes/editar', fabricante.id]" class="btn btn-outline-primary">
-                <i class="bi bi-pencil"></i>
-              </a>
-              <button *ngIf="auth.isAdmin()" class="btn btn-outline-danger" (click)="eliminar(fabricante.id!)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- Spinner -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
   </div>
+
+  <!-- Lista -->
+  <div *ngIf="!cargando" class="fabricante-grid">
+    <div *ngIf="fabricantesFiltrados.length === 0" class="text-center py-5 text-muted">
+      <i class="bi bi-inbox display-4 d-block mb-2" style="color: #cbd5e1;"></i>
+      <p class="mb-0">No hay fabricantes para mostrar</p>
+    </div>
+
+    <ng-container *ngIf="fabricantesFiltrados.length > 0">
+      <div *ngFor="let fabricante of fabricantesPagina" 
+           class="card fabricante-card shadow-sm border-0 rounded-4 mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+
+          <div class="d-flex align-items-center gap-3 fabricante-info">
+            <div class="fabricante-icono">
+              <i class="bi bi-building"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1" style="color: #1a1a2e;">{{ fabricante.nombre }}</h5>
+              <p class="text-muted small mb-0" style="font-size: 0.9rem;">
+                <i class="bi bi-person me-1"></i> {{ fabricante.contacto || 'Sin contacto' }}
+                <span *ngIf="fabricante.telefono" class="ms-3">
+                  <i class="bi bi-telephone me-1"></i> {{ fabricante.telefono }}
+                </span>
+                <span *ngIf="fabricante.email" class="ms-3">
+                  <i class="bi bi-envelope me-1"></i> {{ fabricante.email }}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div class="fabricante-acciones d-flex gap-2">
+            <button *ngIf="isAdmin" 
+                    class="btn btn-sm btn-farma-editar" 
+                    title="Editar fabricante"
+                    [disabled]="showModal || eliminandoId === fabricante.id"
+                    (click)="abrirModalEditar(fabricante)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button *ngIf="isAdmin" 
+                    class="btn btn-sm btn-farma-eliminar" 
+                    title="Eliminar fabricante"
+                    [disabled]="eliminandoId === fabricante.id"
+                    (click)="eliminar(fabricante.id!)">
+              <span *ngIf="eliminandoId === fabricante.id" class="spinner-border spinner-border-sm"></span>
+              <i *ngIf="eliminandoId !== fabricante.id" class="bi bi-trash"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Paginación -->
+    <div *ngIf="fabricantesFiltrados.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+      <div>
+        <span class="text-muted small">
+          Mostrando 
+          {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
+          {{ Math.min(paginaActual * itemsPorPagina, fabricantesFiltrados.length) }}
+          de {{ fabricantesFiltrados.length }}
+        </span>
+      </div>
+      <div class="btn-group shadow-sm">
+        <button class="btn btn-outline-secondary btn-sm" 
+                (click)="anteriorPagina()" 
+                [disabled]="paginaActual === 1">
+          <i class="bi bi-chevron-left"></i> Anterior
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" 
+                (click)="siguientePagina()" 
+                [disabled]="paginaActual === totalPaginas">
+          Siguiente <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ======== PANEL LATERAL: NUEVO/EDITAR FABRICANTE ======== -->
+<div *ngIf="showModal" class="fabricante-panel-overlay" (click)="cerrarModal()"></div>
+
+<div class="fabricante-panel" [class.show]="showModal" *ngIf="showModal" role="dialog">
+
+  <!-- HEADER -->
+  <div class="fabricante-panel-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="icon-circle" [ngClass]="esEdicion ? 'bg-warning' : 'bg-success'">
+        <i class="bi" [ngClass]="esEdicion ? 'bi-pencil' : 'bi-plus-lg'" style="font-size: 1.3rem; color: white;"></i>
+      </div>
+      <div>
+        <h5 class="fw-bold mb-0" style="color: #1a1a2e;">
+          {{ esEdicion ? 'Editar Fabricante' : 'Nuevo Fabricante' }}
+        </h5>
+        <p class="text-muted small mb-0" style="font-weight: 400;">
+          {{ esEdicion ? 'Actualiza los datos del fabricante' : 'Registra un nuevo fabricante o laboratorio' }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+  </div>
+
+  <!-- BODY -->
+  <div class="fabricante-panel-body">
+    <form #formFabricante="ngForm" novalidate>
+
+      <!-- Nombre -->
+      <div class="mb-3">
+        <label for="nombreFabricante" class="form-label fw-semibold text-secondary">
+          <i class="bi bi-building me-1"></i> Nombre <span class="text-danger">*</span>
+        </label>
+        <input type="text" id="nombreFabricante" 
+               class="form-control form-control-lg border-2"
+               #nombreField="ngModel"
+               [class.is-invalid]="nombreField.invalid && (nombreField.touched || formFabricante.submitted)"
+               [(ngModel)]="fabricanteEdit.nombre" name="nombre"
+               required minlength="2" maxlength="100"
+               placeholder="Ej: Pfizer, Bayer, Genfar...">
+        <div class="invalid-feedback" *ngIf="nombreField.errors?.['required'] && (nombreField.touched || formFabricante.submitted)">
+          <i class="bi bi-exclamation-circle me-1"></i> El nombre es obligatorio.
+        </div>
+        <div class="invalid-feedback" *ngIf="nombreField.errors?.['minlength'] && (nombreField.touched || formFabricante.submitted)">
+          <i class="bi bi-exclamation-circle me-1"></i> El nombre debe tener al menos 2 caracteres.
+        </div>
+      </div>
+
+      <!-- Contacto -->
+      <div class="mb-3">
+        <label for="contactoFabricante" class="form-label fw-semibold text-secondary">
+          <i class="bi bi-person me-1"></i> Persona de contacto
+        </label>
+        <input type="text" id="contactoFabricante" 
+               class="form-control border-2"
+               [(ngModel)]="fabricanteEdit.contacto" name="contacto"
+               maxlength="100"
+               placeholder="Nombre del representante o contacto">
+      </div>
+
+      <!-- Teléfono -->
+      <div class="mb-3">
+        <label for="telefonoFabricante" class="form-label fw-semibold text-secondary">
+          <i class="bi bi-telephone me-1"></i> Teléfono
+        </label>
+        <input type="text" id="telefonoFabricante" 
+               class="form-control border-2"
+               #telefonoField="ngModel"
+               [class.is-invalid]="telefonoField.invalid && (telefonoField.touched || formFabricante.submitted)"
+               [(ngModel)]="fabricanteEdit.telefono" name="telefono"
+               pattern="^[0-9+\-\s]{6,15}$"
+               placeholder="Ej: 987654321">
+        <div class="invalid-feedback" *ngIf="telefonoField.errors?.['pattern'] && (telefonoField.touched || formFabricante.submitted)">
+          <i class="bi bi-exclamation-circle me-1"></i> Ingresa un teléfono válido (solo números, 6 a 15 dígitos).
+        </div>
+      </div>
+
+      <!-- Email -->
+      <div class="mb-3">
+        <label for="emailFabricante" class="form-label fw-semibold text-secondary">
+          <i class="bi bi-envelope me-1"></i> Email
+        </label>
+        <input type="email" id="emailFabricante" 
+               class="form-control border-2"
+               #emailField="ngModel"
+               [class.is-invalid]="emailField.invalid && (emailField.touched || formFabricante.submitted)"
+               [(ngModel)]="fabricanteEdit.email" name="email"
+               email
+               placeholder="contacto@fabricante.com">
+        <div class="invalid-feedback" *ngIf="emailField.errors?.['email'] && (emailField.touched || formFabricante.submitted)">
+          <i class="bi bi-exclamation-circle me-1"></i> Ingresa un correo electrónico válido.
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="fabricante-panel-footer">
+    <button type="button" class="btn btn-light btn-lg px-4" [disabled]="guardando" (click)="cerrarModal()">
+      <i class="bi bi-x-circle me-2"></i> Cancelar
+    </button>
+    <button type="button" class="btn btn-success btn-lg px-4" 
+            (click)="guardarFabricante(formFabricante)" 
+            [disabled]="!formFabricante.valid || guardando"
+            style="background-color: #0d9488; border-color: #0d9488;">
+      <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!guardando" class="bi" [ngClass]="esEdicion ? 'bi-pencil' : 'bi-plus-circle'"></i>
+      {{ guardando ? 'Guardando...' : (esEdicion ? ' Actualizar' : ' Guardar') }}
+    </button>
+  </div>
+
 </div>

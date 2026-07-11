@@ -1,72 +1,207 @@
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Categorías</h2>
-    <a routerLink="/categorias/crear" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Nueva Categoría
-    </a>
+
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-tags" style="color: #0d9488;"></i> Categorías
+      </h2>
+      <p class="text-muted small mb-0" style="font-weight: 400;">Gestión de categorías de productos</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <!-- Botón Actualizar -->
+      <button class="btn-farma-refrescar" (click)="cargarCategorias()" [disabled]="cargando">
+        <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+        {{ cargando ? 'Cargando...' : 'Actualizar' }}
+      </button>
+      <!-- Botón Nueva Categoría (solo admin) -->
+      <button *ngIf="isAdmin" class="btn-farma-nuevo" (click)="abrirModalCrear()">
+        <i class="bi bi-plus-circle me-1"></i> Nueva Categoría
+      </button>
+    </div>
   </div>
 
-  <!-- Filtro de búsqueda -->
-  <div class="row mb-3">
+  <!-- ======== FILTRO Y CONTADORES ======== -->
+  <div class="row g-3 mb-4 align-items-center">
+    <div class="col-md-8 d-flex flex-wrap gap-2">
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-database me-1"></i> {{ categorias.length }} categorías
+      </span>
+      <span class="badge bg-light text-dark p-2 shadow-sm" *ngIf="filtroNombre">
+        <i class="bi bi-funnel me-1"></i> {{ totalFiltrados }} mostrados
+      </span>
+    </div>
     <div class="col-md-4">
-      <div class="input-group">
-        <input 
-          type="text" 
-          class="form-control" 
-          placeholder="Buscar por nombre..." 
-          [(ngModel)]="filtroNombre"
-          (keyup.enter)="buscar()"
-        >
-        <button class="btn btn-outline-secondary" type="button" (click)="buscar()">
-          <i class="bi bi-search"></i>
-        </button>
-        <button class="btn btn-outline-danger" type="button" (click)="filtroNombre=''; cargarCategorias()">
+      <div class="input-group input-group-sm shadow-sm">
+        <span class="input-group-text bg-white border-end-0">
+          <i class="bi bi-search text-muted"></i>
+        </span>
+        <input type="text" class="form-control border-start-0"
+               placeholder="Buscar categoría..."
+               [(ngModel)]="filtroNombre"
+               (ngModelChange)="filtrarInstantaneo()">
+        <button *ngIf="filtroNombre" class="btn btn-outline-secondary" type="button" (click)="limpiarFiltro()">
           <i class="bi bi-x-circle"></i>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Tabla -->
-  <div class="table-responsive">
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Nombre</th>
-          <th>Descripción</th>
-          <th>Fecha Creación</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngIf="cargando">
-          <td colspan="5" class="text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Cargando...</span>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="!cargando && categorias.length === 0">
-          <td colspan="5" class="text-center text-muted">No hay categorías registradas</td>
-        </tr>
-        <tr *ngFor="let categoria of categorias">
-          <td>{{ categoria.id }}</td>
-          <td><strong>{{ categoria.nombre }}</strong></td>
-          <td>{{ categoria.descripcion || '-' }}</td>
-          <td>{{ categoria.createdAt | date:'dd/MM/yyyy' }}</td>
-          <td>
-            <div class="btn-group btn-group-sm">
-              <a [routerLink]="['/categorias/editar', categoria.id]" class="btn btn-outline-primary">
-                <i class="bi bi-pencil"></i>
-              </a>
-              <button *ngIf="auth.isAdmin()" class="btn btn-outline-danger" (click)="eliminar(categoria.id!)">
-                <i class="bi bi-trash"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- ======== SPINNER ======== -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
   </div>
+
+  <!-- ======== LISTA DE CATEGORÍAS ======== -->
+  <div *ngIf="!cargando" class="categoria-grid">
+
+    <!-- Sin resultados -->
+    <div *ngIf="categoriasFiltradas.length === 0" class="text-center py-5 text-muted">
+      <i class="bi bi-inbox display-4 d-block mb-2" style="color: #cbd5e1;"></i>
+      <p class="mb-0">No hay categorías para mostrar</p>
+    </div>
+
+    <!-- Tarjetas de categorías -->
+    <ng-container *ngIf="categoriasFiltradas.length > 0">
+      <div *ngFor="let categoria of categoriasPagina" 
+           class="card categoria-card shadow-sm border-0 rounded-4 mb-3">
+        <div class="card-body d-flex justify-content-between align-items-center">
+
+          <!-- Información -->
+          <div class="d-flex align-items-center gap-3 categoria-info">
+            <div class="categoria-icono">
+              <i class="bi bi-tag-fill"></i>
+            </div>
+            <div>
+              <h5 class="fw-bold mb-1" style="color: #1a1a2e;">{{ categoria.nombre }}</h5>
+              <p class="text-muted small mb-0" style="font-size: 0.9rem;">
+                {{ categoria.descripcion || 'Sin descripción' }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="categoria-acciones d-flex gap-2">
+            <button *ngIf="isAdmin" 
+                    class="btn btn-sm btn-farma-editar" 
+                    title="Editar categoría"
+                    (click)="abrirModalEditar(categoria)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button *ngIf="isAdmin" 
+                    class="btn btn-sm btn-farma-eliminar" 
+                    title="Eliminar categoría"
+                    (click)="eliminar(categoria.id!)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- ======== PAGINACIÓN ======== -->
+    <div *ngIf="categoriasFiltradas.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+      <div>
+        <span class="text-muted small">
+          Mostrando 
+          {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
+          {{ Math.min(paginaActual * itemsPorPagina, categoriasFiltradas.length) }}
+          de {{ categoriasFiltradas.length }}
+        </span>
+      </div>
+      <div class="btn-group shadow-sm">
+        <button class="btn btn-outline-secondary btn-sm" 
+                (click)="anteriorPagina()" 
+                [disabled]="paginaActual === 1">
+          <i class="bi bi-chevron-left"></i> Anterior
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" 
+                (click)="siguientePagina()" 
+                [disabled]="paginaActual === totalPaginas">
+          Siguiente <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ======== PANEL LATERAL: NUEVA/EDITAR CATEGORÍA ======== -->
+<div *ngIf="showModal" class="categoria-panel-overlay" (click)="cerrarModal()"></div>
+
+<div class="categoria-panel" [class.show]="showModal" *ngIf="showModal" role="dialog">
+
+  <!-- HEADER -->
+  <div class="categoria-panel-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="icon-circle" [ngClass]="esEdicion ? 'bg-warning' : 'bg-success'">
+        <i class="bi" [ngClass]="esEdicion ? 'bi-pencil' : 'bi-plus-lg'" style="font-size: 1.3rem; color: white;"></i>
+      </div>
+      <div>
+        <h5 class="fw-bold mb-0" style="color: #1a1a2e;">
+          {{ esEdicion ? 'Editar Categoría' : 'Nueva Categoría' }}
+        </h5>
+        <p class="text-muted small mb-0" style="font-weight: 400;">
+          {{ esEdicion ? 'Actualiza los datos de la categoría' : 'Registra una nueva categoría para tus productos' }}
+        </p>
+      </div>
+    </div>
+    <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+  </div>
+
+  <!-- BODY -->
+  <div class="categoria-panel-body">
+    <form #formCategoria="ngForm" class="needs-validation" novalidate>
+
+      <!-- Nombre -->
+      <div class="mb-3">
+        <label for="nombreCategoria" class="form-label fw-semibold text-secondary">
+          <i class="bi bi-tag me-1"></i> Nombre <span class="text-danger">*</span>
+        </label>
+        <input type="text" id="nombreCategoria" 
+               class="form-control form-control-lg border-2" 
+               [class.is-invalid]="formCategoria.submitted && (!categoriaEdit.nombre || categoriaEdit.nombre.length < 2)"
+               [(ngModel)]="categoriaEdit.nombre" name="nombre"
+               required minlength="2" maxlength="50"
+               placeholder="Ej: Medicamentos, Higiene, Vitaminas...">
+        <div class="invalid-feedback" *ngIf="formCategoria.submitted && !categoriaEdit.nombre">
+          <i class="bi bi-exclamation-circle me-1"></i> El nombre es obligatorio.
+        </div>
+        <div class="invalid-feedback" *ngIf="formCategoria.submitted && categoriaEdit.nombre && categoriaEdit.nombre.length < 2">
+          <i class="bi bi-exclamation-circle me-1"></i> El nombre debe tener al menos 2 caracteres.
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="mb-3">
+        <label for="descripcionCategoria" class="form-label fw-semibold text-secondary">
+          <i class="bi bi-text-paragraph me-1"></i> Descripción
+        </label>
+        <textarea id="descripcionCategoria" 
+                  class="form-control border-2" rows="4"
+                  [(ngModel)]="categoriaEdit.descripcion" name="descripcion"
+                  placeholder="Descripción opcional de la categoría..."></textarea>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="categoria-panel-footer">
+    <button type="button" class="btn btn-light btn-lg px-4" (click)="cerrarModal()">
+      <i class="bi bi-x-circle me-2"></i> Cancelar
+    </button>
+    <button type="button" class="btn btn-success btn-lg px-4" 
+            (click)="guardarCategoria(formCategoria)" 
+            [disabled]="!formCategoria.valid"
+            style="background-color: #0d9488; border-color: #0d9488;">
+      <i class="bi" [ngClass]="esEdicion ? 'bi-pencil' : 'bi-plus-circle'"></i>
+      {{ esEdicion ? ' Actualizar' : ' Guardar' }}
+    </button>
+  </div>
+
 </div>

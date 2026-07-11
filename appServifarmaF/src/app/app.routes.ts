@@ -35,7 +35,7 @@ export const routes: Routes = [
       {
         path: 'fabricantes',
         children: [
-          { path: '', loadComponent: () => import('./features/fabricantes/listar/listar').then(m => m.ListarComponent) },
+          { path: '', loadComponent: () => import('./features/fabricantes/listar/listar').then(m => m.ListarFabricantesComponent) },
           { path: 'crear', loadComponent: () => import('./features/fabricantes/crear/crear').then(m => m.CrearComponent) },
           { path: 'editar/:id', loadComponent: () => import('./features/fabricantes/editar/editar').then(m => m.EditarComponent) }
         ]
