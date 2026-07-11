@@ -1,4 +1,203 @@
-  .card {
-    border-radius: 16px;
-    border: none;
+/* ===== BOTONES ===== */
+.btn-farma-refrescar,
+.btn-farma-nuevo {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  border: none;
+  text-decoration: none;
+  gap: 0.3rem;
+}
+
+.btn-farma-refrescar {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+.btn-farma-refrescar:hover:not(:disabled) {
+  background-color: #e2e8f0;
+  transform: translateY(-1px);
+}
+.btn-farma-refrescar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-farma-nuevo {
+  background-color: #0d9488;
+  color: white;
+}
+.btn-farma-nuevo:hover {
+  background-color: #0f766e;
+  transform: translateY(-1px);
+  color: white;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== FILTROS ===== */
+.btn-group .btn.active {
+  background-color: #0d9488 !important;
+  color: white !important;
+  border-color: #0d9488 !important;
+}
+.btn-group .btn:not(.active) {
+  background-color: white;
+  border-color: #e5e7eb;
+  color: #475569;
+}
+.btn-group .btn:not(.active):hover {
+  background-color: #f1f5f9;
+}
+
+/* ===== TARJETAS ===== */
+.mensaje-card {
+  transition: all 0.2s ease;
+  border-left: 4px solid transparent;
+}
+.mensaje-card:hover {
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08) !important;
+  transform: translateY(-2px);
+}
+.mensaje-card.leido {
+  background-color: #f8fafc;
+  border-left-color: #94a3b8;
+  opacity: 0.8;
+}
+.mensaje-card:not(.leido) {
+  border-left-color: #0d9488;
+}
+
+/* ===== ICONOS ===== */
+.mensaje-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.bg-farma-novedad { background-color: #3b82f6; }
+.bg-farma-recordatorio { background-color: #f59e0b; }
+.bg-farma-incidencia { background-color: #ef4444; }
+
+.text-farma-novedad { color: #3b82f6; }
+.text-farma-recordatorio { color: #f59e0b; }
+.text-farma-incidencia { color: #ef4444; }
+
+/* ===== ESTADO LEÍDO ===== */
+.bg-farma-leido {
+  background-color: #22c55e;
+  color: white;
+}
+.bg-farma-no-leido {
+  background-color: #facc15;
+  color: #1e293b;
+}
+
+/* ===== ACCIONES ===== */
+.btn-farma-leer {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+.btn-farma-leer:hover {
+  background-color: #bfdbfe;
+  color: #1e3a8a;
+}
+.btn-farma-eliminar {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.btn-farma-eliminar:hover {
+  background-color: #fecaca;
+  color: #7f1d1d;
+}
+
+.mensaje-texto {
+  color: #1e293b;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+
+/* ===== MODAL ===== */
+.modal {
+  background-color: rgba(0,0,0,0.5);
+  display: none;
+}
+.modal.show {
+  display: block;
+}
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1040;
+}
+.modal {
+  z-index: 1050;
+}
+.modal-content {
+  border-radius: 16px;
+  border: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-header {
+  border-bottom: none;
+  padding: 1.5rem 1.5rem 0.5rem;
+}
+.modal-body {
+  padding: 1rem 1.5rem;
+}
+.modal-footer {
+  border-top: none;
+  padding: 0.5rem 1.5rem 1.5rem;
+}
+.modal-title {
+  font-weight: 700;
+  color: #1a1a2e;
+}
+.btn-primary {
+  background-color: #0d9488;
+  border-color: #0d9488;
+}
+.btn-primary:hover {
+  background-color: #0f766e;
+  border-color: #0f766e;
+}
+.btn-secondary {
+  background-color: #e5e7eb;
+  border-color: #e5e7eb;
+  color: #1e293b;
+}
+.btn-secondary:hover {
+  background-color: #d1d5db;
+  border-color: #d1d5db;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .mensaje-card .card-body {
+    flex-wrap: wrap;
   }
+  .mensaje-acciones {
+    margin-left: auto;
+  }
+  .btn-group {
+    flex-wrap: wrap;
+  }
+}

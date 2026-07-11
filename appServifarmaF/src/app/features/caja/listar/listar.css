@@ -1,97 +1,116 @@
-.card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* ==============================
+   CAJA - DISEÑO FARMACÉUTICO
+   ============================== */
+
+.container-fluid {
+  padding: 0 1.5rem;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
+/* --- Badge de estado --- */
+.bg-farma-success {
+  background: #0d9488 !important;
+  color: #fff !important;
+}
+.bg-farma-secondary {
+  background: #e5e7eb !important;
+  color: #1a1a2e !important;
 }
 
-.badge.rounded-pill {
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.modal.show {
-  display: block;
-  overflow-y: auto;
-}
-
-.modal-dialog-centered {
-  min-height: calc(100% - 3.5rem);
-}
-
-.form-control:focus, .form-select:focus {
-  border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.btn-sm.rounded-circle {
+/* --- Botón Abrir Caja --- */
+.btn-farma-abrir {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  line-height: 1;
+  gap: 6px;
+  padding: 8px 24px;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #0d9488, #14b8a6);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+.btn-farma-abrir:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(13, 148, 136, 0.45);
+}
+.btn-farma-abrir:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.btn {
-  transition: all 0.2s ease;
+/* --- Botón Cerrar Caja --- */
+.btn-farma-cerrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+.btn-farma-cerrar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+}
+.btn-farma-cerrar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.bg-opacity-10 {
-  --bs-bg-opacity: 0.1;
-}
-
+/* --- Tarjetas --- */
 .card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 16px !important;
 }
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
-}
-.badge.rounded-pill {
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-.form-control:focus, .form-select:focus {
-  border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-.bg-opacity-10 {
-  --bs-bg-opacity: 0.1;
+.card-header {
+  border-radius: 16px 16px 0 0 !important;
 }
 
-.card {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+/* --- Inputs --- */
+.form-control:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 0.2rem rgba(13, 148, 136, 0.15);
+}
+.input-group .form-control {
+  border-color: #e5e7eb;
 }
 
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.08) !important;
+/* --- Modales --- */
+.modal-content {
+  border-radius: 20px !important;
+}
+.modal-header {
+  border-radius: 20px 20px 0 0 !important;
+}
+.modal-footer {
+  border-radius: 0 0 20px 20px !important;
 }
 
-.badge.rounded-pill {
-  font-weight: 500;
-  letter-spacing: 0.5px;
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0 0.75rem;
+  }
+  .btn-farma-abrir, .btn-farma-cerrar {
+    padding: 6px 16px;
+    font-size: 0.8rem;
+  }
+  .card-body {
+    padding: 1rem;
+  }
 }
 
-.modal.show {
-  display: block;
-  overflow-y: auto;
-}
-
-.modal-dialog-centered {
-  min-height: calc(100% - 3.5rem);
-}
-
-.form-control:focus, .form-select:focus {
-  border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-
-.bg-opacity-10 {
-  --bs-bg-opacity: 0.1;
-}
-
-.container {
-  max-width: 1200px;
+@media (max-width: 576px) {
+  .btn-farma-abrir, .btn-farma-cerrar {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+  }
 }

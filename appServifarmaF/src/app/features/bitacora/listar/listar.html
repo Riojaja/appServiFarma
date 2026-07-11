@@ -1,65 +1,212 @@
 <div class="container-fluid mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Bitácora de Comunicación</h2>
-    <a routerLink="/bitacora/crear" class="btn btn-primary">
-      <i class="bi bi-plus-circle"></i> Nuevo Mensaje
-    </a>
+
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-journal-text" style="color: #0d9488;"></i> Bitácora de Comunicación
+      </h2>
+      <p class="text-muted small mb-0" style="font-weight: 400;">Registro de novedades, recordatorios e incidencias</p>
+    </div>
+    <div class="d-flex gap-2 align-items-center">
+      <button class="btn-farma-refrescar" (click)="refrescar()" [disabled]="cargando">
+        <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+        {{ cargando ? 'Cargando...' : 'Actualizar' }}
+      </button>
+      <button class="btn-farma-nuevo" (click)="abrirModal()">
+        <i class="bi bi-plus-circle me-1"></i> Nuevo Mensaje
+      </button>
+    </div>
   </div>
 
-  <div class="row">
-    <div class="col-md-8">
-      <div class="table-responsive">
-        <table class="table table-hover">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Mensaje</th>
-              <th>Tipo</th>
-              <th>Usuario</th>
-              <th>Fecha</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngIf="cargando"><td colspan="7" class="text-center"><div class="spinner-border"></div></td></tr>
-            <tr *ngIf="!cargando && mensajes.length === 0">
-              <td colspan="7" class="text-muted text-center">No hay mensajes</td>
-            </tr>
-            <tr *ngFor="let m of mensajes">
-              <td>{{ m.id }}</td>
-              <td>{{ m.mensaje }}</td>
-              <td><span class="badge" [ngClass]="{'bg-info': m.tipo==='novedad', 'bg-warning': m.tipo==='recordatorio', 'bg-danger': m.tipo==='incidencia'}">{{ m.tipo }}</span></td>
-              <td>{{ m.usuarioNombre || 'Usuario #' + m.usuarioId }}</td>
-              <td>{{ m.fechaHora | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td>
-                <span *ngIf="m.leido" class="badge bg-success">Leído</span>
-                <span *ngIf="!m.leido" class="badge bg-secondary">No leído</span>
-              </td>
-              <td>
-                <button class="btn btn-sm btn-outline-primary me-1" (click)="marcarLeido(m.id!)" *ngIf="!m.leido">
-                  <i class="bi bi-check2"></i>
-                </button>
-                <button class="btn btn-sm btn-outline-danger" (click)="eliminar(m.id!)">
-                  <i class="bi bi-trash"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  <!-- ======== FILTROS Y CONTADORES ======== -->
+  <div class="row g-3 mb-4 align-items-center">
+    <div class="col-md-8 d-flex flex-wrap gap-2">
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-envelope me-1"></i> {{ totalNoLeidos }} no leídos
+      </span>
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-database me-1"></i> {{ totalMensajes }} mensajes
+      </span>
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-funnel me-1"></i> {{ totalFiltrados }} mostrados
+      </span>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <div class="btn-group btn-group-sm shadow-sm" role="group">
+        <button class="btn btn-outline-secondary" [class.active]="filtroTipo === 'todos'"
+          (click)="cambiarFiltro('todos')">
+          Todos
+        </button>
+        <button class="btn btn-outline-secondary" [class.active]="filtroTipo === 'novedad'"
+          (click)="cambiarFiltro('novedad')">
+          <i class="bi bi-megaphone me-1"></i> Novedad
+        </button>
+        <button class="btn btn-outline-secondary" [class.active]="filtroTipo === 'recordatorio'"
+          (click)="cambiarFiltro('recordatorio')">
+          <i class="bi bi-clock me-1"></i> Recordatorio
+        </button>
+        <button class="btn btn-outline-secondary" [class.active]="filtroTipo === 'incidencia'"
+          (click)="cambiarFiltro('incidencia')">
+          <i class="bi bi-exclamation-triangle me-1"></i> Incidencia
+        </button>
       </div>
     </div>
-    <div class="col-md-4">
-      <div class="card shadow-sm">
-        <div class="card-header bg-white">
-          <h5 class="card-title mb-0">Resumen</h5>
+  </div>
+
+  <!-- ======== SPINNER ======== -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- ======== LISTA DE MENSAJES (CON PAGINACIÓN) ======== -->
+  <div *ngIf="!cargando" class="bitacora-grid">
+
+    <!-- Sin mensajes -->
+    <div *ngIf="mensajesFiltrados.length === 0" class="text-center py-5 text-muted">
+      <i class="bi bi-inbox display-4 d-block mb-2"></i>
+      <p class="mb-0">No hay mensajes para mostrar con el filtro actual</p>
+    </div>
+
+    <!-- Mensajes de la página actual -->
+    <ng-container *ngIf="mensajesFiltrados.length > 0">
+      <div *ngFor="let mensaje of mensajesPagina" 
+           class="card mensaje-card shadow-sm border-0 rounded-4 mb-3"
+           [class.leido]="mensaje.leido">
+        <div class="card-body d-flex align-items-start gap-3">
+
+          <!-- Icono -->
+          <div class="mensaje-icon" [ngClass]="{
+            'bg-farma-novedad': mensaje.tipo === 'novedad',
+            'bg-farma-recordatorio': mensaje.tipo === 'recordatorio',
+            'bg-farma-incidencia': mensaje.tipo === 'incidencia'
+          }">
+            <i class="bi" [ngClass]="{
+              'bi-megaphone': mensaje.tipo === 'novedad',
+              'bi-clock': mensaje.tipo === 'recordatorio',
+              'bi-exclamation-triangle': mensaje.tipo === 'incidencia'
+            }"></i>
+          </div>
+
+          <!-- Contenido -->
+          <div class="mensaje-contenido flex-grow-1">
+            <div class="d-flex justify-content-between align-items-start flex-wrap">
+              <div class="mensaje-header">
+                <span class="mensaje-tipo fw-semibold" [ngClass]="{
+                  'text-farma-novedad': mensaje.tipo === 'novedad',
+                  'text-farma-recordatorio': mensaje.tipo === 'recordatorio',
+                  'text-farma-incidencia': mensaje.tipo === 'incidencia'
+                }">
+                  {{ mensaje.tipo | titlecase }}
+                </span>
+                <span class="text-muted small ms-2">
+                  <i class="bi bi-person me-1"></i> {{ mensaje.usuarioNombre || 'Usuario #' + mensaje.usuarioId }}
+                </span>
+                <span class="text-muted small ms-2">
+                  <i class="bi bi-clock me-1"></i> {{ mensaje.fechaHora | date:'dd/MM/yyyy HH:mm' }}
+                </span>
+              </div>
+              <div class="mensaje-estado">
+                <span class="badge rounded-pill" 
+                      [ngClass]="mensaje.leido ? 'bg-farma-leido' : 'bg-farma-no-leido'">
+                  {{ mensaje.leido ? 'Leído' : 'No leído' }}
+                </span>
+              </div>
+            </div>
+            <div class="mensaje-texto mt-1">{{ mensaje.mensaje }}</div>
+          </div>
+
+          <!-- Acciones -->
+          <div class="mensaje-acciones d-flex gap-1">
+            <button *ngIf="!mensaje.leido" 
+                    class="btn btn-sm btn-farma-leer" 
+                    title="Marcar como leído"
+                    (click)="marcarLeido(mensaje.id!)">
+              <i class="bi bi-check2-circle"></i>
+            </button>
+            <!-- ✅ Botón eliminar con permisos condicionales -->
+            <button *ngIf="puedeEliminar(mensaje)" 
+                    class="btn btn-sm btn-farma-eliminar" 
+                    title="Eliminar mensaje"
+                    (click)="eliminar(mensaje.id!)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+
         </div>
-        <div class="card-body">
-          <p><strong>Total mensajes:</strong> {{ mensajes.length }}</p>
-          <p><strong>No leídos:</strong> {{ mensajes.filter(m => !m.leido).length }}</p>
-          <p><strong>Leídos:</strong> {{ mensajes.filter(m => m.leido).length }}</p>
-        </div>
+      </div>
+    </ng-container>
+
+    <!-- ======== PAGINACIÓN ======== -->
+    <div *ngIf="mensajesFiltrados.length > 0" class="d-flex justify-content-between align-items-center mt-3">
+      <div>
+        <span class="text-muted small">
+          Mostrando 
+          {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
+          {{ Math.min(paginaActual * itemsPorPagina, mensajesFiltrados.length) }}
+          de {{ mensajesFiltrados.length }}
+        </span>
+      </div>
+      <div class="btn-group shadow-sm">
+        <button class="btn btn-outline-secondary btn-sm" 
+                (click)="anteriorPagina()" 
+                [disabled]="paginaActual === 1">
+          <i class="bi bi-chevron-left"></i> Anterior
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" 
+                (click)="siguientePagina()" 
+                [disabled]="paginaActual === totalPaginas">
+          Siguiente <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ======== MODAL NUEVO MENSAJE ======== -->
+<div class="modal" [class.show]="showModal" [style.display]="showModal ? 'block' : 'none'" tabindex="-1" role="dialog" *ngIf="showModal">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-plus-circle me-2" style="color: #0d9488;"></i>Nuevo Mensaje</h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form #formNuevo="ngForm">
+          <div class="mb-3">
+            <label for="tipoMensaje" class="form-label fw-semibold">Tipo</label>
+            <select id="tipoMensaje" class="form-select" [(ngModel)]="nuevoMensaje.tipo" name="tipo" required>
+              <option value="novedad">Novedad</option>
+              <option value="recordatorio">Recordatorio</option>
+              <option value="incidencia">Incidencia</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="mensajeTexto" class="form-label fw-semibold">Mensaje</label>
+            <textarea id="mensajeTexto" class="form-control" rows="3" 
+                      [(ngModel)]="nuevoMensaje.mensaje" name="mensaje" 
+                      required placeholder="Escribe el mensaje..."></textarea>
+            <div class="invalid-feedback" *ngIf="formNuevo.submitted && !nuevoMensaje.mensaje">
+              El mensaje es obligatorio.
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="guardarMensaje(formNuevo)" 
+                [disabled]="!formNuevo.valid" 
+                style="background-color: #0d9488; border-color: #0d9488;">
+          Guardar
+        </button>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Fondo oscuro para el modal -->
+<div *ngIf="showModal" class="modal-backdrop fade show"></div>
