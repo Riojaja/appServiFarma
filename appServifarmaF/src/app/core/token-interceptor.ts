@@ -22,8 +22,12 @@ export class TokenInterceptor implements HttpInterceptor {
   ) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // Obtener el token del servicio de autenticación
-    const token = this.authService.getToken();
+    // 🔥 CAMBIO CLAVE: Obtener el token directamente de localStorage
+    const token = localStorage.getItem('token');
+    
+    console.log('🔑 Token obtenido:', token ? '✅ Existe' : '❌ No existe');
+    console.log('📤 URL de la petición:', req.url);
+
     let authReq = req;
 
     // Si hay token, clonar la petición y agregar el header Authorization
@@ -33,11 +37,15 @@ export class TokenInterceptor implements HttpInterceptor {
           Authorization: `Bearer ${token}`
         }
       });
+      console.log('✅ Header Authorization agregado');
+    } else {
+      console.warn('⚠️ No hay token, request sin autorización');
     }
 
     // Continuar con la petición y manejar errores
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
+        console.error('❌ Error en la petición:', error.status, error.message);
         // 401: sesión inválida o expirada -> cerrar sesión y redirigir a login
         if (error.status === 401 && !req.url.includes('/auth/login')) {
           this.authService.logout();

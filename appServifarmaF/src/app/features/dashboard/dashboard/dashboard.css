@@ -1,6 +1,7 @@
 /* ==============================
-   LAYOUT GENERAL
+   DASHBOARD - ESTILOS (adaptado de Angular)
    ============================== */
+
 .dashboard-shell {
   display: flex;
   align-items: flex-start;
@@ -92,15 +93,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.kpi-value-lg {
-  font-size: 1.6rem;
-}
-
-.kpi-sub {
-  font-size: 0.72rem;
-  color: #94a3b8;
 }
 
 /* ==============================
@@ -209,7 +201,7 @@
 }
 
 .top-productos-scroll {
-  max-height: 300px; /* ~5 productos visibles */
+  max-height: 300px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -270,10 +262,10 @@
 .ventas-scroll-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
 /* ==============================
-   ACTIVIDAD RECIENTE (VENDEDOR) - misma estructura, pero muestra 6
+   ACTIVIDAD RECIENTE (VENDEDOR)
    ============================== */
 .actividad-scroll-container {
-  max-height: 384px; /* ~6 filas visibles (un poco más que los 320px de admin, que muestran ~5) */
+  max-height: 384px;
   overflow-y: auto;
   padding-right: 4px;
   margin-top: -0.5rem;
@@ -369,7 +361,6 @@
   margin-left: 12px;
 }
 
-/* Para actividad con monto en 0 (si aplica en el futuro) */
 .venta-total-cero {
   color: #94a3b8;
   background: #f1f5f9;
@@ -433,6 +424,29 @@
 .stock-min {
   font-size: 0.74rem;
   color: #9ca3af;
+}
+
+/* ==============================
+   STOCK CRÍTICO - CON SCROLL
+   ============================== */
+.stock-scroll-container {
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.stock-scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+.stock-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.stock-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.stock-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* ==============================
@@ -532,7 +546,19 @@
 .alert-yellow small { color: #a16207; }
 
 /* ==============================
-   ACCIONES RÁPIDAS (tamaño reducido, admin)
+   PANEL DE ALERTAS - LISTA FIJA (SIN SCROLL)
+   ============================== */
+.alertas-lista-fija {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.alertas-lista-fija .alert-card {
+  margin-bottom: 0;
+}
+
+/* ==============================
+   ACCIONES RÁPIDAS
    ============================== */
 .acciones-rapidas-grid {
   display: grid;
@@ -614,6 +640,87 @@
 .btn-reportes:hover { background: #fffbeb; border-color: #f59e0b; }
 .btn-reportes i { color: #f59e0b; }
 
+.btn-demanda::before { background: #dc2626; }
+.btn-demanda:hover { background: #fef2f2; border-color: #dc2626; }
+.btn-demanda i { color: #dc2626; }
+
+/* ==============================
+   BOTONES MODERNOS - ACTUALIZAR Y ALERTAS
+   ============================== */
+
+.btn-actualizar-modern {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+.btn-actualizar-modern:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+}
+.btn-actualizar-modern:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-actualizar-modern i {
+  font-size: 1.1rem;
+}
+
+.btn-ver-todas {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 14px;
+  border: 1.5px solid #4f46e5;
+  border-radius: 30px;
+  background: transparent;
+  color: #4f46e5;
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+.btn-ver-todas:hover {
+  background: #4f46e5;
+  color: #fff;
+  text-decoration: none;
+}
+.btn-ver-todas i {
+  font-size: 0.8rem;
+}
+
+.btn-alertas-mobile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 30px;
+  background: #f59e0b;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  transition: all 0.25s ease;
+}
+.btn-alertas-mobile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45);
+  color: #fff;
+}
+.btn-alertas-mobile i {
+  font-size: 1rem;
+}
+
 /* ==============================
    RESPONSIVE
    ============================== */
@@ -627,6 +734,23 @@
   .top-product-item { padding: 6px 10px; }
   .top-product-name { font-size: 0.8rem; }
   .panel-card { padding: 16px; }
+}
+
+@media (max-width: 767.98px) {
+  .btn-actualizar-modern {
+    padding: 6px 14px;
+    font-size: 0.75rem;
+  }
+  .btn-alertas-mobile {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+  .dashboard-alerts .btn-ver-todas {
+    display: none !important;
+  }
+  .alertas-scroll-container {
+    max-height: 150px;
+  }
 }
 
 @media (max-width: 576px) {
@@ -648,6 +772,26 @@
   }
 }
 
-.btn-demanda::before { background: #dc2626; }
-.btn-demanda:hover { background: #fef2f2; border-color: #dc2626; }
-.btn-demanda i { color: #dc2626; }
+/* ==============================
+   PANEL DE ALERTAS - SCROLL Y LÍMITE
+   ============================== */
+.alertas-scroll-container {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 4px;
+}
+.alertas-scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+.alertas-scroll-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.alertas-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.alertas-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

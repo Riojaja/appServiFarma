@@ -1,3 +1,302 @@
-.list-group-item:hover {
-  background-color: #f8f9fa;
+/* ==============================
+   ALERTAS - DISEÑO PROFESIONAL
+   ============================== */
+
+/* --- Contenedor general --- */
+.container-fluid {
+  padding: 0 1.5rem;
+}
+
+/* --- Encabezado --- */
+h2 i {
+  font-size: 1.8rem;
+}
+
+/* ==============================
+   BOTÓN ACTUALIZAR MODERNO
+   ============================== */
+.btn-actualizar-profesional {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 22px;
+  border: none;
+  border-radius: 30px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+.btn-actualizar-profesional:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+}
+.btn-actualizar-profesional:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.btn-actualizar-profesional i {
+  font-size: 1rem;
+}
+.btn-actualizar-profesional .spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==============================
+   TARJETAS DE RESUMEN
+   ============================== */
+.resumen-card-profesional {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.resumen-card-profesional:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06) !important;
+}
+.resumen-icon-wrapper {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+}
+.resumen-icon-wrapper .bi {
+  font-size: 1.8rem;
+}
+
+/* ==============================
+   BADGES DE ESTADO (colores profesionales)
+   ============================== */
+.badge-critico {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+}
+.badge-advertencia {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+}
+.badge-normal {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #93c5fd;
+}
+.badge-vencido {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #f87171;
+}
+
+/* ==============================
+   BARRAS DE VENCIMIENTO POR MES
+   ============================== */
+.barra-mes-profesional {
+  width: 22px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.3s ease;
+  min-height: 4px;
+}
+.barra-mes-profesional.bg-danger {
+  background: linear-gradient(to top, #dc2626, #f87171);
+}
+.barra-mes-profesional.bg-warning {
+  background: linear-gradient(to top, #d97706, #fcd34d);
+}
+.barra-mes-profesional.bg-info {
+  background: linear-gradient(to top, #2563eb, #93c5fd);
+}
+.barra-mes-profesional.bg-light {
+  background: #e5e7eb;
+}
+
+/* ==============================
+   TABLA
+   ============================== */
+.table th {
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-top: none;
+}
+.table td {
+  vertical-align: middle;
+  padding: 0.6rem 0.5rem;
+}
+.table tbody tr {
+  transition: background-color 0.15s ease;
+}
+.table tbody tr:hover {
+  background-color: #f8fafc;
+}
+.table tbody tr.table-danger {
+  background-color: #fef2f2;
+}
+.table tbody tr.table-warning {
+  background-color: #fffbeb;
+}
+.bg-opacity-10 {
+  --bs-bg-opacity: 0.1;
+}
+
+/* ==============================
+   FILTROS (input y selects)
+   ============================== */
+.form-select,
+.form-control,
+.input-group-text {
+  border-color: #e5e7eb;
+}
+.form-select:focus,
+.form-control:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 0.2rem rgba(79, 70, 229, 0.15);
+}
+.input-group .form-control {
+  border-radius: 0 8px 8px 0;
+}
+.input-group .input-group-text {
+  border-radius: 8px 0 0 8px;
+}
+.form-select.shadow-sm {
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* ==============================
+   SELECTORES MODERNOS (con icono)
+   ============================== */
+.select-wrapper {
+  position: relative;
+  width: 100%;
+}
+.select-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 10;
+}
+.select-estilo {
+  width: 100%;
+  padding: 0.6rem 2.5rem 0.6rem 2.8rem;
+  border-radius: 30px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  font-size: 0.9rem;
+  color: #1a1a2e;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.select-estilo:hover {
+  border-color: #4f46e5;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+}
+.select-estilo:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+  outline: none;
+}
+.select-estilo option {
+  padding: 0.5rem;
+}
+
+/* ==============================
+   BOTÓN LIMPIAR
+   ============================== */
+.btn-limpiar {
+  padding: 0.6rem 1rem;
+  border-radius: 30px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #1a1a2e;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.btn-limpiar:hover {
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+.btn-limpiar i {
+  font-size: 0.9rem;
+}
+
+/* ==============================
+   PAGINACIÓN
+   ============================== */
+.btn-group .btn {
+  border-radius: 0;
+}
+.btn-group .btn:first-child {
+  border-radius: 20px 0 0 20px;
+}
+.btn-group .btn:last-child {
+  border-radius: 0 20px 20px 0;
+}
+.btn-group .btn.active {
+  background-color: #4f46e5;
+  color: #fff;
+  border-color: #4f46e5;
+}
+.btn-group .btn-outline-secondary {
+  border-color: #d1d5db;
+}
+.btn-group .btn-outline-secondary:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+.btn-group .btn-outline-secondary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ==============================
+   RESPONSIVE
+   ============================== */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0 0.75rem;
+  }
+  .resumen-icon-wrapper {
+    width: 44px;
+    height: 44px;
+  }
+  .resumen-icon-wrapper .bi {
+    font-size: 1.5rem;
+  }
+  .select-wrapper {
+    margin-bottom: 0.5rem;
+  }
+  .select-estilo {
+    padding: 0.5rem 2rem 0.5rem 2.2rem;
+    font-size: 0.8rem;
+  }
+  .select-icon {
+    left: 10px;
+    font-size: 0.8rem;
+  }
+  .btn-limpiar {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.8rem;
+  }
 }

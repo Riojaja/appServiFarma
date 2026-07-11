@@ -7,4 +7,5 @@ export interface Alerta {
   cantidad?: number;
   fechaVencimiento?: string;
   diasRestantes?: number;
+  categoriaNombre?: string;
 }

@@ -18,11 +18,18 @@
           <h2 class="page-title">Dashboard</h2>
           <p class="page-subtitle">Resumen general del sistema</p>
         </div>
-        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="refrescarDatos()"
-          [disabled]="cargando">
-          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
-          {{ cargando ? 'Actualizando...' : 'Actualizar' }}
-        </button>
+        <div class="d-flex gap-2 align-items-center">
+          <!-- Botón Actualizar (moderno) -->
+          <button class="btn-actualizar-modern" (click)="refrescarDatos()" [disabled]="cargando">
+            <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+            {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+          </button>
+          <!-- Botón Alertas (solo visible en móvil) -->
+          <a routerLink="/alertas" class="btn-alertas-mobile d-md-none">
+            <i class="bi bi-bell-fill"></i>
+            <span class="d-none d-sm-inline">Alertas</span>
+          </a>
+        </div>
       </div>
 
       <!-- SPINNER DE CARGA GLOBAL -->
@@ -203,15 +210,18 @@
                 No hay productos con stock crítico
               </div>
 
-              <div class="stock-item" *ngFor="let item of stockCritico">
-                <div class="stock-top">
-                  <span class="stock-name">{{ item.producto }}</span>
-                  <span class="stock-unid">{{ item.stock }} unid.</span>
+              <!-- 🔥 CONTENEDOR CON SCROLL (igual que Ventas Recientes) -->
+              <div class="stock-scroll-container">
+                <div class="stock-item" *ngFor="let item of stockCritico">
+                  <div class="stock-top">
+                    <span class="stock-name">{{ item.producto }}</span>
+                    <span class="stock-unid">{{ item.stock }} unid.</span>
+                  </div>
+                  <div class="stock-bar">
+                    <div class="stock-bar-fill" [style.width.%]="(item.stock / item.minimo) * 100"></div>
+                  </div>
+                  <small class="stock-min">Mínimo: {{ item.minimo }} unidades</small>
                 </div>
-                <div class="stock-bar">
-                  <div class="stock-bar-fill" [style.width.%]="(item.stock / item.minimo) * 100"></div>
-                </div>
-                <small class="stock-min">Mínimo: {{ item.minimo }} unidades</small>
               </div>
             </div>
           </div>
@@ -226,16 +236,23 @@
     <!-- ============================================================ -->
     <ng-container *ngIf="rol === 'VENDEDOR'">
 
-      <div class="d-flex justify-content-between align-items-start mb-3">
+      <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
         <div>
           <h2 class="page-title">Panel de Vendedor</h2>
           <p class="page-subtitle">Accesos rápidos a tus funciones principales</p>
         </div>
-        <button class="btn btn-outline-primary btn-sm rounded-pill px-3" (click)="refrescarDatos()"
-          [disabled]="cargando">
-          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
-          {{ cargando ? 'Actualizando...' : 'Actualizar' }}
-        </button>
+        <div class="d-flex gap-2 align-items-center">
+          <!-- Botón Actualizar (moderno) -->
+          <button class="btn-actualizar-modern" (click)="refrescarDatos()" [disabled]="cargando">
+            <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+            {{ cargando ? 'Actualizando...' : 'Actualizar' }}
+          </button>
+          <!-- Botón Alertas (solo visible en móvil) -->
+          <a routerLink="/alertas" class="btn-alertas-mobile d-md-none">
+            <i class="bi bi-bell-fill"></i>
+            <span class="d-none d-sm-inline">Alertas</span>
+          </a>
+        </div>
       </div>
 
       <!-- SPINNER DE CARGA -->
@@ -345,24 +362,34 @@
   <!-- PANEL DE ALERTAS LATERAL (compartido para ambos roles)       -->
   <!-- ============================================================ -->
   <aside class="dashboard-alerts">
-    <h5 class="alerts-title"><i class="bi bi-bell-fill"></i> Alertas</h5>
+    <div class="alerts-header d-flex justify-content-between align-items-center">
+      <h5 class="alerts-title mb-0"><i class="bi bi-bell-fill"></i> Alertas</h5>
+      <a routerLink="/alertas" class="btn-ver-todas d-none d-md-inline-flex">
+        Ver todas <i class="bi bi-arrow-right"></i>
+      </a>
+    </div>
 
     <h6 class="alerts-subtitle">Stock Mínimo</h6>
     <div *ngIf="alertasStock.length === 0" class="text-muted small text-center py-2">
       Sin alertas de stock
     </div>
-    <div class="alert-card alert-red" *ngFor="let alerta of alertasStock">
-      <strong>{{ alerta.producto }}</strong>
-      <small>Stock: {{ alerta.stock }} unidades</small>
+    <!-- 🔥 SIN SCROLL: solo los últimos 5, sin overflow-y -->
+    <div class="alertas-lista-fija">
+      <div class="alert-card alert-red" *ngFor="let alerta of alertasStock | slice:0:5">
+        <strong>{{ alerta.producto }}</strong>
+        <small>Stock: {{ alerta.stock }} unidades</small>
+      </div>
     </div>
 
     <h6 class="alerts-subtitle mt-3">Próximos a Vencer</h6>
     <div *ngIf="alertasVencimiento.length === 0" class="text-muted small text-center py-2">
       Sin vencimientos próximos
     </div>
-    <div class="alert-card alert-yellow" *ngFor="let alerta of alertasVencimiento">
-      <strong>{{ alerta.producto }}</strong>
-      <small>Vence en {{ alerta.dias }} días</small>
+    <div class="alertas-lista-fija">
+      <div class="alert-card alert-yellow" *ngFor="let alerta of alertasVencimiento | slice:0:5">
+        <strong>{{ alerta.producto }}</strong>
+        <small>Vence en {{ alerta.dias }} días</small>
+      </div>
     </div>
   </aside>
 

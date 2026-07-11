@@ -12,7 +12,7 @@ import { ProductoService } from '../../../core/services/producto';
 import { EstadisticaService } from '../../../core/services/estadistica';
 import { LoteService } from '../../../core/services/lote';
 import { forkJoin, of } from 'rxjs';
-import { catchError, finalize } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 
 @Component({
   selector: 'app-dashboard',
@@ -30,13 +30,13 @@ import { catchError, finalize } from 'rxjs/operators';
   styleUrls: ['./dashboard.css']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  // DATOS DEL USUARIO
+  // ========== DATOS DEL USUARIO ==========
   usuario: string = '';
   rol: string = '';
   isAdmin: boolean = false;
   errorGeneral: string = '';
 
-  // KPIs
+  // ========== KPIs ==========
   kpis: any[] = [
     { label: 'Ventas del Día', displayValue: 'S/ 0.00', icon: 'bi-cart3', color: '#16a34a', ruta: '/ventas' },
     { label: 'Caja Actual', displayValue: 'S/ 0.00', icon: 'bi-wallet2', color: '#2563eb', ruta: '/caja' },
@@ -44,23 +44,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { label: 'Próximos a Vencer', displayValue: '0', icon: 'bi-archive-fill', color: '#f59e0b', ruta: '/lotes/proximos-a-vencer' }
   ];
 
-  // VENTAS RECIENTES (todas, scroll en CSS)
+  // ========== LISTAS ==========
   ventasRecientes: any[] = [];
-
-  // STOCK CRÍTICO
   stockCritico: any[] = [];
-
-  // TOP PRODUCTOS
   topProductos: any[] = [];
-
-  // ALERTAS LATERALES (compartidas para ambos roles)
   alertasStock: any[] = [];
   alertasVencimiento: any[] = [];
-
-  // ACTIVIDAD RECIENTE (VENDEDOR)
   actividadReciente: any[] = [];
 
-  // GRÁFICO
+  // ========== GRÁFICO ==========
   public barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
@@ -98,6 +90,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     datasets: [{ data: [], label: 'Ventas (S/)', backgroundColor: '#0d6efd' }]
   };
 
+  // ========== ESTADO DE CARGA ==========
   cargando: boolean = true;
 
   constructor(
@@ -108,21 +101,22 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private estadisticaService: EstadisticaService,
     private loteService: LoteService,
     private cdr: ChangeDetectorRef
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.usuario = this.authService.getUsuario() || 'Usuario';
     this.rol = this.authService.getRol() || '';
-    this.isAdmin = this.rol.toUpperCase() === 'ADMIN';
+    this.isAdmin = this.rol?.toUpperCase() === 'ADMIN';
 
     if (this.isAdmin) {
       this.cargarDatosAdmin();
     } else if (this.rol) {
       this.cargarDatosVendedor();
     } else {
+      // Si el rol aún no está disponible, esperar 100ms y reintentar
       setTimeout(() => {
         this.rol = this.authService.getRol() || '';
-        this.isAdmin = this.rol.toUpperCase() === 'ADMIN';
+        this.isAdmin = this.rol?.toUpperCase() === 'ADMIN';
         if (this.isAdmin) {
           this.cargarDatosAdmin();
         } else if (this.rol) {
@@ -136,8 +130,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void { }
+  ngOnDestroy(): void {}
 
+  // ==============================
+  // ADMIN - CARGA INSTANTÁNEA
+  // ==============================
   private cargarDatosAdmin(): void {
     this.cargando = true;
     this.errorGeneral = '';
@@ -148,6 +145,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const inicioStr = inicio.toISOString();
     const finStr = fin.toISOString();
 
+    // 🔥 1. Cargar datos principales en paralelo
     forkJoin({
       ventasHoy: this.estadisticaService.obtenerTotalVentas(inicioStr, finStr).pipe(catchError(() => of(0))),
       cajaAbierta: this.cajaService.obtenerCajaAbierta().pipe(catchError(() => of(null))),
@@ -156,19 +154,15 @@ export class DashboardComponent implements OnInit, OnDestroy {
       ventasRecientes: this.ventaService.obtenerUltimas(20).pipe(catchError(() => of([]))),
       topVentas: this.ventaService.obtenerUltimas(200).pipe(catchError(() => of([]))),
       datosGrafico: this.ventaService.listar().pipe(catchError(() => of([])))
-    }).pipe(
-      finalize(() => {
-        this.cargando = false;
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
+    }).subscribe({
       next: (resultados) => {
-        // KPIs
+        // ---- Asignar KPIs básicos ----
         const ventasHoy = resultados.ventasHoy || 0;
         this.kpis[0].displayValue = `S/ ${ventasHoy.toFixed(2)}`;
 
+        // Caja (se actualiza después, sin bloquear)
         const caja = resultados.cajaAbierta;
-        if (caja && caja.id) {
+        if (caja?.id) {
           this.cajaService.obtenerTotalVentas(caja.id).pipe(catchError(() => of(0))).subscribe(total => {
             this.kpis[1].displayValue = `S/ ${(total || 0).toFixed(2)}`;
             this.cdr.detectChanges();
@@ -183,7 +177,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         const proximos = resultados.proximosVencer || [];
         this.kpis[3].displayValue = proximos.length.toString();
 
-        // Ventas recientes
+        // ---- Ventas recientes ----
         this.ventasRecientes = (resultados.ventasRecientes || []).map(v => ({
           cliente: v.clienteNombre || 'Anónimo',
           productos: v.detalles?.length || 0,
@@ -191,14 +185,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
           total: v.total || 0
         }));
 
-        // Stock crítico
+        // ---- Stock crítico ----
         this.stockCritico = criticos.map(p => ({
           producto: p.nombre,
           stock: p.stockMinimo || 0,
           minimo: p.stockMinimo || 5
         }));
 
-        // Top productos
+        // ---- Top productos ----
         const ventas = resultados.topVentas || [];
         const mapa = new Map<string, number>();
         ventas.forEach(v => {
@@ -212,14 +206,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
           .sort((a, b) => b.cantidad - a.cantidad)
           .slice(0, 5);
 
-        // Gráfico
-        const todasVentas = resultados.datosGrafico || [];
-        this.armarDatosGrafico(todasVentas);
+        // ---- Gráfico ----
+        this.armarDatosGrafico(resultados.datosGrafico || []);
 
-        // Alertas laterales (mismo helper que usa el vendedor)
+        // ---- Alertas laterales ----
         this.mapearAlertasLaterales(criticos, proximos);
 
-        this.cdr.detectChanges();
+        // 🔥 2. Ocultar spinner INMEDIATAMENTE después de asignar datos
+        this.cargando = false;
+        // Forzar detección de cambios en el siguiente ciclo
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
       },
       error: (err) => {
         console.error('Error cargando dashboard:', err);
@@ -230,26 +228,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Antes este método estaba prácticamente vacío (solo apagaba el spinner),
-   * por eso "Actividad Reciente" y el panel lateral de "Alertas" (Stock Mínimo
-   * y Próximos a Vencer) nunca se llenaban para el rol vendedor, aunque el
-   * HTML los muestra igual que para el admin.
-   */
+  // ==============================
+  // VENDEDOR - CARGA INSTANTÁNEA
+  // ==============================
   private cargarDatosVendedor(): void {
     this.cargando = true;
     this.errorGeneral = '';
 
     forkJoin({
-      ventasRecientes: this.ventaService.obtenerUltimas(20).pipe(catchError(() => of([]))), // antes: 10
+      ventasRecientes: this.ventaService.obtenerUltimas(20).pipe(catchError(() => of([]))),
       productosCriticos: this.productoService.obtenerProductosConStockBajo().pipe(catchError(() => of([]))),
       proximosVencer: this.loteService.obtenerProximosAVencer(30).pipe(catchError(() => of([])))
-    }).pipe(
-      finalize(() => {
-        this.cargando = false;
-        this.cdr.detectChanges();
-      })
-    ).subscribe({
+    }).subscribe({
       next: (resultados) => {
         this.actividadReciente = (resultados.ventasRecientes || []).map(v => ({
           descripcion: 'Venta registrada',
@@ -258,8 +248,16 @@ export class DashboardComponent implements OnInit, OnDestroy {
           monto: v.total || 0
         }));
 
-        this.mapearAlertasLaterales(resultados.productosCriticos || [], resultados.proximosVencer || []);
-        this.cdr.detectChanges();
+        this.mapearAlertasLaterales(
+          resultados.productosCriticos || [],
+          resultados.proximosVencer || []
+        );
+
+        // 🔥 Ocultar spinner inmediatamente
+        this.cargando = false;
+        setTimeout(() => {
+          this.cdr.detectChanges();
+        }, 0);
       },
       error: (err) => {
         console.error('Error cargando dashboard del vendedor:', err);
@@ -270,7 +268,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Lógica compartida por admin y vendedor para llenar el panel lateral de alertas. */
+  // ==============================
+  // MÉTODOS COMPARTIDOS
+  // ==============================
+
   private mapearAlertasLaterales(criticos: any[], proximos: any[]): void {
     this.alertasStock = criticos.map(p => ({ producto: p.nombre, stock: p.stockMinimo || 0 }));
     this.alertasVencimiento = proximos

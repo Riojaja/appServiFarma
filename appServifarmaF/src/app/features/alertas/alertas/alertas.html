@@ -3,13 +3,14 @@
   <!-- ======== ENCABEZADO ======== -->
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-      <h2 class="fw-bold mb-0">
-        <i class="bi bi-bell text-primary me-2"></i>Alertas de Inventario
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-bell" style="color: #4f46e5;"></i> Alertas de Inventario
       </h2>
-      <p class="text-muted small mb-0">Productos con stock bajo y lotes próximos a vencer</p>
+      <p class="text-muted small mb-0" style="font-weight: 400;">Control de stock y vencimientos</p>
     </div>
-    <button class="btn btn-outline-primary rounded-pill px-4" (click)="cargarAlertas()">
-      <i class="bi bi-arrow-clockwise me-1"></i> Actualizar
+    <button class="btn-actualizar-profesional" (click)="cargarAlertas()" [disabled]="cargando">
+      <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+      <span>{{ cargando ? 'Actualizando...' : 'Actualizar' }}</span>
     </button>
   </div>
 
@@ -21,9 +22,9 @@
   </div>
 
   <!-- ======== ERROR ======== -->
-  <div *ngIf="!cargando && error" class="alert alert-danger">
+  <div *ngIf="!cargando && error" class="alert alert-danger shadow-sm rounded-4">
     <i class="bi bi-exclamation-triangle me-2"></i>
-    No se pudieron cargar las alertas de inventario. Intenta actualizar.
+    No se pudieron cargar las alertas. Intenta actualizar.
   </div>
 
   <div *ngIf="!cargando && !error">
@@ -31,109 +32,238 @@
     <!-- ======== TARJETAS DE RESUMEN ======== -->
     <div class="row g-3 mb-4" *ngIf="resumen">
       <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card resumen-card-profesional border-0 h-100 shadow-sm rounded-4">
           <div class="card-body text-center">
-            <i class="bi bi-box-seam text-warning" style="font-size: 1.8rem;"></i>
-            <div class="fs-3 fw-bold mt-1">{{ resumen.totalProductosStockBajo }}</div>
-            <div class="text-muted small">Stock bajo</div>
+            <div class="resumen-icon-wrapper" style="background: #fef9e7; color: #f59e0b;">
+              <i class="bi bi-box-seam" style="font-size: 1.8rem;"></i>
+            </div>
+            <div class="fs-3 fw-bold mt-1" style="color: #1a1a2e;">{{ resumen.totalProductosStockBajo }}</div>
+            <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">Stock bajo</div>
           </div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card resumen-card-profesional border-0 h-100 shadow-sm rounded-4">
           <div class="card-body text-center">
-            <i class="bi bi-x-circle text-danger" style="font-size: 1.8rem;"></i>
-            <div class="fs-3 fw-bold mt-1">{{ resumen.totalProductosSinStock }}</div>
-            <div class="text-muted small">Sin stock</div>
+            <div class="resumen-icon-wrapper" style="background: #fde8e8; color: #dc2626;">
+              <i class="bi bi-x-circle" style="font-size: 1.8rem;"></i>
+            </div>
+            <div class="fs-3 fw-bold mt-1" style="color: #1a1a2e;">{{ resumen.totalProductosSinStock }}</div>
+            <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">Sin stock</div>
           </div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card resumen-card-profesional border-0 h-100 shadow-sm rounded-4">
           <div class="card-body text-center">
-            <i class="bi bi-hourglass-split text-info" style="font-size: 1.8rem;"></i>
-            <div class="fs-3 fw-bold mt-1">{{ resumen.totalLotesProximosAVencer }}</div>
-            <div class="text-muted small">Próximos a vencer</div>
+            <div class="resumen-icon-wrapper" style="background: #e8f4fd; color: #3b82f6;">
+              <i class="bi bi-hourglass-split" style="font-size: 1.8rem;"></i>
+            </div>
+            <div class="fs-3 fw-bold mt-1" style="color: #1a1a2e;">{{ resumen.totalLotesProximosAVencer }}</div>
+            <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">Próximos a vencer
+            </div>
           </div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card resumen-card-profesional border-0 h-100 shadow-sm rounded-4">
           <div class="card-body text-center">
-            <i class="bi bi-check-circle text-success" style="font-size: 1.8rem;"></i>
-            <div class="fs-3 fw-bold mt-1">{{ resumen.totalLotesActivosConStock }}</div>
-            <div class="text-muted small">Lotes activos con stock</div>
+            <div class="resumen-icon-wrapper" style="background: #e6f7e6; color: #16a34a;">
+              <i class="bi bi-check-circle" style="font-size: 1.8rem;"></i>
+            </div>
+            <div class="fs-3 fw-bold mt-1" style="color: #1a1a2e;">{{ resumen.totalLotesActivosConStock }}</div>
+            <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.5px;">Lotes activos</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- ======== FILTROS ======== -->
-    <div class="btn-group mb-3" role="group">
-      <button
-        type="button"
-        class="btn btn-sm"
-        [class.btn-primary]="filtroActivo === 'todas'"
-        [class.btn-outline-primary]="filtroActivo !== 'todas'"
-        (click)="cambiarFiltro('todas')">
-        Todas ({{ alertasStockBajo.length + alertasProximosVencer.length }})
-      </button>
-      <button
-        type="button"
-        class="btn btn-sm"
-        [class.btn-primary]="filtroActivo === 'proximo_vencer'"
-        [class.btn-outline-primary]="filtroActivo !== 'proximo_vencer'"
-        (click)="cambiarFiltro('proximo_vencer')">
-        Próximos a vencer ({{ alertasProximosVencer.length }})
-      </button>
-      <button
-        type="button"
-        class="btn btn-sm"
-        [class.btn-primary]="filtroActivo === 'stock_bajo'"
-        [class.btn-outline-primary]="filtroActivo !== 'stock_bajo'"
-        (click)="cambiarFiltro('stock_bajo')">
-        Stock bajo ({{ alertasStockBajo.length }})
-      </button>
-    </div>
-
-    <!-- ======== LISTA DE ALERTAS ======== -->
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-      <div class="card-body p-0">
-
-        <div *ngIf="alertasVisibles.length === 0" class="text-center py-5 text-muted">
-          <i class="bi bi-check2-circle display-4 d-block mb-2 text-success"></i>
-          No hay alertas en esta categoría. Todo en orden.
+    <div class="row g-3 mb-4 align-items-end">
+      <!-- Búsqueda -->
+      <div class="col-md-4">
+        <div class="input-group shadow-sm" style="border-radius: 30px; overflow: hidden; border: 1px solid #e5e7eb;">
+          <span class="input-group-text bg-white border-0" style="border-radius: 30px 0 0 30px; padding-right: 0;">
+            <i class="bi bi-search text-muted" style="font-size: 1rem;"></i>
+          </span>
+          <input type="text" class="form-control border-0"
+            style="border-radius: 0 30px 30px 0; background: white; padding: 0.6rem 1.2rem 0.6rem 0.8rem;"
+            placeholder="Buscar por producto..." [(ngModel)]="filtroTexto" (input)="aplicarFiltros()">
         </div>
+      </div>
 
-        <div class="list-group list-group-flush">
-          <div *ngFor="let alerta of alertasVisibles" class="list-group-item d-flex align-items-center gap-3 py-3">
-            <span
-              class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-              [ngClass]="claseUrgencia(alerta)"
-              style="width: 42px; height: 42px;">
-              <i class="bi" [ngClass]="iconoAlerta(alerta)"></i>
-            </span>
+      <!-- Selector de Estado -->
+      <div class="col-md-3">
+        <div class="select-wrapper">
+          <i class="bi bi-funnel text-muted select-icon"></i>
+          <select class="form-select select-estilo" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+            <option value="">Todos los estados</option>
+            <option value="critico">🔴 Crítico (≤7 días)</option>
+            <option value="advertencia">🟡 Advertencia (≤30 días)</option>
+            <option value="normal">🟢 Normal (>30 días)</option>
+          </select>
+        </div>
+      </div>
 
-            <div class="flex-grow-1">
-              <div class="fw-semibold">{{ alerta.productoNombre }}</div>
-              <div class="text-muted small">{{ alerta.mensaje }}</div>
+      <!-- Selector de Categoría -->
+      <div class="col-md-3">
+        <div class="select-wrapper">
+          <i class="bi bi-tags text-muted select-icon"></i>
+          <select class="form-select select-estilo" [(ngModel)]="filtroCategoria" (change)="aplicarFiltros()">
+            <option value="">Todas las categorías</option>
+            <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Botón Limpiar -->
+      <div class="col-md-2">
+        <button class="btn btn-limpiar w-100" (click)="limpiarFiltros()">
+          <i class="bi bi-arrow-counterclockwise me-1"></i> Limpiar
+        </button>
+      </div>
+    </div>
+    <!-- ======== VENCIMIENTOS POR MES ======== -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-12">
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h6 class="fw-semibold mb-0" style="color: #1a1a2e;">📊 Vencimientos por mes</h6>
+              <span class="badge bg-light text-dark rounded-pill">Total: {{ mesesVencimiento.reduce((acc, m) => acc +
+                m.cantidad, 0) }}</span>
             </div>
-
-            <div class="text-end" *ngIf="alerta.tipo === 'proximo_vencer'">
-              <span class="badge rounded-pill" [ngClass]="claseUrgencia(alerta)">
-                {{ alerta.diasRestantes }} día(s)
-              </span>
-              <div class="text-muted small mt-1">Cant: {{ alerta.cantidad }}</div>
+            <div class="d-flex gap-2 flex-wrap justify-content-between align-items-end" style="min-height: 60px;">
+              <div *ngFor="let mes of mesesVencimiento" class="text-center" style="flex: 1; min-width: 28px;">
+                <div class="small text-muted" style="font-size: 0.65rem;">{{ mes.nombre }}</div>
+                <div class="position-relative"
+                  style="height: 50px; display: flex; align-items: flex-end; justify-content: center;">
+                  <div class="barra-mes-profesional"
+                    [style.height.%]="mes.cantidad > 0 ? (mes.cantidad / maxMeses * 80) + 10 : 0" [ngClass]="{
+                         'bg-danger': mes.cantidad > 5,
+                         'bg-warning': mes.cantidad > 2 && mes.cantidad <= 5,
+                         'bg-info': mes.cantidad > 0 && mes.cantidad <= 2,
+                         'bg-light': mes.cantidad === 0
+                       }">
+                  </div>
+                </div>
+                <div class="small fw-bold" style="font-size: 0.7rem; color: #1a1a2e;">{{ mes.cantidad }}</div>
+              </div>
             </div>
-            <a>
-              *ngIf="alerta.tipo === 'stock_bajo'"
-              class="btn btn-sm btn-outline-primary"
-              [routerLink]="['/productos', 'editar', alerta.productoId]">
-              Ver producto
-            </a>
           </div>
         </div>
+      </div>
+    </div>
 
+    <!-- ======== TABLA CON PAGINACIÓN ======== -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+            <thead class="table-light" style="border-bottom: 2px solid #e9ecef;">
+              <tr>
+                <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Estado</th>
+                <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Producto</th>
+                <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Lote</th>
+                <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Stock</th>
+                <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Fecha Venc.</th>
+                <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;" class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="alertasPaginadas.length === 0">
+                <td colspan="6" class="text-center py-4 text-muted">
+                  <i class="bi bi-check2-circle display-6 d-block mb-2 text-success"></i>
+                  No hay alertas que coincidan con los filtros.
+                </td>
+              </tr>
+              <tr *ngFor="let alerta of alertasPaginadas" [ngClass]="{
+                    'table-danger': alerta.diasRestantes !== undefined && alerta.diasRestantes < 0,
+                    'table-warning': alerta.diasRestantes !== undefined && alerta.diasRestantes >= 0 && alerta.diasRestantes <= 7
+                  }">
+                <!-- Estado -->
+                <td style="padding: 0.6rem 0.5rem;">
+                  <span class="badge rounded-pill" [ngClass]="alerta.diasRestantes === undefined ? 'badge-normal' :
+                                   alerta.diasRestantes < 0 ? 'badge-vencido' :
+                                   alerta.diasRestantes <= 7 ? 'badge-critico' :
+                                   alerta.diasRestantes <= 30 ? 'badge-advertencia' : 'badge-normal'"
+                    style="padding: 0.4rem 1rem; font-weight: 500;">
+                    {{ alerta.diasRestantes === undefined ? 'Normal' :
+                    alerta.diasRestantes < 0 ? 'Vencido' : alerta.diasRestantes <=7 ? 'Crítico' : alerta.diasRestantes
+                      <=30 ? 'Advertencia' : 'Normal' }} </span>
+                </td>
+                <!-- Producto -->
+                <td style="padding: 0.6rem 0.5rem;">
+                  <span class="fw-semibold">{{ alerta.productoNombre }}</span>
+                </td>
+                <!-- Lote -->
+                <td style="padding: 0.6rem 0.5rem;">
+                  <code
+                    style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">{{ alerta.loteId || 'N/A' }}</code>
+                </td>
+                <!-- Stock -->
+                <td style="padding: 0.6rem 0.5rem;">
+                  <span class="fw-bold" [class.text-danger]="(alerta.cantidad || 0) <= 3">
+                    {{ alerta.cantidad || 0 }}
+                  </span>
+                </td>
+                <!-- Fecha Vencimiento -->
+                <td style="padding: 0.6rem 0.5rem;">
+                  {{ alerta.fechaVencimiento | date:'dd/MM/yyyy' }}
+                  <span *ngIf="alerta.diasRestantes !== undefined" class="badge ms-1" [ngClass]="{
+                          'badge-vencido': alerta.diasRestantes < 0,
+                          'badge-critico': alerta.diasRestantes >= 0 && alerta.diasRestantes <= 7,
+                          'badge-advertencia': alerta.diasRestantes > 7 && alerta.diasRestantes <= 30,
+                          'badge-normal': alerta.diasRestantes > 30
+                        }" style="font-size: 0.65rem; padding: 0.25rem 0.6rem;">
+                    {{ alerta.diasRestantes < 0 ? 'Vencido' : alerta.diasRestantes + ' días' }} </span>
+                </td>
+                <!-- Acciones -->
+                <td style="padding: 0.6rem 0.5rem;">
+                  <div class="d-flex justify-content-center gap-1">
+                    <a class="btn btn-sm btn-outline-primary rounded-circle" title="Ver producto"
+                      [routerLink]="['/productos', 'editar', alerta.productoId]"
+                      style="width: 32px; height: 32px; padding: 0;">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a *ngIf="alerta.tipo === 'proximo_vencer'" class="btn btn-sm btn-outline-warning rounded-circle"
+                      title="Ver lote" [routerLink]="['/lotes', 'editar', alerta.loteId]"
+                      style="width: 32px; height: 32px; padding: 0;">
+                      <i class="bi bi-box"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ======== PAGINACIÓN ======== -->
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top"
+          *ngIf="alertasVisibles.length > 0">
+          <div>
+            <span class="text-muted small">
+              Mostrando {{ (paginaActual - 1) * registrosPorPagina + 1 }} -
+              {{ Math.min(paginaActual * registrosPorPagina, alertasVisibles.length) }}
+              de {{ alertasVisibles.length }} alertas
+            </span>
+          </div>
+          <div class="btn-group" *ngIf="totalPaginas > 1">
+            <button class="btn btn-sm btn-outline-secondary" (click)="cambiarPagina(paginaActual - 1)"
+              [disabled]="paginaActual === 1" style="border-radius: 20px 0 0 20px;">
+              <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-secondary"
+              *ngFor="let p of [].constructor(totalPaginas); let i = index" (click)="cambiarPagina(i + 1)"
+              [class.active]="paginaActual === i + 1" style="border-radius: 0;">
+              {{ i + 1 }}
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="cambiarPagina(paginaActual + 1)"
+              [disabled]="paginaActual === totalPaginas" style="border-radius: 0 20px 20px 0;">
+              <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 

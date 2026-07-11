@@ -212,11 +212,28 @@ SELECT
     r.id,
     'Administrador del Sistema',
     'admin',
-    '$2a$12$PVRsw3SS.wGKwpu5ZKRXWOWszrROx4RHiIL3z6.qJKXVuDE9U.3Xu', -- admin123
+    '$2a$12$3vY0DqKluJYMPr4s.RrG5e4ZDOELikY3gGXaLZ.A8Fv8pleh8rb56', -- admin123
     TRUE
 FROM roles r
 WHERE r.nombre = 'admin'
 AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin');
 
+INSERT INTO roles (nombre, descripcion)
+SELECT 'vendedor', 'Personal de atención al público con acceso restringido'
+WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'vendedor');
+
+INSERT INTO usuarios (rol_id, nombre_completo, usuario, contrasena, activo)
+SELECT 
+    r.id,
+    'Vendedor del Sistema',
+    'vendedor',
+    '$2a$12$sQHGdNSrB9rfc94ihfWOTOoWjDg1RVdJ0LSqhTGnxq2PsZJcpFs7i', -- vendedor123
+    TRUE
+FROM roles r
+WHERE r.nombre = 'vendedor'
+AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'vendedor');
 
 
+
+select * from usuarios
+select * from roles
