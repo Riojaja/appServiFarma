@@ -134,4 +134,7 @@ public interface VentaService {
     List<Object[]> obtenerTotalVentasPorMedioPagoYPeriodo(LocalDateTime inicio, LocalDateTime fin);
     
     List<DetalleVentaResponse> obtenerDetallesVenta(Integer ventaId);
+    
+    void eliminarVentasPorCliente(Integer clienteId);
+    
 }

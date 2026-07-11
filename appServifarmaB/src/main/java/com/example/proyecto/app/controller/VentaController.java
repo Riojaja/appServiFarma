@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -62,6 +63,13 @@ public class VentaController {
         log.debug("Solicitud de venta con ID: {}", id);
         VentaResponse response = ventaService.obtenerVentaPorId(id);
         return ResponseEntity.ok(response);
+    }
+    
+    @DeleteMapping("/cliente/{clienteId}/historial")
+    public ResponseEntity<?> limpiarHistorialCliente(@PathVariable Integer clienteId) {
+        log.info("Solicitud para limpiar historial del cliente ID: {}", clienteId);
+        ventaService.eliminarVentasPorCliente(clienteId);
+        return ResponseEntity.ok(Map.of("mensaje", "Historial del cliente eliminado correctamente"));
     }
 
     @GetMapping
