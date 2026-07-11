@@ -1,88 +1,165 @@
 <div class="container-fluid mt-4">
-  <h2>Movimientos de Stock</h2>
 
-  <!-- Filtros -->
-  <div class="row g-3 mb-3">
-    <div class="col-md-3">
-      <label class="form-label">ID del Lote</label>
-      <input 
-        type="text" 
-        class="form-control" 
-        placeholder="Ej: 1" 
-        [(ngModel)]="filtroLote"
-      >
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-arrow-left-right" style="color: #4f46e5;"></i> Movimientos de Stock
+      </h2>
+      <p class="text-muted small mb-0" style="font-weight: 400;">Historial de movimientos de inventario</p>
     </div>
-    <div class="col-md-3">
-      <label class="form-label">Tipo</label>
-      <select class="form-select" [(ngModel)]="filtroTipo">
+    <span class="badge bg-light text-dark p-2 shadow-sm" style="border-radius: 30px;">
+      <i class="bi bi-database me-1"></i> {{ movimientosFiltrados.length }} registros
+    </span>
+  </div>
+
+  <!-- ======== FILTROS (AUTOMÁTICOS) ======== -->
+  <div class="row g-2 mb-3 align-items-center">
+    <!-- Lote -->
+    <div class="col-md-2">
+      <input type="text" class="form-control form-control-sm shadow-sm"
+             placeholder="ID del Lote"
+             [(ngModel)]="filtroLote"
+             (input)="aplicarFiltros()"
+             style="border-radius: 30px; border-color: #e5e7eb;">
+    </div>
+    <!-- Tipo -->
+    <div class="col-md-2">
+      <select class="form-select form-select-sm shadow-sm"
+              [(ngModel)]="filtroTipo"
+              (change)="aplicarFiltros()"
+              style="border-radius: 30px; border-color: #e5e7eb;">
         <option value="">Todos</option>
-        <option *ngFor="let tipo of tiposMovimiento" [value]="tipo">{{ tipo }}</option>
+        <option *ngFor="let tipo of tiposMovimiento" [value]="tipo">{{ tipo | titlecase }}</option>
       </select>
     </div>
-    <div class="col-md-3">
-      <label class="form-label">Fecha Inicio</label>
-      <input 
-        type="date" 
-        class="form-control" 
-        [(ngModel)]="filtroFechaInicio"
-      >
+    <!-- Fecha Inicio -->
+    <div class="col-md-2">
+      <input type="date" class="form-control form-control-sm shadow-sm"
+             [(ngModel)]="filtroFechaInicio"
+             (change)="aplicarFiltros()"
+             style="border-radius: 30px; border-color: #e5e7eb;">
     </div>
-    <div class="col-md-3">
-      <label class="form-label">Fecha Fin</label>
-      <input 
-        type="date" 
-        class="form-control" 
-        [(ngModel)]="filtroFechaFin"
-      >
+    <!-- Fecha Fin -->
+    <div class="col-md-2">
+      <input type="date" class="form-control form-control-sm shadow-sm"
+             [(ngModel)]="filtroFechaFin"
+             (change)="aplicarFiltros()"
+             style="border-radius: 30px; border-color: #e5e7eb;">
+    </div>
+    <!-- Botón Limpiar (diseño moderno) -->
+    <div class="col-md-2">
+      <button class="btn-limpiar-modern" (click)="limpiarFiltros()">
+        <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+      </button>
     </div>
   </div>
 
-  <div class="d-flex gap-2 mb-3">
-    <button class="btn btn-primary" (click)="aplicarFiltros()">
-      <i class="bi bi-funnel"></i> Aplicar Filtros
-    </button>
-    <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
-      <i class="bi bi-arrow-counterclockwise"></i> Limpiar
-    </button>
+  <!-- ======== SPINNER DE CARGA ======== -->
+  <div *ngIf="cargando" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
   </div>
 
-  <!-- Tabla -->
-  <div class="table-responsive">
-    <table class="table table-hover">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Producto</th>
-          <th>Lote</th>
-          <th>Tipo</th>
-          <th>Cantidad</th>
-          <th>Usuario</th>
-          <th>Fecha</th>
-          <th>Observación</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngIf="cargando">
-          <td colspan="8" class="text-center">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Cargando...</span>
-            </div>
-          </td>
-        </tr>
-        <tr *ngIf="!cargando && movimientos.length === 0">
-          <td colspan="8" class="text-center text-muted">No hay movimientos registrados</td>
-        </tr>
-        <tr *ngFor="let m of movimientos">
-          <td>{{ m.id }}</td>
-          <td>{{ m.nombreProducto || 'Producto #' + m.loteId }}</td>
-          <td>{{ m.loteId }}</td>
-          <td><span class="badge {{ getTipoBadge(m.tipoMovimiento) }}">{{ m.tipoMovimiento }}</span></td>
-          <td>{{ m.cantidad }}</td>
-          <td>{{ m.nombreUsuario || 'Usuario #' + m.usuarioId }}</td>
-          <td>{{ m.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ m.observacion || '-' }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <!-- ======== MENSAJE DE ERROR ======== -->
+  <div *ngIf="!cargando && error" class="alert alert-danger shadow-sm rounded-4">
+    <i class="bi bi-exclamation-triangle me-2"></i> {{ error }}
   </div>
+
+  <!-- ======== TABLA ======== -->
+  <div *ngIf="!cargando && !error" class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+          <thead class="table-light" style="border-bottom: 2px solid #e9ecef;">
+            <tr>
+              <!-- ❌ COLUMNA ID ELIMINADA -->
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Producto</th>
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Lote</th>
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Tipo</th>
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Cantidad</th>
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Usuario</th>
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Fecha</th>
+              <th style="padding: 0.8rem 0.6rem; font-weight: 600; color: #475569;">Observación</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="movimientosPaginados.length === 0">
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                No hay movimientos que coincidan con los filtros.
+              </td>
+            </tr>
+            <tr *ngFor="let m of movimientosPaginados">
+              <!-- Producto -->
+              <td style="padding: 0.6rem 0.5rem;">
+                <span class="fw-semibold">{{ m.nombreProducto || 'Producto #' + m.loteId }}</span>
+              </td>
+              <!-- Lote -->
+              <td style="padding: 0.6rem 0.5rem;">
+                <code style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">{{ m.loteId }}</code>
+              </td>
+              <!-- Tipo (con colores suaves) -->
+              <td style="padding: 0.6rem 0.5rem;">
+                <span class="badge rounded-pill" [ngClass]="getTipoBadge(m.tipoMovimiento)"
+                      style="padding: 0.4rem 1rem; font-weight: 500;">
+                  {{ m.tipoMovimiento | titlecase }}
+                </span>
+              </td>
+              <!-- Cantidad -->
+              <td style="padding: 0.6rem 0.5rem;">
+                <span class="fw-bold">{{ m.cantidad }}</span>
+              </td>
+              <!-- Usuario -->
+              <td style="padding: 0.6rem 0.5rem;">
+                {{ m.nombreUsuario || 'Usuario #' + m.usuarioId }}
+              </td>
+              <!-- Fecha -->
+              <td style="padding: 0.6rem 0.5rem;">
+                {{ m.fecha | date:'dd/MM/yyyy HH:mm' }}
+              </td>
+              <!-- Observación -->
+              <td style="padding: 0.6rem 0.5rem;">
+                {{ m.observacion || '-' }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ======== PAGINACIÓN ======== -->
+      <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top" *ngIf="movimientosFiltrados.length > 0">
+        <div>
+          <span class="text-muted small">
+            Mostrando {{ (paginaActual - 1) * registrosPorPagina + 1 }} -
+            {{ Math.min(paginaActual * registrosPorPagina, movimientosFiltrados.length) }}
+            de {{ movimientosFiltrados.length }} movimientos
+          </span>
+        </div>
+        <div class="btn-group" *ngIf="totalPaginas > 1">
+          <button class="btn btn-sm btn-outline-secondary"
+                  (click)="cambiarPagina(paginaActual - 1)"
+                  [disabled]="paginaActual === 1"
+                  style="border-radius: 20px 0 0 20px;">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-secondary"
+                  *ngFor="let p of [].constructor(totalPaginas); let i = index"
+                  (click)="cambiarPagina(i + 1)"
+                  [class.active]="paginaActual === i + 1"
+                  style="border-radius: 0;">
+            {{ i + 1 }}
+          </button>
+          <button class="btn btn-sm btn-outline-secondary"
+                  (click)="cambiarPagina(paginaActual + 1)"
+                  [disabled]="paginaActual === totalPaginas"
+                  style="border-radius: 0 20px 20px 0;">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
