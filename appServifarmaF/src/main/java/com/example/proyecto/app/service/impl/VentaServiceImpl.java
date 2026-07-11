@@ -271,5 +271,16 @@ public class VentaServiceImpl implements VentaService {
                 .map(detalleVentaMapper::toResponse)
                 .collect(Collectors.toList());
     }
+    
+    @Override
+    @Transactional
+    public void eliminarVentasPorCliente(Integer clienteId) {
+        List<Venta> ventas = ventaRepository.findByClienteId(clienteId);
+        if (ventas.isEmpty()) {
+            throw new ResourceNotFoundException("El cliente no tiene ventas para eliminar.");
+        }
+        ventaRepository.deleteAll(ventas);
+        log.info("Se eliminaron {} ventas del cliente ID: {}", ventas.size(), clienteId);
+    }
 
 }

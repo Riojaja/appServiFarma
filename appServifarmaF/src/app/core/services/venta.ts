@@ -63,4 +63,13 @@ export class VentaService {
   enviarBoletaCorreo(ventaId: number, correoDestino: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/${ventaId}/enviar-boleta`, { destino: correoDestino });
   }
+
+  /**
+ * Limpia todo el historial de compras de un cliente (elimina todas sus ventas)
+ * @param clienteId ID del cliente
+ * @returns Observable con el mensaje de confirmación
+ */
+  limpiarHistorialCliente(clienteId: number): Observable<{ mensaje: string }> {
+    return this.http.delete<{ mensaje: string }>(`${this.apiUrl}/cliente/${clienteId}/historial`);
+  }
 }

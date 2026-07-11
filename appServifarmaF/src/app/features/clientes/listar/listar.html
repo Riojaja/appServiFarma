@@ -3,94 +3,170 @@
   <!-- ======== ENCABEZADO ======== -->
   <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
     <div>
-      <h2 class="fw-bold mb-0">
-        <i class="bi bi-people text-primary me-2"></i>Clientes
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-people" style="color: #0d9488;"></i> Clientes
       </h2>
-      <p class="text-muted small mb-0">Historial de clientes registrados en el sistema</p>
+      <p class="text-muted small mb-0" style="font-weight: 400;">Gestión de clientes y su historial</p>
     </div>
-    <span class="badge bg-light text-dark p-2 shadow-sm">
-      <i class="bi bi-database me-1"></i> {{ clientesFiltrados.length }} registros
+    <span class="badge bg-light text-dark p-2 shadow-sm" style="border-radius: 30px;">
+      <i class="bi bi-database me-1"></i> {{ clientesFiltrados.length }} clientes
     </span>
   </div>
 
-  <!-- ======== BÚSQUEDA Y FILTROS ======== -->
-  <div class="row g-3 mb-4">
+  <!-- ======== FILTRO ======== -->
+  <div class="row g-2 mb-4">
     <div class="col-md-8">
-      <div class="input-group shadow-sm">
-        <span class="input-group-text bg-white border-end-0">
+      <div class="input-group shadow-sm" style="border-radius: 30px; overflow: hidden;">
+        <span class="input-group-text bg-white border-end-0" style="border-radius: 30px 0 0 30px;">
           <i class="bi bi-search text-muted"></i>
         </span>
-        <input type="text" class="form-control border-start-0" 
-               placeholder="Buscar por nombre, DNI, tipo de documento, teléfono o email..."
-               [(ngModel)]="filtroTexto" (keyup)="aplicarFiltro()">
-        <button class="btn btn-outline-danger" type="button" (click)="limpiarFiltro()" title="Limpiar filtros">
+        <input type="text" class="form-control border-start-0" style="border-radius: 0 30px 30px 0;"
+               placeholder="Buscar por nombre, DNI, teléfono o email..."
+               [(ngModel)]="filtroTexto" (input)="aplicarFiltro()">
+        <button class="btn btn-outline-danger" type="button" (click)="limpiarFiltro()"
+                style="border-radius: 0 30px 30px 0;">
           <i class="bi bi-x-circle"></i>
         </button>
       </div>
     </div>
+    <div class="col-md-4 text-md-end">
+      <span *ngIf="clienteSeleccionado" class="badge bg-primary p-2 rounded-pill">
+        <i class="bi bi-person me-1"></i> {{ clienteSeleccionado.nombre }}
+      </span>
+    </div>
   </div>
 
-  <!-- ======== TABLA ======== -->
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light" style="border-bottom: 2px solid #dee2e6;">
-            <tr>
-              <th style="width: 60px;">#</th>
-              <th>Nombre</th>
-              <th>Tipo Documento</th>
-              <th>Número Documento</th>
-              <th>Teléfono</th>
-              <th>Email</th>
-              <th class="text-center" style="width: 100px;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Cargando -->
-            <tr *ngIf="cargando">
-              <td colspan="7" class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Cargando...</span>
-                </div>
-              </td>
-            </tr>
-            <!-- Sin datos -->
-            <tr *ngIf="!cargando && clientesFiltrados.length === 0">
-              <td colspan="7" class="text-center py-5 text-muted">
-                <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                No hay clientes registrados
-              </td>
-            </tr>
-            <!-- Filas -->
-            <tr *ngFor="let cliente of clientesFiltrados; let i = index">
-              <td>{{ i + 1 }}</td>
-              <td><span class="fw-semibold">{{ cliente.nombre }}</span></td>
-              <td>
-                <span class="badge rounded-pill px-3 py-2" 
-                      [ngClass]="cliente.documentoTipo === 'DNI' ? 'bg-primary' : 
-                                 cliente.documentoTipo === 'RUC' ? 'bg-warning text-dark' : 'bg-info'">
-                  {{ cliente.documentoTipo }}
-                </span>
-              </td>
-              <td><span class="fw-semibold">{{ cliente.documentoNumero }}</span></td>
-              <td>{{ cliente.telefono || '-' }}</td>
-              <td>{{ cliente.email || '-' }}</td>
-              <td>
-                <div class="d-flex justify-content-center gap-1">
-                  <button *ngIf="auth.isAdmin()"
-                          class="btn btn-outline-danger btn-sm rounded-circle" 
-                          title="Eliminar cliente" style="width: 32px; height: 32px; padding: 0;"
-                          (click)="eliminar(cliente.id!)">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+  <!-- ======== CONTENEDOR PRINCIPAL ======== -->
+  <div class="row g-4">
+
+    <!-- ===== COLUMNA IZQUIERDA: LISTA DE CLIENTES ===== -->
+    <div class="col-lg-6">
+
+      <!-- SPINNER DE CARGA -->
+      <div *ngIf="cargando" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <!-- LISTA DE CLIENTES -->
+      <div *ngIf="!cargando" class="clientes-grid">
+        <div *ngIf="clientesFiltrados.length === 0" class="text-center py-5 text-muted">
+          <i class="bi bi-inbox display-4 d-block mb-2"></i>
+          No hay clientes registrados
+        </div>
+
+        <!-- Tarjeta de cliente (según diseño de la imagen) -->
+        <div *ngFor="let cliente of clientesFiltrados" class="card cliente-card shadow-sm border-0 rounded-4 mb-3"
+             [class.seleccionado]="clienteSeleccionado?.id === cliente.id">
+          <div class="card-body">
+
+            <!-- 1️⃣ AVATAR (izquierda) -->
+            <div class="avatar-circle" [style.background]="obtenerColorAvatar(cliente.nombre)">
+              {{ cliente.nombre.charAt(0).toUpperCase() }}
+            </div>
+
+            <!-- 2️⃣ DATOS DEL CLIENTE (centro, con botones debajo) -->
+            <div class="cliente-info flex-grow-1">
+              <div class="cliente-nombre">{{ cliente.nombre }}</div>
+              <div class="cliente-detalles">
+                <span><strong>DNI:</strong> {{ cliente.documentoNumero }}</span>
+                <span *ngIf="cliente.telefono"><strong>Tel:</strong> {{ cliente.telefono }}</span>
+                <span *ngIf="cliente.email"><strong>Email:</strong> {{ cliente.email }}</span>
+              </div>
+              <div class="cliente-ultima-compra">
+                <i class="bi bi-calendar3 me-1"></i>
+                Última compra: {{ cliente.ultimaCompra || 'Ninguna' }}
+              </div>
+            </div>
+
+            <!-- 3️⃣ BOTONES (derecha, centrados verticalmente con toda la fila) -->
+            <div class="cliente-botones">
+              <button class="btn btn-sm btn-farma-historial" 
+                      (click)="seleccionarCliente(cliente); $event.stopPropagation()">
+                <i class="bi bi-clock-history me-1"></i> Historial
+              </button>
+              <button *ngIf="isAdmin" class="btn btn-sm btn-farma-eliminar" 
+                      title="Eliminar cliente" (click)="eliminarCliente(cliente)">
+                <i class="bi bi-trash"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
       </div>
     </div>
+
+    <!-- ===== COLUMNA DERECHA: HISTORIAL DEL CLIENTE ===== -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+          <h5 class="card-title mb-0">
+            <i class="bi bi-clock-history text-primary me-2"></i>
+            Historial de Compras
+          </h5>
+          <button *ngIf="isAdmin && clienteSeleccionado" class="btn btn-sm btn-farma-limpiar"
+                  (click)="limpiarHistorial()">
+            <i class="bi bi-trash me-1"></i> Limpiar
+          </button>
+        </div>
+        <div class="card-body historial-card-body">
+
+          <!-- Spinner de carga -->
+          <div *ngIf="cargandoHistorial" class="text-center py-4">
+            <div class="spinner-border spinner-border-sm text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <span class="text-muted ms-2">Cargando historial...</span>
+          </div>
+
+          <!-- Sin cliente seleccionado -->
+          <div *ngIf="!clienteSeleccionado && !cargandoHistorial" class="text-center py-5 text-muted">
+            <i class="bi bi-person display-4 d-block mb-2"></i>
+            Selecciona un cliente para ver su historial
+          </div>
+
+          <!-- Sin historial -->
+          <div *ngIf="clienteSeleccionado && historialVentas.length === 0 && !cargandoHistorial"
+               class="text-center py-5 text-muted">
+            <i class="bi bi-inbox display-4 d-block mb-2"></i>
+            No hay compras registradas para este cliente
+          </div>
+
+          <!-- Lista de historial con scroll (rediseñado estilo farmacéutico) -->
+          <div *ngIf="clienteSeleccionado && historialVentas.length > 0 && !cargandoHistorial"
+               class="historial-container">
+            <div *ngFor="let venta of historialVentas" class="historial-item">
+
+              <!-- Ícono circular (izquierda) -->
+              <div class="historial-icono">
+                <i class="bi bi-receipt"></i>
+              </div>
+
+              <!-- Info de la venta (centro/derecha) -->
+              <div class="historial-info">
+                <div class="historial-top">
+                  <span class="historial-fecha">
+                    <i class="bi bi-calendar3 me-1"></i>
+                    {{ venta.fecha | date:'dd/MM/yyyy HH:mm' }}
+                  </span>
+                  <span class="historial-total">S/ {{ venta.total | number:'1.2-2' }}</span>
+                </div>
+                <div class="historial-productos">
+                  <span *ngFor="let detalle of venta.detalles; let i = index">
+                    {{ detalle.productoNombre || 'Producto #' + detalle.loteId }}
+                    <span *ngIf="i < venta.detalles!.length - 1">, </span>
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
   </div>
 
 </div>

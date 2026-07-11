@@ -17,7 +17,7 @@ export interface Venta {
 export interface DetalleVenta {
   id?: number;
   ventaId: number;
-  loteId: number;
+  loteId: number;        // <--- Usar este para identificar
   cantidad: number;
   precioUnitarioVenta: number;
   precioCompraUnitario: number;
@@ -26,14 +26,13 @@ export interface DetalleVenta {
   loteNumero?: string;
   createdAt?: string;
 }
-
 export interface VentaRequest {
   usuarioId: number;
   clienteId?: number;
   medioPago: 'efectivo' | 'tarjeta' | 'transferencia' | 'yape';
   codigoAutorizacion?: string;
   detalles: DetalleVentaRequest[];
-  cajaId: number; 
+  cajaId: number;
 }
 
 export interface DetalleVentaRequest {

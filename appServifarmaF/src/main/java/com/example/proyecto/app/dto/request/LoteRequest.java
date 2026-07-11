@@ -48,4 +48,6 @@ public class LoteRequest {
     @NotNull(message = "El precio de venta es obligatorio")
     @Positive(message = "El precio de venta debe ser mayor a cero")
     private BigDecimal precioVenta;
+    
+    private Integer usuarioId;
 }

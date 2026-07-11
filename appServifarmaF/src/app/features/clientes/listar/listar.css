@@ -1,36 +1,370 @@
+/* ==============================
+   CLIENTES - DISEÑO FARMACÉUTICO
+   ============================== */
+
 .container-fluid {
-  padding-bottom: 2rem;
+  padding: 0 1.5rem;
 }
 
-.table th {
-  border-top: none;
-  font-weight: 600;
-  color: #6c757d;
+/* --- Filtro --- */
+.input-group .form-control:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 0.2rem rgba(13, 148, 136, 0.15);
 }
 
-.btn-group .btn {
-  padding: 0.25rem 0.5rem;
+/* --- Grid de tarjetas --- */
+.clientes-grid {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.clientes-grid::-webkit-scrollbar {
+  width: 4px;
+}
+.clientes-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.clientes-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.clientes-grid::-webkit-scrollbar-thumb:hover {
+  background: #0d9488;
 }
 
-/* Estilos para el listado de clientes */
-.badge.rounded-pill {
+/* --- Tarjeta de cliente --- */
+.cliente-card {
+  transition: all 0.25s ease;
+  cursor: pointer;
+  border: 2px solid transparent !important;
+  background: #ffffff;
+}
+.cliente-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(13, 148, 136, 0.10) !important;
+}
+.cliente-card.seleccionado {
+  border-color: #0d9488 !important;
+  background: #f0fdfa;
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.15) !important;
+}
+
+/* --- Card body --- */
+.cliente-card .card-body {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+}
+
+/* --- Avatar --- */
+.avatar-circle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* --- Información del cliente --- */
+.cliente-info {
+  flex: 1;
+  min-width: 0;
+}
+.cliente-nombre {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+  margin-bottom: 2px;
+}
+.cliente-detalles {
+  font-size: 0.82rem;
+  color: #475569;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+.cliente-detalles span {
+  white-space: nowrap;
+}
+.cliente-ultima-compra {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* --- Botones (a la derecha, misma fila que avatar + info) --- */
+.cliente-botones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* ==============================
+   BOTONES FARMACÉUTICOS
+   ============================== */
+
+/* Botón Historial */
+.btn-farma-historial {
+  background: #0d9488;
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 4px 16px;
   font-weight: 500;
-  letter-spacing: 0.3px;
-  min-width: 70px;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-farma-historial:hover {
+  background: #0f766e;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25);
 }
 
-.btn-sm.rounded-circle {
+/* Botón Eliminar (círculo) */
+.btn-farma-eliminar {
+  background: transparent;
+  color: #dc2626;
+  border: 1.5px solid #dc2626;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+.btn-farma-eliminar:hover {
+  background: #dc2626;
+  color: #fff;
+  transform: scale(1.05);
 }
 
-.table > :not(caption) > * > * {
-  padding: 0.8rem 0.6rem;
+/* Botón Limpiar Historial */
+.btn-farma-limpiar {
+  background: transparent;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+  border-radius: 30px;
+  padding: 2px 14px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.btn-farma-limpiar:hover {
+  background: #dc2626;
+  color: #fff;
 }
 
-/* Animación suave para el hover de la tabla */
-.table-hover tbody tr {
-  transition: background-color 0.2s ease;
+/* ==============================
+   HISTORIAL DE COMPRAS (rediseñado)
+   ============================== */
+.historial-container {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.historial-container::-webkit-scrollbar {
+  width: 6px;
+}
+.historial-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.historial-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.historial-container::-webkit-scrollbar-thumb:hover {
+  background: #0d9488;
+}
+
+.historial-card-body {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tarjeta de cada venta, estilo alineado a la tarjeta de cliente */
+.historial-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 16px;
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+}
+.historial-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(13, 148, 136, 0.10);
+  border-color: #f0fdfa;
+}
+
+/* Ícono circular tipo "avatar" para cada venta */
+.historial-icono {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #0d9488;
+  color: #fff;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  margin-top: 2px;
+}
+
+.historial-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.historial-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.historial-fecha {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+/* Badge de total, tipo píldora igual que el resto del diseño */
+.historial-total {
+  background: #0d9488;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 3px 14px;
+  border-radius: 30px;
+  white-space: nowrap;
+}
+
+.historial-productos {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ==============================
+   SWEETALERT2 - DISEÑO FARMACÉUTICO
+   ============================== */
+.swal-farmaceutico {
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(13, 148, 136, 0.15) !important;
+  border: 2px solid #f0fdfa !important;
+}
+.swal-farmaceutico .swal2-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  font-size: 1.5rem !important;
+}
+.swal-farmaceutico .swal2-content {
+  color: #475569 !important;
+  font-size: 1rem !important;
+}
+.swal-farmaceutico .swal2-icon {
+  border-color: #0d9488 !important;
+}
+.swal-farmaceutico .swal2-icon.swal2-success {
+  border-color: #0d9488 !important;
+}
+.swal-farmaceutico .swal2-icon.swal2-success .swal2-success-ring {
+  border-color: #0d9488 !important;
+}
+.swal-farmaceutico .swal2-icon.swal2-warning {
+  border-color: #f59e0b !important;
+}
+.swal-farmaceutico .swal2-icon.swal2-error {
+  border-color: #dc2626 !important;
+}
+
+.btn-farma-confirm {
+  background: #0d9488 !important;
+  border-radius: 30px !important;
+  padding: 8px 24px !important;
+  font-weight: 600 !important;
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25) !important;
+}
+.btn-farma-confirm:hover {
+  background: #0f766e !important;
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.35) !important;
+}
+.btn-farma-cancel {
+  border-radius: 30px !important;
+  padding: 8px 24px !important;
+  font-weight: 600 !important;
+  border: 1px solid #d1d5db !important;
+  background: #f9fafb !important;
+  color: #1f2937 !important;
+}
+.btn-farma-cancel:hover {
+  background: #f3f4f6 !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  /* El avatar y la info siguen en fila (como en el diseño de referencia);
+     solo se reduce el espaciado, sin pasar a columna. */
+  .cliente-card .card-body {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .cliente-detalles {
+    gap: 4px 10px;
+  }
+  .cliente-botones {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .container-fluid {
+    padding: 0 0.75rem;
+  }
+  .avatar-circle {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
+  }
+  .historial-icono {
+    width: 34px;
+    height: 34px;
+    font-size: 0.9rem;
+  }
+  .historial-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .historial-total {
+    align-self: flex-start;
+  }
 }

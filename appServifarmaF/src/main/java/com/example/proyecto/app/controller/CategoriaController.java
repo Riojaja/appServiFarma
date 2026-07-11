@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -77,6 +78,7 @@ public class CategoriaController {
     // OPERACIONES DE ELIMINACIÓN
     // ==============================
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<MensajeResponse> eliminarCategoria(@PathVariable Integer id) {
         log.debug("Solicitud de eliminación de categoría con ID: {}", id);

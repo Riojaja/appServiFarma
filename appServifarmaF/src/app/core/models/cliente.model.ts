@@ -6,5 +6,6 @@ export interface Cliente {
   telefono?: string;
   direccion?: string;
   email?: string;
-  createdAt?: string; 
+  ultimaCompra?: string; // 🔥 AGREGAR
+  createdAt?: string;
 }

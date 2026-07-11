@@ -108,9 +108,9 @@ export class ListarComponent implements OnInit {
           hoy.setHours(0, 0, 0, 0);
           const limite = new Date(hoy);
           limite.setDate(limite.getDate() + 30);
-          filtrados = data.filter(l => 
-            l.estado === 'activo' && 
-            new Date(l.fechaVencimiento) >= hoy && 
+          filtrados = data.filter(l =>
+            l.estado === 'activo' &&
+            new Date(l.fechaVencimiento) >= hoy &&
             new Date(l.fechaVencimiento) <= limite
           );
         }
@@ -139,22 +139,22 @@ export class ListarComponent implements OnInit {
       const id = Number(this.filtroProducto);
       if (!isNaN(id)) {
         this.loteService.listarPorProducto(id).subscribe({
-          next: (data) => { 
-            this.lotes = data; 
-            this.aplicarFiltros(); 
+          next: (data) => {
+            this.lotes = data;
+            this.aplicarFiltros();
           },
           error: (err) => console.error(err)
         });
       } else {
         this.loteService.buscarPorLote(this.filtroProducto).subscribe({
-          next: (data) => { 
-            this.lotes = [data]; 
-            this.aplicarFiltros(); 
+          next: (data) => {
+            this.lotes = [data];
+            this.aplicarFiltros();
           },
           error: (err) => {
-            if (err.status === 404) { 
-              this.lotes = []; 
-              this.aplicarFiltros(); 
+            if (err.status === 404) {
+              this.lotes = [];
+              this.aplicarFiltros();
             } else {
               console.error(err);
             }
@@ -194,9 +194,9 @@ export class ListarComponent implements OnInit {
   }
 
   calcularAlertas(): void {
-    const hoy = new Date(); 
+    const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    const limite = new Date(hoy); 
+    const limite = new Date(hoy);
     limite.setDate(limite.getDate() + 30);
     this.stockBajo = this.lotes.filter(l => l.estado === 'activo' && l.cantidad <= 10);
     this.proximoVencer = this.lotes.filter(l => {
@@ -208,9 +208,9 @@ export class ListarComponent implements OnInit {
   }
 
   diasParaVencer(fechaVencimiento: string): number {
-    const hoy = new Date(); 
+    const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    const venc = new Date(fechaVencimiento); 
+    const venc = new Date(fechaVencimiento);
     venc.setHours(0, 0, 0, 0);
     return Math.ceil((venc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
   }
@@ -242,13 +242,13 @@ export class ListarComponent implements OnInit {
 
   // ======== OFFCANVAS CREAR ========
   abrirOffcanvasCrear(): void {
-    this.nuevoLote = { 
-      productoId: null, 
-      lote: '', 
-      fechaVencimiento: '', 
-      cantidad: 1, 
-      precioVenta: 0, 
-      estado: 'activo' 
+    this.nuevoLote = {
+      productoId: null,
+      lote: '',
+      fechaVencimiento: '',
+      cantidad: 1,
+      precioVenta: 0,
+      estado: 'activo'
     };
     this.offcanvasCrearAbierto = true;
   }
@@ -264,7 +264,14 @@ export class ListarComponent implements OnInit {
       return;
     }
     this.guardando = true;
-    this.loteService.crear(this.nuevoLote).subscribe({
+
+    // 🔥 AGREGAR usuarioId al objeto
+    const loteConUsuario = {
+      ...this.nuevoLote,
+      usuarioId: this.authService.getUsuarioId() // Obtener ID del usuario logueado
+    };
+
+    this.loteService.crear(loteConUsuario).subscribe({
       next: () => {
         this.guardando = false;
         this.cerrarOffcanvasCrear();
@@ -339,10 +346,10 @@ export class ListarComponent implements OnInit {
     this.loteService.obtener(id).subscribe({
       next: (data: Lote) => {
         this.loteAjustar = data;
-        this.formAjustar.patchValue({ 
-          tipoMovimiento: 'ajuste', 
-          cantidad: '', 
-          observacion: '' 
+        this.formAjustar.patchValue({
+          tipoMovimiento: 'ajuste',
+          cantidad: '',
+          observacion: ''
         });
         this.cargando = false;
       },
