@@ -45,6 +45,7 @@ public class CategoriaController {
     // ==============================
     // OPERACIONES DE CONSULTA
     // ==============================
+   
 
     @GetMapping
     public ResponseEntity<List<CategoriaResponse>> listarTodas() {

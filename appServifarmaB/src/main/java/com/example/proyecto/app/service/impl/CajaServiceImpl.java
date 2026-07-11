@@ -16,7 +16,7 @@ import com.example.proyecto.app.repository.UsuarioRepository;
 import com.example.proyecto.app.repository.VentaRepository;
 import com.example.proyecto.app.service.BitacoraComunicacionService;
 import com.example.proyecto.app.service.CajaService;
-import com.example.proyecto.app.util.SecurityUtils;
+
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

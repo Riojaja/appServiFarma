@@ -162,6 +162,6 @@ public interface ProductoRepository extends JpaRepository<Producto, Integer> {
      * Útil para alertas de reposición.
      */
    
-   
+  
 
 }
