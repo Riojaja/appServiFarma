@@ -4,6 +4,7 @@ import com.example.proyecto.app.dto.request.AperturaCajaRequest;
 import com.example.proyecto.app.dto.request.CierreCajaRequest;
 import com.example.proyecto.app.dto.response.CajaResponse;
 import com.example.proyecto.app.dto.response.CierreCajaResponse;
+import com.example.proyecto.app.entity.BitacoraComunicacion;
 import com.example.proyecto.app.entity.Caja;
 import com.example.proyecto.app.entity.Usuario;
 import com.example.proyecto.app.entity.Venta;
@@ -13,9 +14,13 @@ import com.example.proyecto.app.mapper.CajaMapper;
 import com.example.proyecto.app.repository.CajaRepository;
 import com.example.proyecto.app.repository.UsuarioRepository;
 import com.example.proyecto.app.repository.VentaRepository;
+import com.example.proyecto.app.service.BitacoraComunicacionService;
 import com.example.proyecto.app.service.CajaService;
+import com.example.proyecto.app.util.SecurityUtils;
+
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,16 +29,19 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CajaServiceImpl implements CajaService {
 
+    private static final Logger log = LoggerFactory.getLogger(CajaServiceImpl.class);
+
     private final CajaRepository cajaRepository;
     private final UsuarioRepository usuarioRepository;
     private final VentaRepository ventaRepository;
     private final CajaMapper cajaMapper;
+    private final BitacoraComunicacionService bitacoraService;
+ 
 
     // ==============================
     // OPERACIONES DE APERTURA Y CIERRE
@@ -51,7 +59,7 @@ public class CajaServiceImpl implements CajaService {
             throw new CajaCerradaException("El usuario ya tiene una caja abierta. Debe cerrarla antes de abrir otra.");
         }
 
-        // 3. Validar que no haya ninguna caja abierta en el sistema (opcional, según lógica de negocio)
+        // 3. Validar que no haya ninguna caja abierta en el sistema
         if (cajaRepository.findFirstByEstadoOrderByFechaAperturaDesc(Caja.EstadoCaja.abierta).isPresent()) {
             throw new CajaCerradaException("Ya existe una caja abierta en el sistema. Solo puede haber una caja abierta a la vez.");
         }
@@ -67,6 +75,30 @@ public class CajaServiceImpl implements CajaService {
         Caja saved = cajaRepository.save(caja);
         log.info("Caja abierta: ID {}, Usuario: {}, Monto inicial: {}",
                 saved.getId(), usuario.getUsuario(), saved.getMontoApertura());
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            String mensaje = String.format(
+                    "💰 Caja abierta por %s - Monto inicial: S/ %.2f",
+                    usuario.getUsuario(),
+                    saved.getMontoApertura()
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuario.getId())
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.novedad)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para apertura de caja #{}", saved.getId());
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para apertura de caja: {}", e.getMessage());
+            // No propagamos la excepción para no interrumpir el flujo principal
+        }
 
         return cajaMapper.toResponse(saved);
     }
@@ -97,6 +129,41 @@ public class CajaServiceImpl implements CajaService {
         Caja saved = cajaRepository.save(caja);
         log.info("Caja cerrada: ID {}, Usuario: {}, Total ventas: {}, Monto declarado: {}, Diferencia: {}",
                 saved.getId(), usuario.getUsuario(), totalVentas, request.getMontoCierreDeclarado(), diferencia);
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            String diferenciaTexto = diferencia.compareTo(BigDecimal.ZERO) >= 0
+                    ? "(Sobrante: S/ " + diferencia.abs() + ")"
+                    : "(Faltante: S/ " + diferencia.abs() + ")";
+
+            // Si la diferencia es mayor a 5 soles, se considera incidencia, sino novedad
+            BitacoraComunicacion.Tipo tipo = diferencia.abs().compareTo(new BigDecimal("5")) > 0
+                    ? BitacoraComunicacion.Tipo.incidencia
+                    : BitacoraComunicacion.Tipo.novedad;
+
+            String mensaje = String.format(
+                    "🔒 Caja cerrada por %s - Total ventas: S/ %.2f - Monto declarado: S/ %.2f - Diferencia: S/ %.2f %s",
+                    usuario.getUsuario(),
+                    totalVentas,
+                    request.getMontoCierreDeclarado(),
+                    diferencia.abs(),
+                    diferenciaTexto
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuario.getId())
+                            .mensaje(mensaje)
+                            .tipo(tipo)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para cierre de caja #{}", saved.getId());
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para cierre de caja: {}", e.getMessage());
+        }
 
         // 6. Construir respuesta
         return CierreCajaResponse.builder()
@@ -194,9 +261,6 @@ public class CajaServiceImpl implements CajaService {
         if (!cajaRepository.existsById(cajaId)) {
             throw new ResourceNotFoundException("Caja con ID " + cajaId + " no encontrada.");
         }
-        // Nota: Este método depende de una consulta personalizada en VentaRepository.
-        // Si no existe, se puede implementar o adaptar según la necesidad.
-        // Se deja como placeholder para que se pueda implementar en el futuro.
         throw new UnsupportedOperationException("Método no implementado aún: obtenerTotalVentasPorMedioPago");
     }
 }

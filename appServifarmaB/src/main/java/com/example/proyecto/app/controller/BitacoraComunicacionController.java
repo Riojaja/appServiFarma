@@ -7,7 +7,8 @@ import com.example.proyecto.app.entity.BitacoraComunicacion;
 import com.example.proyecto.app.service.BitacoraComunicacionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +17,12 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Slf4j
 @RestController
 @RequestMapping("/api/bitacora-comunicacion")
 @RequiredArgsConstructor
 public class BitacoraComunicacionController {
+
+    private static final Logger log = LoggerFactory.getLogger(BitacoraComunicacionController.class);
 
     private final BitacoraComunicacionService bitacoraService;
 

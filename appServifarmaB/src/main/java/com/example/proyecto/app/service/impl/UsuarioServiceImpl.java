@@ -1,6 +1,5 @@
 package com.example.proyecto.app.service.impl;
 
-
 import com.example.proyecto.app.dto.request.UsuarioRequest;
 import com.example.proyecto.app.dto.response.UsuarioResponse;
 import com.example.proyecto.app.entity.Rol;
@@ -12,6 +11,8 @@ import com.example.proyecto.app.repository.RolRepository;
 import com.example.proyecto.app.repository.UsuarioRepository;
 import com.example.proyecto.app.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UsuarioServiceImpl implements UsuarioService {
+
+    private static final Logger log = LoggerFactory.getLogger(UsuarioServiceImpl.class);
 
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
@@ -50,6 +53,10 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         // Guardar
         Usuario saved = usuarioRepository.save(usuario);
+
+        // Log de ejemplo (corregido: dos placeholders y dos argumentos)
+        log.info("Usuario creado: {} (ID: {})", saved.getUsuario(), saved.getId());
+
         return usuarioMapper.toResponse(saved);
     }
 

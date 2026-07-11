@@ -9,10 +9,13 @@ import com.example.proyecto.app.exception.*;
 import com.example.proyecto.app.mapper.DetalleVentaMapper;
 import com.example.proyecto.app.mapper.VentaMapper;
 import com.example.proyecto.app.repository.*;
+import com.example.proyecto.app.service.BitacoraComunicacionService;
 import com.example.proyecto.app.service.InventarioService;
 import com.example.proyecto.app.service.VentaService;
+import com.example.proyecto.app.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +25,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class VentaServiceImpl implements VentaService {
+
+    private static final Logger log = LoggerFactory.getLogger(VentaServiceImpl.class);
 
     private final VentaRepository ventaRepository;
     private final DetalleVentaRepository detalleVentaRepository;
@@ -37,6 +41,9 @@ public class VentaServiceImpl implements VentaService {
     private final InventarioService inventarioService;
     private final VentaMapper ventaMapper;
     private final DetalleVentaMapper detalleVentaMapper;
+    private final BitacoraComunicacionService bitacoraService;
+    private final SecurityUtils securityUtils;
+
     // ==============================
     // OPERACIÓN PRINCIPAL: REGISTRAR VENTA
     // ==============================
@@ -106,9 +113,9 @@ public class VentaServiceImpl implements VentaService {
             BigDecimal subtotal = lote.getPrecioVenta().multiply(BigDecimal.valueOf(detalleReq.getCantidad()));
             totalVenta = totalVenta.add(subtotal);
 
-            // Crear detalle de venta (sin asociar a la venta aún para evitar guardados parciales en caso de error)
+            // Crear detalle de venta
             DetalleVenta detalle = DetalleVenta.builder()
-                    .venta(savedVenta) // Asociar a la venta guardada
+                    .venta(savedVenta)
                     .lote(lote)
                     .cantidad(detalleReq.getCantidad())
                     .precioUnitarioVenta(lote.getPrecioVenta())
@@ -127,7 +134,6 @@ public class VentaServiceImpl implements VentaService {
         Venta ventaFinal = ventaRepository.save(savedVenta);
 
         // 9. Descontar el stock de cada lote y registrar movimientos
-        //    (Esto debe hacerse después de confirmar que todos los detalles se guardaron correctamente)
         for (DetalleVenta detalle : detallesGuardados) {
             inventarioService.descontarStock(
                     detalle.getLote().getId(),
@@ -138,6 +144,33 @@ public class VentaServiceImpl implements VentaService {
         }
 
         log.info("Venta registrada exitosamente. ID: {}, Total: {}", ventaFinal.getId(), totalVenta);
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            String clienteInfo = (cliente != null) ? " - Cliente: " + cliente.getNombre() : " - Cliente: General";
+            String mensaje = String.format(
+                    "🛒 Venta registrada - Total: S/ %.2f - Usuario: %s %s - Medio de pago: %s",
+                    totalVenta,
+                    usuario.getUsuario(),
+                    clienteInfo,
+                    request.getMedioPago().name()
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuario.getId())
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.novedad)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para venta ID: {}", ventaFinal.getId());
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para venta: {}", e.getMessage());
+        }
+
         return ventaMapper.toResponse(ventaFinal);
     }
 
@@ -156,11 +189,36 @@ public class VentaServiceImpl implements VentaService {
         }
 
         // Opcional: Aquí se podría revertir el stock, pero la lógica de negocio puede no requerirlo.
-        // Por ahora, solo cambiamos el estado.
         venta.setEstado(Venta.EstadoVenta.anulada);
         ventaRepository.save(venta);
 
         log.info("Venta anulada: ID {}", id);
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            // Obtener usuario autenticado o usar sistema
+            Integer usuarioId = getUsuarioId();
+
+            String mensaje = String.format(
+                    "🚫 Venta anulada - ID: %d - Total: S/ %.2f",
+                    id,
+                    venta.getTotal()
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuarioId)
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.incidencia)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para anulación de venta ID: {}", id);
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para anulación de venta: {}", e.getMessage());
+        }
     }
 
     // ==============================
@@ -260,7 +318,6 @@ public class VentaServiceImpl implements VentaService {
             throw new IllegalArgumentException("La fecha de inicio no puede ser posterior a la fecha de fin.");
         }
         // Nota: Este método requiere una consulta personalizada en VentaRepository.
-        // Se debe implementar si no existe.
         throw new UnsupportedOperationException("Método pendiente de implementar: obtenerTotalVentasPorMedioPagoYPeriodo");
     }
     
@@ -279,8 +336,56 @@ public class VentaServiceImpl implements VentaService {
         if (ventas.isEmpty()) {
             throw new ResourceNotFoundException("El cliente no tiene ventas para eliminar.");
         }
+
+        // Obtener nombre del cliente para el mensaje (opcional)
+        String nombreCliente = "Cliente ID: " + clienteId;
+        try {
+            Cliente cliente = clienteRepository.findById(clienteId).orElse(null);
+            if (cliente != null) {
+                nombreCliente = cliente.getNombre();
+            }
+        } catch (Exception e) {
+            // Ignorar
+        }
+
         ventaRepository.deleteAll(ventas);
         log.info("Se eliminaron {} ventas del cliente ID: {}", ventas.size(), clienteId);
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            Integer usuarioId = getUsuarioId();
+            String mensaje = String.format(
+                    "🗑️ Eliminación masiva de ventas - Cliente: %s - Cantidad: %d",
+                    nombreCliente,
+                    ventas.size()
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuarioId)
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.incidencia)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para eliminación masiva de ventas del cliente ID: {}", clienteId);
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para eliminación de ventas: {}", e.getMessage());
+        }
     }
 
+    // ==============================
+    // MÉTODO AUXILIAR PARA OBTENER USUARIO
+    // ==============================
+
+    private Integer getUsuarioId() {
+        try {
+            return securityUtils.getUsuarioAutenticado().getId();
+        } catch (Exception e) {
+            log.debug("No se pudo obtener usuario autenticado, usando usuario sistema (ID 1)");
+            return 1; // Usuario sistema por defecto
+        }
+    }
 }

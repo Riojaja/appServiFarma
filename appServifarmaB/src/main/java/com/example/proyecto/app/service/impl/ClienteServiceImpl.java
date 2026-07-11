@@ -9,6 +9,8 @@ import com.example.proyecto.app.mapper.ClienteMapper;
 import com.example.proyecto.app.repository.ClienteRepository;
 import com.example.proyecto.app.service.ClienteService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ClienteServiceImpl implements ClienteService {
+
+    private static final Logger log = LoggerFactory.getLogger(ClienteServiceImpl.class);
 
     private final ClienteRepository clienteRepository;
     private final ClienteMapper clienteMapper;
@@ -33,6 +37,7 @@ public class ClienteServiceImpl implements ClienteService {
 
         Cliente cliente = clienteMapper.toEntity(request);
         Cliente saved = clienteRepository.save(cliente);
+        log.info("Cliente creado: {} (ID: {}, Documento: {})", saved.getNombre(), saved.getId(), saved.getDocumentoNumero());
         return clienteMapper.toResponse(saved);
     }
 
@@ -58,6 +63,7 @@ public class ClienteServiceImpl implements ClienteService {
         cliente.setEmail(request.getEmail());
 
         Cliente updated = clienteRepository.save(cliente);
+        log.info("Cliente actualizado: {} (ID: {})", updated.getNombre(), updated.getId());
         return clienteMapper.toResponse(updated);
     }
 
@@ -109,6 +115,7 @@ public class ClienteServiceImpl implements ClienteService {
         //     throw new BusinessException("No se puede eliminar el cliente porque tiene ventas asociadas.");
         // }
         clienteRepository.deleteById(id);
+        log.info("Cliente eliminado con ID: {}", id);
     }
 
     @Override

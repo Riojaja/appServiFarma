@@ -2,10 +2,7 @@ package com.example.proyecto.app.service.impl;
 
 import com.example.proyecto.app.dto.request.ProductoRequest;
 import com.example.proyecto.app.dto.response.ProductoResponse;
-import com.example.proyecto.app.entity.Categoria;
-import com.example.proyecto.app.entity.Fabricante;
-import com.example.proyecto.app.entity.Lote;
-import com.example.proyecto.app.entity.Producto;
+import com.example.proyecto.app.entity.*;
 import com.example.proyecto.app.exception.BusinessException;
 import com.example.proyecto.app.exception.DuplicadoException;
 import com.example.proyecto.app.exception.ResourceNotFoundException;
@@ -14,8 +11,12 @@ import com.example.proyecto.app.repository.CategoriaRepository;
 import com.example.proyecto.app.repository.FabricanteRepository;
 import com.example.proyecto.app.repository.LoteRepository;
 import com.example.proyecto.app.repository.ProductoRepository;
+import com.example.proyecto.app.service.BitacoraComunicacionService;
 import com.example.proyecto.app.service.ProductoService;
+import com.example.proyecto.app.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +28,15 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ProductoServiceImpl implements ProductoService {
 
+    private static final Logger log = LoggerFactory.getLogger(ProductoServiceImpl.class);
+
     private final ProductoRepository productoRepository;
     private final FabricanteRepository fabricanteRepository;
     private final CategoriaRepository categoriaRepository;
     private final LoteRepository loteRepository;
     private final ProductoMapper productoMapper;
+    private final BitacoraComunicacionService bitacoraService;
+    private final SecurityUtils securityUtils;
 
     // ==============================
     // OPERACIONES CRUD BÁSICAS
@@ -73,6 +78,38 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setProductoGenerico(productoGenerico);
 
         Producto saved = productoRepository.save(producto);
+        log.info("Producto creado: {} (ID: {})", saved.getNombre(), saved.getId());
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            String categoriaNombre = categoria != null ? categoria.getNombre() : "Sin categoría";
+            String fabricanteNombre = fabricante != null ? fabricante.getNombre() : "Sin fabricante";
+
+            String mensaje = String.format(
+                    "📦 Nuevo producto registrado: %s - Categoría: %s - Fabricante: %s - Precio: S/ %.2f",
+                    saved.getNombre(),
+                    categoriaNombre,
+                    fabricanteNombre,
+                    saved.getPrecioVentaActual()
+            );
+
+            Integer usuarioId = getUsuarioId();
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuarioId)
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.novedad)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para nuevo producto ID: {}", saved.getId());
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para nuevo producto: {}", e.getMessage());
+        }
+
         return productoMapper.toResponse(saved);
     }
 
@@ -110,13 +147,40 @@ public class ProductoServiceImpl implements ProductoService {
                     .orElseThrow(() -> new ResourceNotFoundException("Producto genérico con ID " + request.getProductoGenericoId() + " no encontrado."));
         }
 
-        // 6. Actualizar datos (el mapper ignora los campos null para no sobreescribir con null)
+        // 6. Actualizar datos
         productoMapper.updateEntity(producto, request);
         producto.setCategoria(categoria);
         producto.setFabricante(fabricante);
         producto.setProductoGenerico(productoGenerico);
 
         Producto updated = productoRepository.save(producto);
+        log.info("Producto actualizado: {} (ID: {})", updated.getNombre(), updated.getId());
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            Integer usuarioId = getUsuarioId();
+            String mensaje = String.format(
+                    "✏️ Producto actualizado: %s (ID: %d) - Nuevo precio: S/ %.2f",
+                    updated.getNombre(),
+                    updated.getId(),
+                    updated.getPrecioVentaActual()
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuarioId)
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.novedad)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para actualización de producto ID: {}", id);
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para actualización de producto: {}", e.getMessage());
+        }
+
         return productoMapper.toResponse(updated);
     }
 
@@ -138,9 +202,8 @@ public class ProductoServiceImpl implements ProductoService {
     @Transactional
     public void eliminarProducto(Integer id) {
         // 1. Verificar que el producto existe
-        if (!productoRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Producto con ID " + id + " no encontrado.");
-        }
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + id + " no encontrado."));
 
         // 2. Verificar que no tenga lotes asociados (integridad referencial)
         long lotesCount = loteRepository.countByProductoId(id);
@@ -148,7 +211,33 @@ public class ProductoServiceImpl implements ProductoService {
             throw new BusinessException("No se puede eliminar el producto porque tiene " + lotesCount + " lotes asociados.");
         }
 
+        String nombreProducto = producto.getNombre();
         productoRepository.deleteById(id);
+        log.info("Producto eliminado: {} (ID: {})", nombreProducto, id);
+
+        // ==============================================================
+        // CREAR MENSAJE EN BITÁCORA
+        // ==============================================================
+        try {
+            Integer usuarioId = getUsuarioId();
+            String mensaje = String.format(
+                    "🗑️ Producto eliminado: %s (ID: %d)",
+                    nombreProducto,
+                    id
+            );
+
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest bitacoraRequest =
+                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
+                            .usuarioId(usuarioId)
+                            .mensaje(mensaje)
+                            .tipo(BitacoraComunicacion.Tipo.incidencia)
+                            .build();
+
+            bitacoraService.crearMensaje(bitacoraRequest);
+            log.info("Mensaje de bitácora creado para eliminación de producto ID: {}", id);
+        } catch (Exception e) {
+            log.error("Error al crear mensaje en bitácora para eliminación de producto: {}", e.getMessage());
+        }
     }
 
     // ==============================
@@ -185,7 +274,6 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public List<ProductoResponse> buscarPorCategoria(Integer categoriaId) {
-        // Validar que la categoría existe (opcional pero recomendable)
         if (!categoriaRepository.existsById(categoriaId)) {
             throw new ResourceNotFoundException("Categoría con ID " + categoriaId + " no encontrada.");
         }
@@ -213,17 +301,14 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public List<ProductoResponse> buscarAlternativasGenericas(Integer productoId) {
-        // Busca productos que tengan el mismo producto genérico o el mismo principio activo
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + productoId + " no encontrado."));
 
-        // Si el producto es genérico, buscar productos que lo tengan como genérico
         if (producto.getEsGenerico()) {
             return productoRepository.findByProductoGenericoId(productoId).stream()
                     .map(productoMapper::toResponse)
                     .collect(Collectors.toList());
         } else {
-            // Si es comercial, buscar productos con el mismo principio activo (excluyendo el actual)
             return productoRepository.findByPrincipioActivoContainingIgnoreCase(producto.getPrincipioActivo()).stream()
                     .filter(p -> !p.getId().equals(productoId))
                     .map(productoMapper::toResponse)
@@ -237,7 +322,6 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public Integer obtenerStockActual(Integer productoId) {
-        // Verificar que el producto exista
         if (!productoRepository.existsById(productoId)) {
             throw new ResourceNotFoundException("Producto con ID " + productoId + " no encontrado.");
         }
@@ -265,5 +349,18 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     public boolean existePorCodigoBarras(String codigoBarras) {
         return productoRepository.existsByCodigoBarras(codigoBarras);
+    }
+
+    // ==============================
+    // MÉTODO AUXILIAR PARA OBTENER USUARIO
+    // ==============================
+
+    private Integer getUsuarioId() {
+        try {
+            return securityUtils.getUsuarioAutenticado().getId();
+        } catch (Exception e) {
+            log.debug("No se pudo obtener usuario autenticado, usando usuario sistema (ID 1)");
+            return 1;
+        }
     }
 }
