@@ -86,6 +86,21 @@ public class ReporteController {
     // ==============================
     // REPORTE DE RENTABILIDAD
     // ==============================
+    
+    @GetMapping("/rentabilidad/json")
+    @Operation(summary = "Obtiene datos de rentabilidad en JSON",
+               description = "Retorna los datos de rentabilidad en formato JSON para el frontend")
+    public ResponseEntity<ReporteRentabilidadResponse> obtenerRentabilidadJson(
+            @Parameter(description = "Fecha de inicio (formato: yyyy-MM-dd)", example = "2025-06-01")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
+            
+            @Parameter(description = "Fecha de fin (formato: yyyy-MM-dd)", example = "2025-06-30")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fin) {
+        
+        log.info("Solicitud de datos de rentabilidad JSON desde {} hasta {}", inicio, fin);
+        ReporteRentabilidadResponse reporte = reporteService.generarReporteRentabilidad(inicio, fin);
+        return ResponseEntity.ok(reporte);
+    }
 
     @GetMapping("/rentabilidad")
     @Operation(summary = "Genera reporte de rentabilidad real",

@@ -39,6 +39,15 @@ public class Usuario {
     @Builder.Default
     private Boolean activo = true;
 
+    // ========== NUEVOS CAMPOS PARA SEGURIDAD ==========
+    @Builder.Default
+    private Integer intentosFallidos = 0;
+
+    private LocalDateTime bloqueadoHasta;
+
+    private LocalDateTime ultimoAcceso;
+
+    // ========== AUDITORÍA ==========
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -47,7 +56,7 @@ public class Usuario {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // Relaciones inversas (opcionales)
+    // ========== RELACIONES ==========
     @OneToMany(mappedBy = "usuario")
     private List<Venta> ventas;
 
@@ -65,4 +74,13 @@ public class Usuario {
 
     @OneToMany(mappedBy = "usuario")
     private List<BitacoraComunicacion> bitacoraComunicaciones;
+
+    // ========== MÉTODOS AUXILIARES ==========
+    public boolean isActivo() {
+        return activo != null && activo;
+    }
+
+    public boolean isBloqueado() {
+        return bloqueadoHasta != null && bloqueadoHasta.isAfter(LocalDateTime.now());
+    }
 }
