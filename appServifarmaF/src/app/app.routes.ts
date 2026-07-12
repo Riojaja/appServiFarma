@@ -164,7 +164,13 @@ export const routes: Routes = [
         path: 'usuarios',
         canActivate: [AuthGuard],
         data: { roles: ['admin'] }, // solo administradores
-        loadComponent: () => import('./features/usuarios/listar/listar').then(m => m.ListarComponent)
+        loadComponent: () => import('./features/usuarios/listar/listar').then(m => m.ListarUsuariosComponent)
+      },
+      {
+        path: 'configuracion/seguridad',
+        loadComponent: () => import('./features/configuracion/seguridad/configuracion-seguridad/configuracion-seguridad')
+          .then(m => m.ConfiguracionSeguridadComponent),
+        canActivate: [AuthGuard]
       },
 
       // ============================================================

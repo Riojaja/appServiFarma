@@ -1,11 +1,10 @@
 export interface Usuario {
-  id?: number;
+  id: number;
   nombreCompleto: string;
   usuario: string;
-  contrasena?: string;
-  rol: string; // 'admin' o 'vendedor'
-  rolId?: number;
+  rol: { id: number; nombre: string };
   activo: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  intentosFallidos?: number;
+  bloqueadoHasta?: string;
+  ultimoAcceso?: string;
 }

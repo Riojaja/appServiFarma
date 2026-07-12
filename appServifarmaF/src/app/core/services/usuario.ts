@@ -1,16 +1,15 @@
+// src/app/core/services/usuario.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Usuario } from '../models/usuario.model';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class UsuarioService {
   private apiUrl = `${environment.apiUrl}/usuarios`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient) {}
 
   listar(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(this.apiUrl);
@@ -32,26 +31,21 @@ export class UsuarioService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  cambiarEstado(id: number, activo: boolean): Observable<Usuario> {
-    return this.http.patch<Usuario>(`${this.apiUrl}/${id}/estado`, { activo });
+  cambiarEstado(id: number, activo: boolean): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${id}/estado?activo=${activo}`, {});
   }
 
-  obtenerPorUsername(username: string): Observable<Usuario> {
-    return this.http.get<Usuario>(`${this.apiUrl}/username/${username}`);
+  cambiarContrasena(id: number, nuevaContrasena: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${id}/contrasena?nuevaContrasena=${encodeURIComponent(nuevaContrasena)}`, {});
   }
 
-  buscarPorNombre(nombre: string): Observable<Usuario[]> {
-    return this.http.get<Usuario[]>(`${this.apiUrl}/buscar?nombre=${nombre}`);
+  /** Cierra todas las sesiones activas de un usuario (solo admin) */
+  cerrarSesiones(id: number): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${id}/cerrar-sesion`, {});
   }
 
-  /**
-   * Cambia la contraseña de un usuario. El backend la recibe como query param
-   * (@RequestParam), no en el body, por eso va en la URL y no como segundo argumento del post.
-   */
-  cambiarContrasena(id: number, nuevaContrasena: string): Observable<{ mensaje: string }> {
-    return this.http.patch<{ mensaje: string }>(
-      `${this.apiUrl}/${id}/contrasena?nuevaContrasena=${encodeURIComponent(nuevaContrasena)}`,
-      {}
-    );
+  /** Ejecuta cierre de sesiones por turno (solo admin) */
+  cerrarSesionesTurno(): Observable<any> {
+    return this.http.post(`${this.apiUrl}/cerrar-sesiones-turno`, {});
   }
 }

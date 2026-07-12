@@ -67,6 +67,7 @@ export class AuthService {
     localStorage.removeItem(this.ROL_KEY);
     localStorage.removeItem(this.USER_ID_KEY);
     localStorage.removeItem(this.NOMBRE_KEY);
+    
   }
 
   /**
