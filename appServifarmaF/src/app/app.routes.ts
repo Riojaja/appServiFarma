@@ -42,10 +42,14 @@ export const routes: Routes = [
       },
       {
         path: 'proveedores',
+        canActivate: [AuthGuard],
         children: [
-          { path: '', loadComponent: () => import('./features/proveedores/listar/listar').then(m => m.ListarComponent) },
-          { path: 'crear', loadComponent: () => import('./features/proveedores/crear/crear').then(m => m.CrearComponent) },
-          { path: 'editar/:id', loadComponent: () => import('./features/proveedores/editar/editar').then(m => m.EditarComponent) }
+          {
+            path: '',
+            loadComponent: () => import('./features/proveedores/listar/listar')
+              .then(m => m.ListarProveedoresComponent)
+          }
+
         ]
       },
       {
@@ -122,10 +126,10 @@ export const routes: Routes = [
           { path: 'rentabilidad', loadComponent: () => import('./features/reportes/rentabilidad/rentabilidad').then(m => m.RentabilidadComponent) },
           { path: '', redirectTo: 'digemit', pathMatch: 'full' }
         ]
-      },
-      {
+      }, {
+
         path: 'estadisticas',
-        loadComponent: () => import('./features/estadisticas/dashboard/dashboard').then(m => m.DashboardComponent)
+        loadComponent: () => import('./features/estadisticas/dashboard/dashboard').then(m => m.DashboardEstadisticasComponent)
       },
       {
         path: 'auditoria',
