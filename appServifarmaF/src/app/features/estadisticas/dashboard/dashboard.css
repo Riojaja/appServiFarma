@@ -1,102 +1,107 @@
-/* ===================== VARIABLES ===================== */
+/* ===================== VARIABLES (acopladas al navy + teal de ServiFarma) ===================== */
 .dashboard-stats {
+  --farma-navy: #1a1a2e;
   --farma-primario: #0d9488;
   --farma-primario-claro: #2dd4bf;
   --farma-primario-oscuro: #0f766e;
   --farma-fondo-suave: #f0fdfa;
   --farma-texto: #1e293b;
   --farma-texto-suave: #64748b;
+  --farma-secundario: #f9fafb;
+  --farma-secundario-oscuro: #cbd5e1;
 }
 
 /* ===================== ENCABEZADO ===================== */
 .titulo-principal {
-  color: var(--farma-texto);
+  color: var(--farma-navy);
 }
 .titulo-principal i {
   color: var(--farma-primario);
 }
 
-/* ===================== BOTONES DE ACCIÓN ===================== */
-.btn-farma-refrescar,
+.periodo-badge {
+  display: inline-flex;
+  align-items: center;
+  background: var(--farma-navy);
+  color: #fff;
+  padding: 0.4rem 1rem;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.periodo-badge i {
+  color: var(--farma-primario-claro);
+}
+
+/* ===================== BOTONES DE EXPORTAR (PDF) ===================== */
 .btn-farma-pdf,
-.btn-farma-excel {
+.btn-farma-pdf-alt {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.55rem 1.1rem;
+  padding: 0.55rem 1.25rem;
   border-radius: 30px;
   font-weight: 600;
   font-size: 0.875rem;
   transition: all 0.2s ease;
   border: none;
-  gap: 0.4rem;
-  min-width: 110px;
-  white-space: nowrap;
-}
-
-.btn-farma-refrescar {
-  background-color: #f1f5f9;
-  color: var(--farma-texto);
-}
-.btn-farma-refrescar:hover:not(:disabled) {
-  background-color: #e2e8f0;
-  transform: translateY(-1px);
 }
 
 .btn-farma-pdf {
-  background-color: #fee2e2;
-  color: #991b1b;
+  background-color: var(--farma-primario);
+  color: #fff;
 }
 .btn-farma-pdf:hover:not(:disabled) {
-  background-color: #fecaca;
+  background-color: var(--farma-primario-oscuro);
   transform: translateY(-1px);
 }
-
-.btn-farma-excel {
-  background-color: #dcfce7;
-  color: #166534;
-}
-.btn-farma-excel:hover:not(:disabled) {
-  background-color: #bbf7d0;
-  transform: translateY(-1px);
-}
-
-.btn-farma-refrescar:disabled,
-.btn-farma-pdf:disabled,
-.btn-farma-excel:disabled {
-  opacity: 0.55;
+.btn-farma-pdf:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  pointer-events: none;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
+.btn-farma-pdf-alt {
+  background-color: var(--farma-fondo-suave);
+  color: var(--farma-primario-oscuro);
+  border: 1.5px solid var(--farma-primario-claro);
 }
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.btn-farma-pdf-alt:hover:not(:disabled) {
+  background-color: #ccfbf1;
+  transform: translateY(-1px);
+}
+.btn-farma-pdf-alt:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* ===================== FILTROS ===================== */
 .card-filtros {
   border-left: 4px solid var(--farma-primario);
+  background-color: var(--farma-secundario);
+}
+.card-filtros label {
+  color: var(--farma-texto-suave);
 }
 
 .btn-filtro-rapido {
-  background: #f8fafc;
+  background: var(--farma-secundario);
   color: var(--farma-texto);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--farma-secundario-oscuro);
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   transition: all 0.15s ease;
 }
 .btn-filtro-rapido:hover:not(:disabled) {
   background: var(--farma-fondo-suave);
   border-color: var(--farma-primario-claro);
   color: var(--farma-primario-oscuro);
+}
+.btn-filtro-rapido.activo {
+  background: var(--farma-navy);
+  border-color: var(--farma-navy);
+  color: #fff;
 }
 .btn-filtro-rapido:disabled {
   opacity: 0.5;
@@ -110,12 +115,11 @@
   border-radius: 10px;
   padding: 0.5rem 0.75rem;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   transition: all 0.15s ease;
 }
 .btn-filtro-aplicar:hover:not(:disabled) {
   background: var(--farma-primario-oscuro);
-  transform: translateY(-1px);
 }
 .btn-filtro-aplicar:disabled {
   opacity: 0.6;
@@ -125,6 +129,7 @@
 /* ===================== TARJETAS GENERALES ===================== */
 .card {
   transition: box-shadow 0.2s ease, transform 0.2s ease;
+  background-color: var(--farma-secundario);
 }
 
 .kpi-card,
@@ -133,18 +138,18 @@
 }
 .kpi-card:hover,
 .grafico-card:hover {
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08) !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
   transform: translateY(-2px);
 }
 
 .kpi-icono {
-  width: 52px;
-  height: 52px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
 }
 .kpi-icono-verde { background: var(--farma-fondo-suave); color: var(--farma-primario); }
 .kpi-icono-naranja { background: #fffbeb; color: #f59e0b; }
@@ -154,17 +159,9 @@
   border-top: 3px solid var(--farma-primario);
 }
 .kpi-mini-icono {
-  font-size: 1.4rem;
-  margin-bottom: 0.35rem;
+  font-size: 1.5rem;
+  margin-bottom: 0.4rem;
   display: block;
-}
-
-.interpretacion-card {
-  background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%);
-  border-left: 4px solid var(--farma-primario);
-}
-.interpretacion-card h6 {
-  color: var(--farma-primario-oscuro);
 }
 
 .icono-verde { color: var(--farma-primario); }
@@ -178,11 +175,18 @@
   height: clamp(220px, 34vw, 300px);
 }
 .chart-wrapper-lg {
-  height: clamp(230px, 30vw, 320px);
+  height: clamp(240px, 36vw, 320px);
 }
 .chart-wrapper canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+.grafico-container {
+  background-color: var(--farma-fondo-suave);
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: inset 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 /* ===================== SKELETON / LOADING ===================== */
@@ -201,7 +205,7 @@
   background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
   background-size: 400% 100%;
   animation: skeleton-loading 1.4s ease infinite;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
 }
 
 @keyframes skeleton-loading {
@@ -219,33 +223,30 @@
 
 @media (max-width: 768px) {
   .kpi-icono {
-    width: 44px;
-    height: 44px;
-    font-size: 1.25rem;
-  }
-  .btn-farma-pdf,
-  .btn-farma-excel,
-  .btn-farma-refrescar {
-    font-size: 0.78rem;
-    padding: 0.4rem 0.7rem;
-    min-width: 0;
-    flex: 1 1 auto;
+    width: 50px;
+    height: 50px;
+    font-size: 1.45rem;
   }
   .chart-wrapper,
   .chart-wrapper-lg {
-    height: 260px;
+    height: 240px;
+  }
+  .btn-farma-pdf,
+  .btn-farma-pdf-alt {
+    font-size: 0.8rem;
+    padding: 0.45rem 1rem;
   }
 }
 
 @media (max-width: 576px) {
   .titulo-principal {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
   }
   .kpi-mini-icono {
-    font-size: 1.15rem;
+    font-size: 1.35rem;
   }
   .chart-wrapper,
   .chart-wrapper-lg {
-    height: 230px;
+    height: 220px;
   }
 }

@@ -10,9 +10,7 @@ import { EstadisticaService } from '../../../core/services/estadistica';
 import { AuthService } from '../../../core/auth';
 import Swal from 'sweetalert2';
 import * as jspdf from 'jspdf';
-import 'jspdf-autotable';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import jspdfAutotable from 'jspdf-autotable';
 
 export interface VentaPorDia {
   fecha: string;
@@ -42,9 +40,12 @@ export interface ResumenInterpretacion {
   tendenciaTexto: string;
 }
 
+type FiltroActivo = 'hoy' | 'semana' | 'mes' | 'personalizado';
+
 const COLOR_PRIMARIO = '#0d9488';
 const COLOR_PRIMARIO_CLARO = '#2dd4bf';
 const COLOR_PRIMARIO_OSCURO = '#0f766e';
+const COLOR_NAVY = '#1a1a2e';
 const PALETA_PIE = ['#0d9488', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#6366f1'];
 
 @Component({
@@ -65,11 +66,31 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
   // ========== FILTROS ==========
   fechaInicio: string = '';
   fechaFin: string = '';
+  filtroActivo: FiltroActivo = 'mes';
   cargando: boolean = false;
-  exportandoPDF: boolean = false;
-  exportandoExcel: boolean = false;
+  /** 'actual' | 'hoy' mientras se genera ese PDF específico; null si no hay ninguno en curso */
+  exportando: 'actual' | 'hoy' | null = null;
   hayDatos: boolean = false;
   errorCarga: string | null = null;
+
+  /** Evita doble-click / llamadas concurrentes en cualquier operación pesada */
+  get operacionEnCurso(): boolean {
+    return this.cargando || this.exportando !== null;
+  }
+
+  /** Texto humano del período actualmente seleccionado, ej: "Mes de Julio de 2026" */
+  get periodoTitulo(): string {
+    switch (this.filtroActivo) {
+      case 'hoy':
+        return `Hoy: ${this.humanizeDate(this.fechaInicio)}`;
+      case 'semana':
+        return `Semana del ${this.humanizeDate(this.fechaInicio, true)} al ${this.humanizeDate(this.fechaFin, true)}`;
+      case 'mes':
+        return `Mes de ${this.humanizeMonth(this.fechaInicio)} de ${this.parseLocalDate(this.fechaInicio).getFullYear()}`;
+      default:
+        return `Del ${this.humanizeDate(this.fechaInicio, true)} al ${this.humanizeDate(this.fechaFin, true)}`;
+    }
+  }
 
   // ========== MÉTRICAS ==========
   totalVentas: number = 0;
@@ -83,19 +104,14 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
   ventasPorHoraData: VentaPorHora[] = [];
   distribucionPagosData: DistribucionPago[] = [];
 
-  // ========== INTERPRETACIÓN AUTOMÁTICA ==========
+  // ========== INTERPRETACIÓN AUTOMÁTICA (solo se usa para el PDF y los mini-KPI) ==========
   resumen: ResumenInterpretacion | null = null;
-
-  /** Evita doble clic / llamadas concurrentes en cualquier operación pesada */
-  get operacionEnCurso(): boolean {
-    return this.cargando || this.exportandoPDF || this.exportandoExcel;
-  }
 
   // ========== GRÁFICO BARRAS ==========
   public barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 700, easing: 'easeOutQuart' },
+    animation: { duration: 500, easing: 'easeOutQuart' },
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: {
@@ -110,7 +126,6 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
         bodyColor: '#f1f5f9',
         padding: 10,
         cornerRadius: 8,
-        displayColors: true,
         callbacks: {
           label: (context) => {
             const value = (context.raw as number) ?? 0;
@@ -160,14 +175,11 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     ]
   };
 
-  // ========== GRÁFICO PASTEL (dona) ==========
-  // Tipado como "any" a propósito: la propiedad "cutout" es válida en tiempo de
-  // ejecución para gráficos doughnut, pero el genérico ChartConfiguration<'doughnut'>
-  // no siempre lo resuelve bien según la versión de chart.js instalada.
+  // ========== GRÁFICO DONA (medios de pago) ==========
   public pieChartOptions: any = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 700, easing: 'easeOutQuart' },
+    animation: { duration: 500, easing: 'easeOutQuart' },
     cutout: '55%',
     plugins: {
       legend: {
@@ -197,21 +209,15 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
   public pieChartData: ChartData<'doughnut'> = {
     labels: [],
     datasets: [
-      {
-        data: [],
-        backgroundColor: PALETA_PIE,
-        borderWidth: 3,
-        borderColor: '#ffffff',
-        hoverOffset: 10
-      }
+      { data: [], backgroundColor: PALETA_PIE, borderWidth: 3, borderColor: '#ffffff', hoverOffset: 10 }
     ]
   };
 
-  // ========== GRÁFICO LÍNEAS ==========
+  // ========== GRÁFICO LÍNEAS (ventas por hora) ==========
   public lineChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 700, easing: 'easeOutQuart' },
+    animation: { duration: 500, easing: 'easeOutQuart' },
     interaction: { mode: 'index', intersect: false },
     plugins: {
       legend: { display: true, position: 'top', align: 'end', labels: { color: '#1e293b', font: { weight: 'bold', size: 12 }, usePointStyle: true } },
@@ -222,10 +228,7 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
         padding: 10,
         cornerRadius: 8,
         callbacks: {
-          label: (context) => {
-            const value = (context.raw as number) ?? 0;
-            return `S/ ${value.toFixed(2)}`;
-          }
+          label: (context) => `S/ ${((context.raw as number) ?? 0).toFixed(2)}`
         }
       }
     },
@@ -271,6 +274,7 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.establecerFechasPorDefecto();
+    this.filtroActivo = 'mes';
     this.cargarDatos();
   }
 
@@ -301,27 +305,52 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     return gradiente;
   }
 
-  // ========== FECHAS ==========
+  // ========== FECHAS (parseadas en LOCAL, no UTC, para evitar el bug del "día equivocado") ==========
   establecerFechasPorDefecto(): void {
     const hoy = new Date();
-    const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-    const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-    this.fechaInicio = this.formatDate(primerDia);
-    this.fechaFin = this.formatDate(ultimoDia);
+    this.fechaInicio = this.formatDate(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    this.fechaFin = this.formatDate(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
   }
 
   private formatDate(date: Date): string {
-    // OJO: no usar toISOString() aquí, porque convierte a UTC y puede
-    // desfasar el día según la hora local (ej. Perú es UTC-5), enviando
-    // al backend una fecha distinta a la que el usuario ve en pantalla.
     const anio = date.getFullYear();
     const mes = String(date.getMonth() + 1).padStart(2, '0');
     const dia = String(date.getDate()).padStart(2, '0');
     return `${anio}-${mes}-${dia}`;
   }
 
+  /** Convierte "YYYY-MM-DD" a Date en horario LOCAL (evita el corrimiento de día por UTC) */
+  private parseLocalDate(fecha: string): Date {
+    if (!fecha) return new Date();
+    const soloFecha = fecha.split('T')[0];
+    const [anio, mes, dia] = soloFecha.split('-').map(Number);
+    return new Date(anio, (mes || 1) - 1, dia || 1);
+  }
+
+  /** "Domingo, 12 de julio de 2026" (o "Domingo 12 de julio" con soloDia=true) */
+  humanizeDate(fecha: string, soloDia: boolean = false): string {
+    if (!fecha) return '—';
+    const dateObj = this.parseLocalDate(fecha);
+    const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const diaSemana = diasSemana[dateObj.getDay()];
+    const dia = dateObj.getDate();
+    const mes = meses[dateObj.getMonth()];
+    const anio = dateObj.getFullYear();
+    return soloDia ? `${diaSemana} ${dia} de ${mes}` : `${diaSemana}, ${dia} de ${mes} de ${anio}`;
+  }
+
+  /** "Julio" */
+  humanizeMonth(fecha: string): string {
+    if (!fecha) return '—';
+    const dateObj = this.parseLocalDate(fecha);
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    return meses[dateObj.getMonth()];
+  }
+
   /** Se dispara al cambiar manualmente los inputs de fecha (con debounce, evita ráfagas de peticiones) */
   onFechaCambiada(): void {
+    this.filtroActivo = 'personalizado';
     if (this.debounceTimer) { clearTimeout(this.debounceTimer); }
     this.debounceTimer = setTimeout(() => {
       if (this.fechaInicio && this.fechaFin) {
@@ -336,6 +365,7 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     const hoy = new Date();
     this.fechaInicio = this.formatDate(hoy);
     this.fechaFin = this.formatDate(hoy);
+    this.filtroActivo = 'hoy';
     this.cargarDatos();
   }
 
@@ -344,17 +374,20 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     const hoy = new Date();
     const dia = hoy.getDay();
     const diff = hoy.getDate() - dia + (dia === 0 ? -6 : 1);
-    const base = new Date(hoy);
-    const lunes = new Date(base.setDate(diff));
-    const domingo = new Date(new Date(lunes).setDate(lunes.getDate() + 6));
+    const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), diff);
+    const domingo = new Date(hoy.getFullYear(), hoy.getMonth(), diff + 6);
     this.fechaInicio = this.formatDate(lunes);
     this.fechaFin = this.formatDate(domingo);
+    this.filtroActivo = 'semana';
     this.cargarDatos();
   }
 
   aplicarFiltroMes(): void {
     if (this.operacionEnCurso) { return; }
-    this.establecerFechasPorDefecto();
+    const hoy = new Date();
+    this.fechaInicio = this.formatDate(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+    this.fechaFin = this.formatDate(new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0));
+    this.filtroActivo = 'mes';
     this.cargarDatos();
   }
 
@@ -364,16 +397,19 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
       Swal.fire('Advertencia', 'Selecciona ambas fechas', 'warning');
       return;
     }
-    if (new Date(this.fechaInicio) > new Date(this.fechaFin)) {
+    if (this.parseLocalDate(this.fechaInicio) > this.parseLocalDate(this.fechaFin)) {
       Swal.fire('Advertencia', 'La fecha de inicio no puede ser mayor a la fecha fin', 'warning');
       return;
     }
+    this.filtroActivo = 'personalizado';
     this.cargarDatos();
   }
 
   // ========== CARGA DE DATOS ==========
-  cargarDatos(): void {
-    // Guard anti doble-clic / doble ejecución
+  // Importante: cada sub-carga SIEMPRE resuelve su Promise (nunca la rechaza),
+  // así un error puntual en un endpoint no tumba el resto del dashboard ni deja
+  // el botón pegado en "Cargando...".
+  async cargarDatos(): Promise<void> {
     if (this.cargando) { return; }
     if (!this.fechaInicio || !this.fechaFin) {
       Swal.fire('Error', 'Rango de fechas inválido', 'error');
@@ -382,29 +418,26 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
 
     this.cargando = true;
     this.errorCarga = null;
-    this.hayDatos = false;
     this.cdr.detectChanges();
 
-    Promise.all([
-      this.cargarMetricas(),
-      this.cargarVentasPorDia(),
-      this.cargarDistribucionPagos(),
-      this.cargarVentasPorHora()
-    ])
-      .then(() => {
-        this.calcularInterpretacion();
-      })
-      .catch((err) => {
-        console.error('Error general al cargar el dashboard:', err);
-        this.errorCarga = 'Ocurrió un problema cargando algunas estadísticas.';
-      })
-      .finally(() => {
-        this.cargando = false;
-        this.hayDatos = this.ventasPorDiaData.length > 0 ||
-                        this.distribucionPagosData.length > 0 ||
-                        this.ventasPorHoraData.length > 0;
-        this.cdr.detectChanges();
-      });
+    try {
+      await Promise.all([
+        this.cargarMetricas(),
+        this.cargarVentasPorDia(),
+        this.cargarDistribucionPagos(),
+        this.cargarVentasPorHora()
+      ]);
+      this.calcularInterpretacion();
+    } catch (err) {
+      console.error('Error general al cargar el dashboard:', err);
+      this.errorCarga = 'Ocurrió un problema cargando algunas estadísticas.';
+    } finally {
+      this.cargando = false;
+      this.hayDatos = this.ventasPorDiaData.length > 0 ||
+                      this.distribucionPagosData.length > 0 ||
+                      this.ventasPorHoraData.length > 0;
+      this.cdr.detectChanges();
+    }
   }
 
   // ========== MÉTRICAS ==========
@@ -415,57 +448,51 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
         .subscribe({
           next: (data) => {
             this.totalVentas = data || 0;
-            this.cargarTransaccionesYTicket(resolve);
+            this.cargarTransaccionesYTicket().finally(resolve);
           },
           error: (err) => {
             console.error('Error total ventas:', err);
             this.totalVentas = 0;
-            this.cargarTransaccionesYTicket(resolve);
+            this.cargarTransaccionesYTicket().finally(resolve);
           }
         });
     });
   }
 
-  private cargarTransaccionesYTicket(resolve: () => void): void {
-    Promise.all([
-      this.estadisticaService.obtenerTotalTransacciones(this.fechaInicio, this.fechaFin).toPromise(),
-      this.estadisticaService.obtenerTicketPromedio(this.fechaInicio, this.fechaFin).toPromise()
-    ]).then(([transacciones, ticket]) => {
+  private async cargarTransaccionesYTicket(): Promise<void> {
+    try {
+      const [transacciones, ticket] = await Promise.all([
+        this.estadisticaService.obtenerTotalTransacciones(this.fechaInicio, this.fechaFin).toPromise(),
+        this.estadisticaService.obtenerTicketPromedio(this.fechaInicio, this.fechaFin).toPromise()
+      ]);
       this.totalTransacciones = transacciones || 0;
       this.ticketPromedio = ticket || 0;
-      this.cargarVariacion();
-      resolve();
-    }).catch((err) => {
+    } catch (err) {
       console.error('Error en métricas:', err);
       this.totalTransacciones = 0;
       this.ticketPromedio = 0;
-      resolve();
-    });
+    }
+    this.cargarVariacion();
   }
 
   private cargarVariacion(): void {
     try {
-      const inicio = new Date(this.fechaInicio);
-      const fin = new Date(this.fechaFin);
+      const inicio = this.parseLocalDate(this.fechaInicio);
+      const fin = this.parseLocalDate(this.fechaFin);
       const diffDias = Math.ceil((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24)) + 1;
       const inicioAnterior = new Date(inicio);
       inicioAnterior.setDate(inicioAnterior.getDate() - diffDias);
       const finAnterior = new Date(inicio);
       finAnterior.setDate(finAnterior.getDate() - 1);
 
-      const inicioStr = this.formatDate(inicioAnterior);
-      const finStr = this.formatDate(finAnterior);
-
-      this.estadisticaService.obtenerTotalVentas(inicioStr, finStr)
+      this.estadisticaService.obtenerTotalVentas(this.formatDate(inicioAnterior), this.formatDate(finAnterior))
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (data) => {
             this.totalVentasAnterior = data || 0;
-            if (this.totalVentasAnterior > 0) {
-              this.variacionPorcentual = ((this.totalVentas - this.totalVentasAnterior) / this.totalVentasAnterior) * 100;
-            } else {
-              this.variacionPorcentual = this.totalVentas > 0 ? 100 : 0;
-            }
+            this.variacionPorcentual = this.totalVentasAnterior > 0
+              ? ((this.totalVentas - this.totalVentasAnterior) / this.totalVentasAnterior) * 100
+              : (this.totalVentas > 0 ? 100 : 0);
             this.cdr.detectChanges();
           },
           error: () => {
@@ -486,9 +513,7 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (data: any[]) => {
-            this.ventasPorDiaData = (data && data.length > 0)
-              ? data.map(item => ({ fecha: item[0] || '', total: item[1] || 0 }))
-              : [];
+            this.ventasPorDiaData = (data || []).map(item => ({ fecha: item[0] || '', total: item[1] || 0 }));
             this.actualizarGraficoBarras();
             resolve();
           },
@@ -506,7 +531,7 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     if (this.ventasPorDiaData.length > 0) {
       const promedio = this.ventasPorDiaData.reduce((acc, i) => acc + i.total, 0) / this.ventasPorDiaData.length;
       this.barChartData = {
-        labels: this.ventasPorDiaData.map(item => item.fecha),
+        labels: this.ventasPorDiaData.map(item => this.humanizeDate(item.fecha, true)),
         datasets: [
           { ...this.barChartData.datasets[0], data: this.ventasPorDiaData.map(item => item.total) },
           { ...this.barChartData.datasets[1], data: this.ventasPorDiaData.map(() => promedio) }
@@ -525,16 +550,14 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ========== DISTRIBUCIÓN PAGOS ==========
+  // ========== DISTRIBUCIÓN DE PAGOS ==========
   private cargarDistribucionPagos(): Promise<void> {
     return new Promise((resolve) => {
       this.estadisticaService.obtenerDistribucionPagos(this.fechaInicio, this.fechaFin)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (data: any[]) => {
-            this.distribucionPagosData = (data && data.length > 0)
-              ? data.map(item => ({ medioPago: item[0] || '', total: item[1] || 0 }))
-              : [];
+            this.distribucionPagosData = (data || []).map(item => ({ medioPago: item[0] || '', total: item[1] || 0 }));
             this.actualizarGraficoPie();
             resolve();
           },
@@ -567,15 +590,12 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
 
   // ========== VENTAS POR HORA ==========
   private cargarVentasPorHora(): Promise<void> {
-    const fecha = this.fechaInicio;
     return new Promise((resolve) => {
-      this.estadisticaService.obtenerVentasPorHora(fecha)
+      this.estadisticaService.obtenerVentasPorHora(this.fechaInicio)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (data: any[]) => {
-            this.ventasPorHoraData = (data && data.length > 0)
-              ? data.map(item => ({ hora: item[0] || 0, total: item[1] || 0 }))
-              : [];
+            this.ventasPorHoraData = (data || []).map(item => ({ hora: item[0] || 0, total: item[1] || 0 }));
             this.actualizarGraficoLineas();
             resolve();
           },
@@ -605,17 +625,14 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ========== INTERPRETACIÓN AUTOMÁTICA DE LOS GRÁFICOS ==========
+  // ========== INTERPRETACIÓN AUTOMÁTICA (usada en mini-KPIs y en el PDF) ==========
   private calcularInterpretacion(): void {
     if (this.ventasPorDiaData.length === 0 && this.distribucionPagosData.length === 0 && this.ventasPorHoraData.length === 0) {
       this.resumen = null;
       return;
     }
 
-    let mejorDia = '—', peorDia = '—';
-    let mejorDiaTotal = 0, peorDiaTotal = 0;
-    let promedioDiario = 0;
-
+    let mejorDia = '—', peorDia = '—', mejorDiaTotal = 0, peorDiaTotal = 0, promedioDiario = 0;
     if (this.ventasPorDiaData.length > 0) {
       const ordenado = [...this.ventasPorDiaData].sort((a, b) => b.total - a.total);
       mejorDia = ordenado[0].fecha;
@@ -625,16 +642,14 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
       promedioDiario = this.ventasPorDiaData.reduce((a, b) => a + b.total, 0) / this.ventasPorDiaData.length;
     }
 
-    let horaPico = '—';
-    let horaPicoTotal = 0;
+    let horaPico = '—', horaPicoTotal = 0;
     if (this.ventasPorHoraData.length > 0) {
       const ordenadoHoras = [...this.ventasPorHoraData].sort((a, b) => b.total - a.total);
       horaPico = `${ordenadoHoras[0].hora}:00`;
       horaPicoTotal = ordenadoHoras[0].total;
     }
 
-    let medioPagoPrincipal = '—';
-    let medioPagoPrincipalPct = 0;
+    let medioPagoPrincipal = '—', medioPagoPrincipalPct = 0;
     if (this.distribucionPagosData.length > 0) {
       const total = this.distribucionPagosData.reduce((a, b) => a + b.total, 0);
       const top = [...this.distribucionPagosData].sort((a, b) => b.total - a.total)[0];
@@ -667,292 +682,244 @@ export class DashboardEstadisticasComponent implements OnInit, OnDestroy {
     return `${Math.abs(this.variacionPorcentual).toFixed(1)}%`;
   }
 
-  // ========== EXPORTAR A PDF (con gráficos incluidos) ==========
-  async exportarPDF(): Promise<void> {
-    if (this.operacionEnCurso) { return; }
-    if (!this.hayDatos) {
-      Swal.fire('Sin datos', 'No hay información para exportar en el período seleccionado.', 'info');
-      return;
+  // ========== TEXTOS DE INTERPRETACIÓN (solo se usan dentro del PDF) ==========
+  private interpretacionVentasPorDia(): string {
+    if (!this.resumen || this.ventasPorDiaData.length === 0) {
+      return 'No se registraron ventas en el período seleccionado.';
     }
+    return `El día con mayores ventas fue ${this.humanizeDate(this.resumen.mejorDia, true)} (S/ ${this.resumen.mejorDiaTotal.toFixed(2)}). ` +
+      `El de menor actividad fue ${this.humanizeDate(this.resumen.peorDia, true)} (S/ ${this.resumen.peorDiaTotal.toFixed(2)}). ` +
+      `El promedio diario del período fue S/ ${this.resumen.promedioDiario.toFixed(2)}, y ${this.resumen.tendenciaTexto}.`;
+  }
 
-    this.exportandoPDF = true;
-    Swal.fire({ title: 'Generando PDF...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  private interpretacionMediosPago(): string {
+    if (!this.resumen || this.distribucionPagosData.length === 0) {
+      return 'No se registraron ventas por medio de pago en este período.';
+    }
+    return `El medio de pago más utilizado fue "${this.resumen.medioPagoPrincipal}", representando el ` +
+      `${this.resumen.medioPagoPrincipalPct.toFixed(1)}% del total facturado. Esto sugiere priorizar ese canal ` +
+      `en la operación diaria de caja.`;
+  }
+
+  private interpretacionVentasPorHora(): string {
+    if (!this.resumen || this.ventasPorHoraData.length === 0) {
+      return 'No se registraron ventas por hora en la fecha seleccionada.';
+    }
+    return `La hora de mayor actividad comercial fue a las ${this.resumen.horaPico} horas, con ventas de ` +
+      `S/ ${this.resumen.horaPicoTotal.toFixed(2)}. Es un buen dato para planificar turnos de personal.`;
+  }
+
+  // ========== EXPORTAR A PDF ==========
+  // modo 'actual'  -> usa el período que el usuario tiene visible ahora mismo
+  // modo 'hoy'     -> fuerza la carga de datos de HOY, genera el PDF, y restaura el filtro anterior
+  async exportarPDF(modo: 'actual' | 'hoy'): Promise<void> {
+    if (this.operacionEnCurso) { return; }
+
+    this.exportando = modo;
+    this.cdr.detectChanges();
+
+    const filtroPrevio = { inicio: this.fechaInicio, fin: this.fechaFin, activo: this.filtroActivo };
+    const esReporteDeHoy = modo === 'hoy';
 
     try {
-      const doc = new jspdf.jsPDF('landscape', 'mm', 'a4');
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      doc.setFillColor('#0d9488');
-      doc.rect(0, 0, pageWidth, 16, 'F');
-      doc.setFontSize(16);
-      doc.setTextColor('#ffffff');
-      doc.text('ServiFarma - Reporte de Estadísticas', pageWidth / 2, 10, { align: 'center' });
-
-      doc.setFontSize(10);
-      doc.setTextColor('#475569');
-      doc.text(`Período: ${this.fechaInicio} al ${this.fechaFin}  •  Generado: ${new Date().toLocaleString('es-PE')}`, pageWidth / 2, 23, { align: 'center' });
-
-      const metrics = [
-        { label: 'Total Ventas', value: `S/ ${this.totalVentas.toFixed(2)}` },
-        { label: 'Transacciones', value: `${this.totalTransacciones}` },
-        { label: 'Ticket Promedio', value: `S/ ${this.ticketPromedio.toFixed(2)}` },
-        { label: 'Variación', value: `${this.variacionPorcentual >= 0 ? '+' : ''}${this.variacionPorcentual.toFixed(1)}%` }
-      ];
-
-      let y = 32;
-      doc.setFontSize(11);
-      metrics.forEach((m, i) => {
-        doc.setTextColor('#1e293b');
-        doc.text(m.label, 20 + i * 68, y);
-        doc.setTextColor('#0d9488');
-        doc.setFontSize(13);
-        doc.text(m.value, 20 + i * 68, y + 6);
-        doc.setFontSize(11);
-      });
-
-      y += 14;
-
-      // ---- Gráficos como imágenes ----
-      const imgBar = this.barChartRef?.chart?.toBase64Image('image/png', 1);
-      const imgPie = this.pieChartRef?.chart?.toBase64Image('image/png', 1);
-      const imgLine = this.lineChartRef?.chart?.toBase64Image('image/png', 1);
-
-      const anchoImg = (pageWidth - 50) / 2;
-      const altoImg = 62;
-
-      if (imgBar) {
-        doc.setFontSize(11);
-        doc.setTextColor('#1e293b');
-        doc.text('Ventas por Día', 20, y);
-        doc.addImage(imgBar, 'PNG', 20, y + 3, anchoImg, altoImg);
-      }
-      if (imgPie) {
-        doc.text('Medios de Pago', 20 + anchoImg + 10, y);
-        doc.addImage(imgPie, 'PNG', 20 + anchoImg + 10, y + 3, anchoImg, altoImg);
+      if (esReporteDeHoy) {
+        const hoyStr = this.formatDate(new Date());
+        if (this.fechaInicio !== hoyStr || this.fechaFin !== hoyStr) {
+          this.fechaInicio = hoyStr;
+          this.fechaFin = hoyStr;
+          this.filtroActivo = 'hoy';
+          await this.cargarDatos();
+        }
       }
 
-      y += altoImg + 12;
-
-      if (imgLine) {
-        doc.text(`Ventas por Hora (${this.fechaInicio})`, 20, y);
-        doc.addImage(imgLine, 'PNG', 20, y + 3, pageWidth - 40, altoImg);
-        y += altoImg + 12;
+      if (!this.hayDatos) {
+        Swal.fire('Sin datos', 'No hay información para generar el reporte en el período seleccionado.', 'info');
+        return;
       }
 
-      // ---- Interpretación automática ----
-      if (this.resumen) {
-        if (y > pageHeight - 45) { doc.addPage(); y = 20; }
-        doc.setFillColor('#f0fdfa');
-        doc.roundedRect(18, y, pageWidth - 36, 34, 3, 3, 'F');
-        doc.setFontSize(12);
-        doc.setTextColor('#0d9488');
-        doc.text('Interpretación de resultados', 24, y + 8);
-        doc.setFontSize(9.5);
-        doc.setTextColor('#334155');
-        const texto =
-          `El mejor día de ventas fue ${this.resumen.mejorDia} (S/ ${this.resumen.mejorDiaTotal.toFixed(2)}), mientras que ${this.resumen.peorDia} ` +
-          `registró el monto más bajo (S/ ${this.resumen.peorDiaTotal.toFixed(2)}). La hora de mayor actividad fue ${this.resumen.horaPico} ` +
-          `con S/ ${this.resumen.horaPicoTotal.toFixed(2)} en ventas. El medio de pago más usado fue "${this.resumen.medioPagoPrincipal}" ` +
-          `(${this.resumen.medioPagoPrincipalPct.toFixed(1)}% del total). En general, ${this.resumen.tendenciaTexto}.`;
-        const lineas = doc.splitTextToSize(texto, pageWidth - 48);
-        doc.text(lineas, 24, y + 16);
-        y += 40;
-      }
-
-      // ---- Tablas de detalle ----
-      if (this.ventasPorDiaData.length > 0) {
-        if (y > pageHeight - 30) { doc.addPage(); y = 20; }
-        (doc as any).autoTable({
-          startY: y,
-          head: [['Fecha', 'Total Ventas']],
-          body: this.ventasPorDiaData.map(item => [item.fecha, `S/ ${item.total.toFixed(2)}`]),
-          theme: 'striped',
-          headStyles: { fillColor: '#0d9488', textColor: '#fff' },
-          styles: { fontSize: 8 },
-          margin: { left: 20, right: 20 }
-        });
-      }
-
-      doc.save(`Estadisticas_${this.fechaInicio}_al_${this.fechaFin}.pdf`);
-      Swal.close();
+      this.generarDocumentoPDF(esReporteDeHoy);
       this.notificarExito('PDF generado correctamente');
     } catch (err) {
       console.error('Error exportando PDF:', err);
-      Swal.close();
       Swal.fire('Error', 'No se pudo generar el PDF. Intenta nuevamente.', 'error');
     } finally {
-      this.exportandoPDF = false;
+      if (esReporteDeHoy && (filtroPrevio.inicio !== this.fechaInicio || filtroPrevio.fin !== this.fechaFin)) {
+        this.fechaInicio = filtroPrevio.inicio;
+        this.fechaFin = filtroPrevio.fin;
+        this.filtroActivo = filtroPrevio.activo;
+        await this.cargarDatos();
+      }
+      this.exportando = null;
+      this.cdr.detectChanges();
     }
   }
 
-  // ========== EXPORTAR A EXCEL (con gráficos incluidos) ==========
-  async exportarExcel(): Promise<void> {
-    if (this.operacionEnCurso) { return; }
-    if (!this.hayDatos) {
-      Swal.fire('Sin datos', 'No hay información para exportar en el período seleccionado.', 'info');
-      return;
+  /** Dibuja el gráfico + su cuadrito de interpretación al costado, estilo "informe". Devuelve el nuevo Y. */
+  private dibujarSeccionGrafico(doc: any, opts: {
+    titulo: string;
+    imagenBase64: string | undefined;
+    interpretacion: string;
+    x: number; y: number; anchoImg: number; altoImg: number; anchoBox: number;
+  }): number {
+    const { titulo, imagenBase64, interpretacion, x, y, anchoImg, altoImg, anchoBox } = opts;
+
+    doc.setFontSize(12);
+    doc.setTextColor(COLOR_NAVY);
+    doc.text(titulo, x, y);
+
+    if (imagenBase64) {
+      doc.setDrawColor('#e2e8f0');
+      doc.roundedRect(x, y + 4, anchoImg, altoImg, 3, 3, 'S');
+      doc.addImage(imagenBase64, 'PNG', x + 1.5, y + 5.5, anchoImg - 3, altoImg - 3);
     }
 
-    this.exportandoExcel = true;
-    Swal.fire({ title: 'Generando Excel...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const boxX = x + anchoImg + 8;
+    const boxY = y + 4;
+    doc.setFillColor('#f0fdfa');
+    doc.setDrawColor(COLOR_PRIMARIO);
+    doc.roundedRect(boxX, boxY, anchoBox, altoImg, 3, 3, 'FD');
 
-    try {
-      const workbook = new ExcelJS.Workbook();
-      workbook.creator = 'ServiFarma';
-      workbook.created = new Date();
+    doc.setFontSize(9.5);
+    doc.setTextColor(COLOR_PRIMARIO_OSCURO);
+    doc.text('Interpretación', boxX + 5, boxY + 8);
 
-      const hoja = workbook.addWorksheet('Estadísticas', {
-        views: [{ showGridLines: false }]
+    doc.setFontSize(8.3);
+    doc.setTextColor('#334155');
+    const lineas = doc.splitTextToSize(interpretacion, anchoBox - 10);
+    doc.text(lineas, boxX + 5, boxY + 15);
+
+    return y + altoImg + 14;
+  }
+
+  private generarDocumentoPDF(esHoy: boolean): void {
+    const doc = new jspdf.jsPDF('landscape', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 18;
+
+    // Encabezado
+    doc.setFillColor(COLOR_NAVY);
+    doc.rect(0, 0, pageWidth, 20, 'F');
+    doc.setFontSize(16);
+    doc.setTextColor('#ffffff');
+    doc.text('ServiFarma · Reporte de Estadísticas', pageWidth / 2, 12, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor('#475569');
+    const tituloPeriodo = esHoy ? `Reporte del día: ${this.humanizeDate(this.fechaInicio)}` : this.periodoTitulo;
+    doc.text(tituloPeriodo, pageWidth / 2, 28, { align: 'center' });
+    doc.setFontSize(8);
+    doc.text(`Generado el ${this.humanizeDate(this.formatDate(new Date()))}`, pageWidth / 2, 33, { align: 'center' });
+
+    let y = 42;
+
+    // KPIs
+    const metrics = [
+      { label: 'Total Ventas', value: `S/ ${this.totalVentas.toFixed(2)}` },
+      { label: 'Transacciones', value: `${this.totalTransacciones}` },
+      { label: 'Ticket Promedio', value: `S/ ${this.ticketPromedio.toFixed(2)}` },
+      { label: 'Variación vs. período anterior', value: `${this.variacionPorcentual >= 0 ? '+' : ''}${this.variacionPorcentual.toFixed(1)}%` }
+    ];
+    metrics.forEach((m, i) => {
+      const offsetX = margin + i * 65;
+      doc.setFontSize(9);
+      doc.setTextColor('#64748b');
+      doc.text(m.label, offsetX, y);
+      doc.setFontSize(13);
+      doc.setTextColor(COLOR_PRIMARIO_OSCURO);
+      doc.text(m.value, offsetX, y + 7);
+    });
+
+    y += 18;
+
+    const anchoImg = 140;
+    const altoImg = 72;
+    const anchoBox = pageWidth - margin * 2 - anchoImg - 8;
+
+    const imgBar = this.barChartRef?.chart?.toBase64Image('image/png', 1);
+    y = this.dibujarSeccionGrafico(doc, {
+      titulo: 'Ventas por Día', imagenBase64: imgBar, interpretacion: this.interpretacionVentasPorDia(),
+      x: margin, y, anchoImg, altoImg, anchoBox
+    });
+
+    if (y > pageHeight - 90) { doc.addPage(); y = 20; }
+
+    const imgPie = this.pieChartRef?.chart?.toBase64Image('image/png', 1);
+    y = this.dibujarSeccionGrafico(doc, {
+      titulo: 'Medios de Pago', imagenBase64: imgPie, interpretacion: this.interpretacionMediosPago(),
+      x: margin, y, anchoImg, altoImg, anchoBox
+    });
+
+    if (y > pageHeight - 90) { doc.addPage(); y = 20; }
+
+    const imgLine = this.lineChartRef?.chart?.toBase64Image('image/png', 1);
+    y = this.dibujarSeccionGrafico(doc, {
+      titulo: `Ventas por Hora (${this.humanizeDate(this.fechaInicio, true)})`, imagenBase64: imgLine,
+      interpretacion: this.interpretacionVentasPorHora(),
+      x: margin, y, anchoImg, altoImg, anchoBox
+    });
+
+    // Tablas de respaldo
+    if (this.ventasPorDiaData.length > 0) {
+      if (y > pageHeight - 50) { doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setTextColor(COLOR_NAVY);
+      doc.text('Detalle: Ventas por Día', margin, y);
+      y += 6;
+      jspdfAutotable(doc, {
+        head: [['Fecha', 'Total Ventas']],
+        body: this.ventasPorDiaData.map(item => [this.humanizeDate(item.fecha, true), `S/ ${item.total.toFixed(2)}`]),
+        startY: y, theme: 'striped',
+        headStyles: { fillColor: COLOR_PRIMARIO, textColor: '#fff', fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin }
       });
-
-      hoja.mergeCells('A1:F1');
-      hoja.getCell('A1').value = 'ServiFarma - Reporte de Estadísticas';
-      hoja.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FF0D9488' } };
-
-      hoja.mergeCells('A2:F2');
-      hoja.getCell('A2').value = `Período: ${this.fechaInicio} al ${this.fechaFin}`;
-      hoja.getCell('A2').font = { size: 10, color: { argb: 'FF475569' } };
-
-      // ---- KPIs ----
-      let fila = 4;
-      const kpis: [string, string | number][] = [
-        ['Total Ventas', this.totalVentas],
-        ['Transacciones', this.totalTransacciones],
-        ['Ticket Promedio', this.ticketPromedio],
-        ['Variación vs. período anterior', `${this.variacionPorcentual.toFixed(1)}%`]
-      ];
-      kpis.forEach(([label, value]) => {
-        hoja.getCell(`A${fila}`).value = label;
-        hoja.getCell(`A${fila}`).font = { bold: true };
-        hoja.getCell(`B${fila}`).value = value;
-        hoja.getCell(`B${fila}`).font = { color: { argb: 'FF0D9488' }, bold: true };
-        fila++;
-      });
-      fila += 1;
-
-      // ---- Interpretación ----
-      if (this.resumen) {
-        hoja.mergeCells(`A${fila}:F${fila}`);
-        hoja.getCell(`A${fila}`).value = 'Interpretación de resultados';
-        hoja.getCell(`A${fila}`).font = { bold: true, size: 12, color: { argb: 'FF0D9488' } };
-        fila++;
-        const texto =
-          `El mejor día de ventas fue ${this.resumen.mejorDia} (S/ ${this.resumen.mejorDiaTotal.toFixed(2)}), mientras que ${this.resumen.peorDia} ` +
-          `registró el monto más bajo (S/ ${this.resumen.peorDiaTotal.toFixed(2)}). La hora de mayor actividad fue ${this.resumen.horaPico} ` +
-          `con S/ ${this.resumen.horaPicoTotal.toFixed(2)} en ventas. El medio de pago más usado fue "${this.resumen.medioPagoPrincipal}" ` +
-          `(${this.resumen.medioPagoPrincipalPct.toFixed(1)}% del total). En general, ${this.resumen.tendenciaTexto}.`;
-        hoja.mergeCells(`A${fila}:F${fila + 2}`);
-        const celdaTexto = hoja.getCell(`A${fila}`);
-        celdaTexto.value = texto;
-        celdaTexto.alignment = { wrapText: true, vertical: 'top' };
-        fila += 4;
-      }
-
-      // ---- Tabla ventas por día ----
-      if (this.ventasPorDiaData.length > 0) {
-        hoja.getCell(`A${fila}`).value = 'Ventas por Día';
-        hoja.getCell(`A${fila}`).font = { bold: true };
-        fila++;
-        hoja.getCell(`A${fila}`).value = 'Fecha';
-        hoja.getCell(`B${fila}`).value = 'Total';
-        hoja.getRow(fila).font = { bold: true };
-        hoja.getRow(fila).eachCell((c: any) => c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0D9488' } });
-        fila++;
-        this.ventasPorDiaData.forEach(item => {
-          hoja.getCell(`A${fila}`).value = item.fecha;
-          hoja.getCell(`B${fila}`).value = item.total;
-          fila++;
-        });
-        fila += 1;
-      }
-
-      // ---- Tabla distribución de pagos ----
-      if (this.distribucionPagosData.length > 0) {
-        hoja.getCell(`A${fila}`).value = 'Distribución por Medio de Pago';
-        hoja.getCell(`A${fila}`).font = { bold: true };
-        fila++;
-        hoja.getCell(`A${fila}`).value = 'Medio de Pago';
-        hoja.getCell(`B${fila}`).value = 'Total';
-        hoja.getRow(fila).font = { bold: true };
-        fila++;
-        this.distribucionPagosData.forEach(item => {
-          hoja.getCell(`A${fila}`).value = item.medioPago;
-          hoja.getCell(`B${fila}`).value = item.total;
-          fila++;
-        });
-        fila += 1;
-      }
-
-      // ---- Tabla ventas por hora ----
-      if (this.ventasPorHoraData.length > 0) {
-        hoja.getCell(`A${fila}`).value = 'Ventas por Hora';
-        hoja.getCell(`A${fila}`).font = { bold: true };
-        fila++;
-        hoja.getCell(`A${fila}`).value = 'Hora';
-        hoja.getCell(`B${fila}`).value = 'Total';
-        hoja.getRow(fila).font = { bold: true };
-        fila++;
-        this.ventasPorHoraData.forEach(item => {
-          hoja.getCell(`A${fila}`).value = `${item.hora}:00`;
-          hoja.getCell(`B${fila}`).value = item.total;
-          fila++;
-        });
-        fila += 2;
-      }
-
-      hoja.getColumn('A').width = 28;
-      hoja.getColumn('B').width = 18;
-
-      // ---- Gráficos como imágenes embebidas ----
-      const filaGraficos = fila + 1;
-      const agregarImagen = (base64: string | undefined, celda: string, rangoFin: string) => {
-        if (!base64) { return; }
-        const id = workbook.addImage({ base64: base64.split(',')[1], extension: 'png' });
-        hoja.addImage(id, `${celda}:${rangoFin}`);
-      };
-
-      const imgBar = this.barChartRef?.chart?.toBase64Image('image/png', 1);
-      const imgPie = this.pieChartRef?.chart?.toBase64Image('image/png', 1);
-      const imgLine = this.lineChartRef?.chart?.toBase64Image('image/png', 1);
-
-      hoja.getCell(`A${filaGraficos}`).value = 'Ventas por Día (gráfico)';
-      hoja.getCell(`A${filaGraficos}`).font = { bold: true };
-      agregarImagen(imgBar, `A${filaGraficos + 1}`, `F${filaGraficos + 16}`);
-
-      hoja.getCell(`H${filaGraficos}`).value = 'Medios de Pago (gráfico)';
-      hoja.getCell(`H${filaGraficos}`).font = { bold: true };
-      agregarImagen(imgPie, `H${filaGraficos + 1}`, `M${filaGraficos + 16}`);
-
-      const filaLinea = filaGraficos + 19;
-      hoja.getCell(`A${filaLinea}`).value = `Ventas por Hora (gráfico) - ${this.fechaInicio}`;
-      hoja.getCell(`A${filaLinea}`).font = { bold: true };
-      agregarImagen(imgLine, `A${filaLinea + 1}`, `M${filaLinea + 16}`);
-
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/octet-stream' });
-      saveAs(blob, `Estadisticas_${this.fechaInicio}_al_${this.fechaFin}.xlsx`);
-
-      Swal.close();
-      this.notificarExito('Excel generado correctamente');
-    } catch (err) {
-      console.error('Error exportando Excel:', err);
-      Swal.close();
-      Swal.fire('Error', 'No se pudo generar el Excel. Intenta nuevamente.', 'error');
-    } finally {
-      this.exportandoExcel = false;
+      y = (doc as any).lastAutoTable.finalY + 10;
     }
+
+    if (this.distribucionPagosData.length > 0) {
+      if (y > pageHeight - 50) { doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setTextColor(COLOR_NAVY);
+      doc.text('Detalle: Medios de Pago', margin, y);
+      y += 6;
+      jspdfAutotable(doc, {
+        head: [['Medio de Pago', 'Total']],
+        body: this.distribucionPagosData.map(item => [item.medioPago, `S/ ${item.total.toFixed(2)}`]),
+        startY: y, theme: 'striped',
+        headStyles: { fillColor: COLOR_PRIMARIO, textColor: '#fff', fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin }
+      });
+      y = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    if (this.ventasPorHoraData.length > 0) {
+      if (y > pageHeight - 50) { doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setTextColor(COLOR_NAVY);
+      doc.text('Detalle: Ventas por Hora', margin, y);
+      y += 6;
+      jspdfAutotable(doc, {
+        head: [['Hora', 'Total Ventas']],
+        body: this.ventasPorHoraData.map(item => [`${item.hora}:00`, `S/ ${item.total.toFixed(2)}`]),
+        startY: y, theme: 'striped',
+        headStyles: { fillColor: COLOR_PRIMARIO, textColor: '#fff', fontSize: 9 },
+        bodyStyles: { fontSize: 8 },
+        margin: { left: margin, right: margin }
+      });
+    }
+
+    const nombreArchivo = esHoy
+      ? `Estadisticas_Hoy_${this.fechaInicio}.pdf`
+      : `Estadisticas_${this.fechaInicio}_al_${this.fechaFin}.pdf`;
+    doc.save(nombreArchivo);
   }
 
   private notificarExito(mensaje: string): void {
     Swal.fire({
-      toast: true,
-      position: 'top-end',
-      icon: 'success',
-      title: mensaje,
-      showConfirmButton: false,
-      timer: 2500,
-      timerProgressBar: true
+      toast: true, position: 'top-end', icon: 'success', title: mensaje,
+      showConfirmButton: false, timer: 2500, timerProgressBar: true
     });
   }
 }

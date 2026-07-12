@@ -1,7 +1,7 @@
 <div class="container-fluid mt-4 dashboard-stats">
 
   <!-- ======== ENCABEZADO ======== -->
-  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
     <div>
       <h2 class="fw-bold mb-0 titulo-principal">
         <i class="bi bi-graph-up"></i> Estadísticas
@@ -9,36 +9,41 @@
       <p class="text-muted small mb-0">Análisis de ventas y comportamiento del negocio</p>
     </div>
     <div class="d-flex flex-wrap gap-2 align-items-center">
-      <button class="btn-farma-excel" (click)="exportarExcel()" [disabled]="operacionEnCurso || !hayDatos" title="Exportar a Excel">
-        <span *ngIf="!exportandoExcel"><i class="bi bi-file-earmark-excel"></i> Excel</span>
-        <span *ngIf="exportandoExcel"><span class="spinner-border spinner-border-sm"></span> Generando...</span>
+      <button class="btn-farma-pdf" (click)="exportarPDF('actual')" [disabled]="operacionEnCurso || !hayDatos" title="Exportar el período actual a PDF">
+        <span *ngIf="exportando === 'actual'" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="exportando !== 'actual'" class="bi bi-file-earmark-pdf me-1"></i>
+        {{ exportando === 'actual' ? 'Generando...' : 'PDF del Período' }}
       </button>
-      <button class="btn-farma-pdf" (click)="exportarPDF()" [disabled]="operacionEnCurso || !hayDatos" title="Exportar a PDF">
-        <span *ngIf="!exportandoPDF"><i class="bi bi-file-earmark-pdf"></i> PDF</span>
-        <span *ngIf="exportandoPDF"><span class="spinner-border spinner-border-sm"></span> Generando...</span>
-      </button>
-      <button class="btn-farma-refrescar" (click)="cargarDatos()" [disabled]="operacionEnCurso">
-        <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
-        {{ cargando ? 'Cargando...' : 'Actualizar' }}
+      <button class="btn-farma-pdf-alt" (click)="exportarPDF('hoy')" [disabled]="operacionEnCurso" title="Exportar solo las ventas de hoy">
+        <span *ngIf="exportando === 'hoy'" class="spinner-border spinner-border-sm me-1"></span>
+        <i *ngIf="exportando !== 'hoy'" class="bi bi-calendar-day me-1"></i>
+        {{ exportando === 'hoy' ? 'Generando...' : 'PDF de Hoy' }}
       </button>
     </div>
+  </div>
+
+  <!-- ======== BADGE DE PERÍODO ACTUAL ======== -->
+  <div class="mb-3">
+    <span class="periodo-badge">
+      <i class="bi bi-calendar-event me-1"></i>{{ periodoTitulo }}
+    </span>
   </div>
 
   <!-- ======== FILTROS ======== -->
   <div class="card card-filtros shadow-sm border-0 rounded-4 p-3 mb-4">
     <div class="row g-2">
       <div class="col-6 col-md-3">
-        <button class="btn-filtro-rapido w-100" (click)="aplicarFiltroHoy()" [disabled]="operacionEnCurso">
+        <button class="btn-filtro-rapido w-100" [class.activo]="filtroActivo === 'hoy'" (click)="aplicarFiltroHoy()" [disabled]="operacionEnCurso">
           <i class="bi bi-calendar-day me-1"></i> Hoy
         </button>
       </div>
       <div class="col-6 col-md-3">
-        <button class="btn-filtro-rapido w-100" (click)="aplicarFiltroSemana()" [disabled]="operacionEnCurso">
+        <button class="btn-filtro-rapido w-100" [class.activo]="filtroActivo === 'semana'" (click)="aplicarFiltroSemana()" [disabled]="operacionEnCurso">
           <i class="bi bi-calendar-week me-1"></i> Esta Semana
         </button>
       </div>
       <div class="col-6 col-md-3">
-        <button class="btn-filtro-rapido w-100" (click)="aplicarFiltroMes()" [disabled]="operacionEnCurso">
+        <button class="btn-filtro-rapido w-100" [class.activo]="filtroActivo === 'mes'" (click)="aplicarFiltroMes()" [disabled]="operacionEnCurso">
           <i class="bi bi-calendar-month me-1"></i> Este Mes
         </button>
       </div>
@@ -48,14 +53,17 @@
         </button>
       </div>
     </div>
-    <div class="row g-3 mt-2">
-      <div class="col-md-6">
+    <div class="row g-3 mt-2 align-items-end">
+      <div class="col-md-5">
         <label class="form-label fw-semibold small">Fecha Inicio</label>
         <input type="date" class="form-control" [(ngModel)]="fechaInicio" (change)="onFechaCambiada()" [disabled]="operacionEnCurso">
       </div>
-      <div class="col-md-6">
+      <div class="col-md-5">
         <label class="form-label fw-semibold small">Fecha Fin</label>
         <input type="date" class="form-control" [(ngModel)]="fechaFin" (change)="onFechaCambiada()" [disabled]="operacionEnCurso">
+      </div>
+      <div class="col-md-2">
+        <small class="text-muted d-block">Tip: usa la misma fecha en ambos campos para ver un solo día.</small>
       </div>
     </div>
   </div>
@@ -123,14 +131,14 @@
     </div>
   </div>
 
-  <!-- ======== KPIS SECUNDARIOS (solo si hay datos) ======== -->
+  <!-- ======== MINI-KPIS DE RESUMEN (números puntuales, no texto largo) ======== -->
   <div class="row g-3 mb-4" *ngIf="resumen && !cargando">
     <div class="col-6 col-md-3">
       <div class="card kpi-mini shadow-sm border-0 rounded-4 h-100">
         <div class="card-body text-center">
           <i class="bi bi-trophy kpi-mini-icono text-success"></i>
           <div class="small text-muted">Mejor Día</div>
-          <div class="fw-bold">{{ resumen.mejorDia }}</div>
+          <div class="fw-bold">{{ humanizeDate(resumen.mejorDia, true) }}</div>
           <div class="small text-success">S/ {{ resumen.mejorDiaTotal.toFixed(2) }}</div>
         </div>
       </div>
@@ -166,21 +174,7 @@
     </div>
   </div>
 
-  <!-- ======== INTERPRETACIÓN AUTOMÁTICA ======== -->
-  <div class="card interpretacion-card shadow-sm border-0 rounded-4 mb-4" *ngIf="resumen && !cargando">
-    <div class="card-body">
-      <h6 class="fw-bold mb-2"><i class="bi bi-lightbulb me-2"></i>Interpretación de resultados</h6>
-      <p class="mb-0 small text-secondary">
-        El mejor día de ventas fue <strong>{{ resumen.mejorDia }}</strong> (S/ {{ resumen.mejorDiaTotal.toFixed(2) }}),
-        mientras que <strong>{{ resumen.peorDia }}</strong> registró el monto más bajo (S/ {{ resumen.peorDiaTotal.toFixed(2) }}).
-        La hora de mayor actividad fue <strong>{{ resumen.horaPico }}</strong> con S/ {{ resumen.horaPicoTotal.toFixed(2) }} en ventas.
-        El medio de pago más usado fue <strong>"{{ resumen.medioPagoPrincipal }}"</strong> ({{ resumen.medioPagoPrincipalPct.toFixed(1) }}% del total).
-        En general, {{ resumen.tendenciaTexto }}.
-      </p>
-    </div>
-  </div>
-
-  <!-- ======== GRÁFICOS ======== -->
+  <!-- ======== GRÁFICOS (sin cajas de interpretación en pantalla; eso va solo en el PDF) ======== -->
   <div class="row g-4">
     <div class="col-lg-6">
       <div class="card grafico-card shadow-sm border-0 rounded-4 h-100">
@@ -188,14 +182,12 @@
           <h6 class="fw-bold mb-0"><i class="bi bi-calendar3 me-2 icono-verde"></i>Ventas por Día</h6>
         </div>
         <div class="card-body">
-          <div class="chart-wrapper" [class.skeleton-chart]="cargando">
-            <canvas *ngIf="!cargando"
-                    baseChart
-                    #barChartRef="base-chart"
-                    [data]="barChartData"
-                    [options]="barChartOptions"
-                    [type]="barChartType">
-            </canvas>
+          <div class="grafico-container">
+            <div class="chart-wrapper" [class.skeleton-chart]="cargando">
+              <canvas *ngIf="!cargando" baseChart #barChartRef="base-chart"
+                      [data]="barChartData" [options]="barChartOptions" [type]="barChartType">
+              </canvas>
+            </div>
           </div>
           <div *ngIf="!cargando && ventasPorDiaData.length === 0" class="text-center text-muted mt-3">
             <i class="bi bi-inbox display-6 d-block"></i>
@@ -211,14 +203,12 @@
           <h6 class="fw-bold mb-0"><i class="bi bi-credit-card-2-front me-2 icono-naranja"></i>Medios de Pago</h6>
         </div>
         <div class="card-body">
-          <div class="chart-wrapper" [class.skeleton-chart]="cargando">
-            <canvas *ngIf="!cargando"
-                    baseChart
-                    #pieChartRef="base-chart"
-                    [data]="pieChartData"
-                    [options]="pieChartOptions"
-                    [type]="pieChartType">
-            </canvas>
+          <div class="grafico-container">
+            <div class="chart-wrapper" [class.skeleton-chart]="cargando">
+              <canvas *ngIf="!cargando" baseChart #pieChartRef="base-chart"
+                      [data]="pieChartData" [options]="pieChartOptions" [type]="pieChartType">
+              </canvas>
+            </div>
           </div>
           <div *ngIf="!cargando && distribucionPagosData.length === 0" class="text-center text-muted mt-3">
             <i class="bi bi-inbox display-6 d-block"></i>
@@ -231,17 +221,15 @@
     <div class="col-lg-12">
       <div class="card grafico-card shadow-sm border-0 rounded-4">
         <div class="card-header bg-transparent border-0 pt-3">
-          <h6 class="fw-bold mb-0"><i class="bi bi-clock me-2 icono-azul"></i>Ventas por Hora ({{ fechaInicio }})</h6>
+          <h6 class="fw-bold mb-0"><i class="bi bi-clock me-2 icono-azul"></i>Ventas por Hora — {{ humanizeDate(fechaInicio, true) }}</h6>
         </div>
         <div class="card-body">
-          <div class="chart-wrapper chart-wrapper-lg" [class.skeleton-chart]="cargando">
-            <canvas *ngIf="!cargando"
-                    baseChart
-                    #lineChartRef="base-chart"
-                    [data]="lineChartData"
-                    [options]="lineChartOptions"
-                    [type]="lineChartType">
-            </canvas>
+          <div class="grafico-container">
+            <div class="chart-wrapper chart-wrapper-lg" [class.skeleton-chart]="cargando">
+              <canvas *ngIf="!cargando" baseChart #lineChartRef="base-chart"
+                      [data]="lineChartData" [options]="lineChartOptions" [type]="lineChartType">
+              </canvas>
+            </div>
           </div>
           <div *ngIf="!cargando && ventasPorHoraData.length === 0" class="text-center text-muted mt-3">
             <i class="bi bi-inbox display-6 d-block"></i>
