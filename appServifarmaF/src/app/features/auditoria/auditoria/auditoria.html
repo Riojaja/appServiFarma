@@ -1,0 +1,180 @@
+<div class="container-fluid mt-4">
+
+  <!-- ======== ENCABEZADO ======== -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-shield-check" style="color: #3b82f6;"></i> Auditoría del Sistema
+      </h2>
+      <p class="text-muted small mb-0" style="font-weight: 400;">
+        Registro de todas las acciones realizadas en el sistema
+      </p>
+    </div>
+    <button class="btn-farma-refrescar" (click)="cargarDatos()" [disabled]="cargando">
+      <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+      {{ cargando ? 'Cargando...' : 'Actualizar' }}
+    </button>
+  </div>
+
+  <!-- ======== RESUMEN DE ACTIVIDAD (KPIs) ======== -->
+  <div *ngIf="!cargando && resumen" class="row g-3 mb-4">
+    <div class="col-md-2">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body text-center p-2">
+          <i class="bi bi-cash-stack display-6" style="color: #3b82f6;"></i>
+          <h6 class="text-muted mt-1">Total Ventas</h6>
+          <h5 class="fw-bold">{{ resumen.totalVentas | currency:'S/ ':'symbol':'1.2-2' }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body text-center p-2">
+          <i class="bi bi-receipt display-6" style="color: #f59e0b;"></i>
+          <h6 class="text-muted mt-1">Transacciones</h6>
+          <h5 class="fw-bold">{{ resumen.totalTransacciones | number }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body text-center p-2">
+          <i class="bi bi-x-circle display-6" style="color: #ef4444;"></i>
+          <h6 class="text-muted mt-1">Anuladas</h6>
+          <h5 class="fw-bold">{{ resumen.totalAnuladas | number }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body text-center p-2">
+          <i class="bi bi-arrow-left-right display-6" style="color: #3b82f6;"></i>
+          <h6 class="text-muted mt-1">Mov. Stock</h6>
+          <h5 class="fw-bold">{{ resumen.totalMovimientosStock | number }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body text-center p-2">
+          <i class="bi bi-cash display-6" style="color: #8b5cf6;"></i>
+          <h6 class="text-muted mt-1">Cajas Cerradas</h6>
+          <h5 class="fw-bold">{{ resumen.totalCajasCerradas | number }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-2">
+      <div class="card shadow-sm border-0 rounded-4 h-100">
+        <div class="card-body text-center p-2">
+          <i class="bi bi-tags display-6" style="color: #ec4899;"></i>
+          <h6 class="text-muted mt-1">Mermas</h6>
+          <h5 class="fw-bold">{{ (resumen.movimientosPorTipo && resumen.movimientosPorTipo['merma']) || 0 | number }}</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== FILTROS ======== -->
+  <div class="card shadow-sm border-0 rounded-4 p-3 mb-4" style="border-left: 4px solid #3b82f6;">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Usuario</label>
+        <select class="form-select" [(ngModel)]="usuarioFiltro" (change)="aplicarFiltros()">
+          <option value="todos">Todos los usuarios</option>
+          <option *ngFor="let u of usuarios" [value]="u.id">{{ u.nombre }}</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Acción</label>
+        <input type="text" class="form-control" [(ngModel)]="accionFiltro" (input)="aplicarFiltros()" placeholder="Buscar acción...">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Fecha Inicio</label>
+        <input type="date" class="form-control" [(ngModel)]="fechaInicio">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold small">Fecha Fin</label>
+        <input type="date" class="form-control" [(ngModel)]="fechaFin">
+      </div>
+    </div>
+    <div class="row mt-3">
+      <div class="col-md-12 text-end">
+        <button class="btn btn-primary" style="background-color: #3b82f6; border-color: #3b82f6;" (click)="cargarDatos()" [disabled]="cargando">
+          <i class="bi bi-funnel me-1"></i> Filtrar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== SPINNER ======== -->
+  <div *ngIf="cargando" class="text-center py-3">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- ======== TABLA DE REGISTROS ======== -->
+  <div *ngIf="!cargando" class="card shadow-sm border-0 rounded-4">
+    <div class="card-body">
+      <div *ngIf="registrosFiltrados.length === 0" class="text-center py-4 text-muted">
+        <i class="bi bi-inbox display-4 d-block mb-2"></i>
+        <p>No hay registros de auditoría para los filtros seleccionados</p>
+      </div>
+
+      <div *ngIf="registrosFiltrados.length > 0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Módulo</th>
+                <th>Detalle</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let registro of registrosPagina">
+                <td><span class="fw-semibold">{{ registro.usuario }}</span></td>
+                <td>{{ registro.accion }}</td>
+                <td>{{ registro.fecha | date:'dd/MM/yyyy' }}</td>
+                <td>{{ registro.hora }}</td>
+                <td><span class="badge bg-light text-dark">{{ registro.modulo }}</span></td>
+                <td><small class="text-muted">{{ registro.detalle || '' }}</small></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- ======== PAGINACIÓN ======== -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div>
+            <span class="text-muted small">
+              Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
+              {{ Math.min(paginaActual * itemsPorPagina, registrosFiltrados.length) }}
+              de {{ registrosFiltrados.length }} registros
+            </span>
+          </div>
+          <div class="btn-group shadow-sm">
+            <button class="btn btn-outline-secondary btn-sm" (click)="anteriorPagina()" [disabled]="paginaActual === 1">
+              <i class="bi bi-chevron-left"></i> Anterior
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" (click)="siguientePagina()" [disabled]="paginaActual === totalPaginas">
+              Siguiente <i class="bi bi-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== INFORMACIÓN ======== -->
+  <div class="alert alert-info mt-3" role="alert" style="background-color: #eff6ff; border-color: #3b82f6;">
+    <i class="bi bi-info-circle me-2" style="color: #3b82f6;"></i>
+    <strong>Información de Auditoría:</strong>
+    Todos los registros de auditoría se almacenan en una permanencia y no pueden ser modificados.
+    La auditoría es crucial para el cumplimiento normativo y la seguridad del sistema.
+  </div>
+
+</div>

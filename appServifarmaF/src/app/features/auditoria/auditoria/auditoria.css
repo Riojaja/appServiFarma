@@ -1,0 +1,73 @@
+/* ===== BOTONES ===== */
+.btn-farma-refrescar {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+  border: none;
+  background-color: #eff6ff;
+  color: #1e3a8a;
+}
+.btn-farma-refrescar:hover:not(:disabled) {
+  background-color: #dbeafe;
+  transform: translateY(-1px);
+}
+.btn-farma-refrescar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== TARJETAS ===== */
+.card {
+  transition: all 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.08) !important;
+}
+
+/* ===== TABLA ===== */
+.table-hover tbody tr:hover {
+  background-color: #eff6ff;
+  cursor: pointer;
+}
+.table th {
+  font-weight: 600;
+  color: #1e3a8a;
+  border-bottom: 2px solid #bfdbfe;
+}
+.table td {
+  vertical-align: middle;
+}
+.badge {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  font-weight: 500;
+  padding: 0.35rem 0.65rem;
+  border-radius: 30px;
+}
+
+/* ===== FILTROS ===== */
+.card {
+  border-left: 4px solid #3b82f6 !important;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .col-md-2, .col-md-3 {
+    margin-bottom: 0.5rem;
+  }
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+}

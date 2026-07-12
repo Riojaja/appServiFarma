@@ -1,0 +1,145 @@
+.rentabilidad-container {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-farma-excel, .btn-farma-pdf, .btn-farma-csv {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  transition: all 0.2s ease;
+  border: none;
+  gap: 0.3rem;
+}
+
+.btn-farma-excel {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+.btn-farma-excel:hover {
+  background-color: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.btn-farma-pdf {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.btn-farma-pdf:hover {
+  background-color: #fecaca;
+  transform: translateY(-1px);
+}
+
+.btn-farma-csv {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+.btn-farma-csv:hover {
+  background-color: #c7d2fe;
+  transform: translateY(-1px);
+}
+
+.card {
+  transition: all 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08) !important;
+  transform: translateY(-2px);
+}
+
+canvas {
+  max-height: 300px;
+  width: 100% !important;
+}
+
+.form-control[type="date"] {
+  border-radius: 30px;
+  padding-left: 1rem; /* Añadido para alinear el ícono */
+}
+
+.btn-outline-primary {
+  border-color: #0d9488;
+  color: #0d9488;
+}
+.btn-outline-primary:hover {
+  border-color: #0d9488;
+  background-color: #0d9488;
+  color: white;
+}
+
+.btn-primary {
+  background-color: #0d9488;
+  border-color: #0d9488;
+}
+.btn-primary.disabled,
+.btn-primary:disabled {
+  background-color: #cbd5e1 !important;
+  border-color: #94a3b8 !important;
+  color: #64748b !important;
+}
+
+.spinner-border.text-primary {
+  border-color: #0d9488 !important;
+}
+
+.card.kpi-card {
+  background-color: rgba(173, 216, 230, 0.1); /* Slightly lighter azure background */
+}
+.card.kpi-card:hover {
+  background-color: rgba(173, 216, 230, 0.2); /* Slightly darker on hover */
+}
+
+.card.kpi-card .card-body {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.card.kpi-card .card-body h5 {
+  font-size: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.card.kpi-card .card-body h6 {
+  font-size: 0.75rem;
+}
+
+.card.kpi-card .display-6 {
+  margin-bottom: 1rem;
+}
+
+.alert.py-3 {
+  padding: 1rem;
+  background-color: #ecfdf5;
+  border-color: #22c55e;
+}
+
+.alert.py-3 strong {
+  color: #22c55e;
+}

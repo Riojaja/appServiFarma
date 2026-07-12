@@ -1,0 +1,75 @@
+<div class="rentabilidad-container">
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 rounded-4 p-3 mb-4">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary btn-sm w-100" (click)="aplicarFiltroHoy()">
+          <i class="bi bi-calendar-day me-1"></i> Hoy
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary btn-sm w-100" (click)="aplicarFiltroSemana()">
+          <i class="bi bi-calendar-week me-1"></i> Esta Semana
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary btn-sm w-100" (click)="aplicarFiltroMes()">
+          <i class="bi bi-calendar-month me-1"></i> Este Mes
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary w-100" style="background-color: #0d9488; border-color: #0d9488;" (click)="cargarRentabilidad()" [disabled]="cargando">
+          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+          {{ cargando ? 'Cargando...' : 'Filtrar' }}
+        </button>
+      </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Fecha Inicio</label>
+        <input type="date" class="form-control" [(ngModel)]="fechaInicio">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Fecha Fin</label>
+        <input type="date" class="form-control" [(ngModel)]="fechaFin">
+      </div>
+    </div>
+  </div>
+
+  <!-- Spinner -->
+  <div *ngIf="cargando" class="text-center py-3">
+    <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
+  </div>
+
+  <!-- KPIs -->
+  <div *ngIf="!cargando && rentabilidad" class="row g-3 mb-4">
+    <div class="col-md-2"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body text-center p-2"><i class="bi bi-cash-stack display-6" style="color: #0d9488;"></i><h6 class="text-muted mt-1">Ingresos</h6><h5 class="fw-bold">{{ ingresosTotales | currency:'S/ ':'symbol':'1.2-2' }}</h5></div></div></div>
+    <div class="col-md-2"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body text-center p-2"><i class="bi bi-credit-card-2-front display-6" style="color: #f59e0b;"></i><h6 class="text-muted mt-1">Costos</h6><h5 class="fw-bold">{{ costoVentas | currency:'S/ ':'symbol':'1.2-2' }}</h5></div></div></div>
+    <div class="col-md-2"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body text-center p-2"><i class="bi bi-exclamation-triangle display-6" style="color: #ef4444;"></i><h6 class="text-muted mt-1">Mermas</h6><h5 class="fw-bold">{{ mermas | currency:'S/ ':'symbol':'1.2-2' }}</h5></div></div></div>
+    <div class="col-md-3"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body text-center p-2"><i class="bi bi-graph-up-arrow display-6" style="color: #3b82f6;"></i><h6 class="text-muted mt-1">Margen Bruto</h6><h5 class="fw-bold">{{ margenBruto | currency:'S/ ':'symbol':'1.2-2' }}</h5></div></div></div>
+    <div class="col-md-3"><div class="card shadow-sm border-0 rounded-4 h-100"><div class="card-body text-center p-2"><i class="bi bi-graph-up-arrow display-6" style="color: #0d9488;"></i><h6 class="text-muted mt-1">Margen Neto</h6><h5 class="fw-bold">{{ margenNeto | currency:'S/ ':'symbol':'1.2-2' }}</h5></div></div></div>
+  </div>
+
+  <!-- Gráfico -->
+  <div *ngIf="!cargando && rentabilidad" class="row">
+    <div class="col-lg-12">
+      <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-transparent border-0 pt-3"><h6 class="fw-bold mb-0"><i class="bi bi-pie-chart me-2" style="color: #0d9488;"></i>Margen por Categoría</h6></div>
+        <div class="card-body">
+          <canvas baseChart [data]="barChartData" [options]="barChartOptions" [type]="barChartType"></canvas>
+          <div *ngIf="categorias.length === 0" class="text-center text-muted mt-3"><i class="bi bi-inbox display-6 d-block"></i><p>No hay datos de categorías para el período seleccionado</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botones de exportación -->
+  <div *ngIf="!cargando && rentabilidad" class="d-flex gap-2 mt-3">
+    <button class="btn-farma-excel" (click)="exportar('excel')"><i class="bi bi-file-earmark-excel"></i> Excel</button>
+    <button class="btn-farma-pdf" (click)="exportar('pdf')"><i class="bi bi-file-earmark-pdf"></i> PDF</button>
+    <button class="btn-farma-csv" (click)="exportar('csv')"><i class="bi bi-file-earmark-text"></i> CSV</button>
+  </div>
+
+  <!-- Sin datos -->
+  <div *ngIf="!cargando && !rentabilidad" class="text-center py-4 text-muted"><i class="bi bi-inbox display-4 d-block mb-2"></i><p>No hay datos de rentabilidad. Ajusta el rango de fechas.</p></div>
+</div>

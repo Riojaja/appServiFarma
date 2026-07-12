@@ -1,0 +1,85 @@
+.digemit-container {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.card.bg-light {
+  background-color: rgba(173, 216, 230, 0.3); /* Light azure background */
+}
+
+.card.bg-light-subtle {
+  background-color: rgba(173, 216, 230, 0.1); /* Slightly lighter azure background for subtle elements */
+}
+
+.alert.py-3 {
+  padding: 1rem;
+}
+
+.btn.btn-outline-primary {
+  background-color: #e0f7fa; /* Very light blue background */
+  color: #006064; /* Darker blue color */
+}
+
+.btn.btn-outline-primary:hover:not(:disabled) {
+  background-color: #b2ebf2; /* Slightly darker blue background on hover */
+  transform: translateY(-1px);
+}
+
+.btn.btn-outline-danger {
+  background-color: #ffebee; /* Very light red background */
+  color: #ef6c00; /* Darker amber color */
+}
+
+.btn.btn-outline-danger:hover:not(:disabled) {
+  background-color: #ffcdd2; /* Slightly darker red background on hover */
+  transform: translateY(-1px);
+}
+
+.btn.btn-outline-secondary {
+  background-color: #f8f9fa; /* Neutral light gray background */
+  color: #004d40; /* Darkest blue green color */
+}
+
+.btn.btn-outline-secondary:hover:not(:disabled) {
+  background-color: #e9ecef; /* Slightly darker neutral color on hover */
+  transform: translateY(-1px);
+}
+
+.btn.btn-outline-info {
+  background-color: #e1ffc7; /* Very light green background */
+  color: #006064; /* Darker blue color */
+  gap: 0.5rem; /* Increased gap for better visual separation */
+}
+
+.btn.btn-outline-info:hover:not(:disabled) {
+  background-color: #cdfff3; /* Slightly darker green background on hover */
+  transform: translateY(-1px);
+}
+
+.form-control[type="month"] {
+  border-radius: 30px;
+  padding-left: 2rem; /* Increased left padding for better visual alignment with Bootstrap icons */
+}

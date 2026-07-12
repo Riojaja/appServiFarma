@@ -1,0 +1,45 @@
+<div class="digemit-container">
+  <div class="card shadow-sm border-0 rounded-4 bg-light">
+    <div class="card-body">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small">Mes de Reporte</label>
+          <input type="month" class="form-control" [(ngModel)]="mesDigemit">
+        </div>
+        <div class="col-md-8 d-flex gap-2 justify-content-end">
+          <button class="btn btn-outline-primary" (click)="exportar('excel')" [disabled]="cargando">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+          </button>
+          <button class="btn btn-outline-danger" (click)="exportar('pdf')" [disabled]="cargando">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+          </button>
+          <button class="btn btn-outline-secondary" (click)="exportar('csv')" [disabled]="cargando">
+            <i class="bi bi-file-earmark-text"></i> CSV
+          </button>
+          <button class="btn btn-outline-info" [disabled]="cargando">
+            <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+          {{ cargando ? 'Generando...' : 'Generar' }}
+            </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Información -->
+  <div class="alert py-3 mt-3" role="alert" style="background-color: #f0fdfa; border-color: #0d9488;">
+    <i class="bi bi-info-circle me-2" style="color: #0d9488;"></i>
+    <strong>Normativa DIGEMID:</strong> Este reporte mensual debe ser presentado según la normativa vigente. Exporta el archivo en el formato requerido por la entidad.
+  </div>
+
+  <!-- Vista previa -->
+  <div class="card shadow-sm border-0 rounded-4 mt-3 bg-light-subtle">
+    <div class="card-body">
+      <h6 class="fw-bold mb-3"><i class="bi bi-table me-2"></i>Vista previa del reporte</h6>
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-printer display-4 d-block mb-3"></i>
+        <p>El reporte DIGEMID se genera al exportar. Selecciona el mes y haz clic en "Generar" para iniciar la descarga.</p>
+        <p class="small"><i class="bi bi-check-circle-fill text-success me-1"></i> Formato compatible: Excel, PDF, CSV</p>
+      </div>
+    </div>
+  </div>
+</div>

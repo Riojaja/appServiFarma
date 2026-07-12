@@ -1,0 +1,55 @@
+<div class="container-fluid mt-4">
+
+  <!-- Encabezado -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="fw-bold mb-0" style="color: #1a1a2e;">
+        <i class="bi bi-file-earmark-text" style="color: #0d9488;"></i> Reportes
+      </h2>
+      <p class="text-muted small mb-0" style="font-weight: 400;">
+        Generación de reportes de rentabilidad y DIGEMID
+      </p>
+    </div>
+  </div>
+
+  <!-- Pestañas mejoradas (estilo "Acciones Rápidas") -->
+  <div class="row g-3 mb-4">
+    <!-- Tarjeta Rentabilidad -->
+    <div class="col-md-6">
+      <a routerLink="rentabilidad" routerLinkActive="active" 
+         class="card p-3 text-decoration-none shadow-sm border-0 rounded-4 h-100 transition-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-circle" style="background-color: #d1fae5;">
+            <i class="bi bi-bar-chart-line-fill fs-4" style="color: #0d9488;"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0" style="color: #1a1a2e;">Rentabilidad</h5>
+            <small class="text-muted">Análisis de ingresos, costos y márgenes</small>
+          </div>
+          <i class="bi bi-chevron-right ms-auto" style="color: #94a3b8;"></i>
+        </div>
+      </a>
+    </div>
+
+    <!-- Tarjeta DIGEMID -->
+    <div class="col-md-6">
+      <a routerLink="digemit" routerLinkActive="active" 
+         class="card p-3 text-decoration-none shadow-sm border-0 rounded-4 h-100 transition-card">
+        <div class="d-flex align-items-center gap-3">
+          <div class="icon-circle" style="background-color: #fef3c7;">
+            <i class="bi bi-file-earmark-richtext fs-4" style="color: #f59e0b;"></i>
+          </div>
+          <div>
+            <h5 class="fw-bold mb-0" style="color: #1a1a2e;">DIGEMID</h5>
+            <small class="text-muted">Reporte mensual para DIGEMID</small>
+          </div>
+          <i class="bi bi-chevron-right ms-auto" style="color: #94a3b8;"></i>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <!-- Contenido dinámico -->
+  <router-outlet></router-outlet>
+
+</div>

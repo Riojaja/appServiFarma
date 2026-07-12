@@ -121,10 +121,25 @@ export const routes: Routes = [
       // ============================================================
       {
         path: 'reportes',
+        loadComponent: () => import('./features/reportes/reportes')
+          .then(m => m.ReportesComponent),
+        canActivate: [AuthGuard],
         children: [
-          { path: 'digemit', loadComponent: () => import('./features/reportes/digemit/digemit').then(m => m.DigemitComponent) },
-          { path: 'rentabilidad', loadComponent: () => import('./features/reportes/rentabilidad/rentabilidad').then(m => m.RentabilidadComponent) },
-          { path: '', redirectTo: 'digemit', pathMatch: 'full' }
+          {
+            path: 'rentabilidad',
+            loadComponent: () => import('./features/reportes/rentabilidad/rentabilidad/rentabilidad')
+              .then(m => m.RentabilidadComponent)
+          },
+          {
+            path: 'digemit',
+            loadComponent: () => import('./features/reportes/digemit/digemit/digemit')
+              .then(m => m.DigemitComponent)
+          },
+          {
+            path: '',
+            redirectTo: 'rentabilidad',
+            pathMatch: 'full'
+          }
         ]
       }, {
 
@@ -133,13 +148,9 @@ export const routes: Routes = [
       },
       {
         path: 'auditoria',
-        children: [
-          { path: 'movimientos-stock', loadComponent: () => import('./features/auditoria/movimientos-stock/movimientos-stock').then(m => m.MovimientosStockComponent) },
-          { path: 'ventas-anuladas', loadComponent: () => import('./features/auditoria/ventas-anuladas/ventas-anuladas').then(m => m.VentasAnuladasComponent) },
-          { path: 'cajas-diferencia', loadComponent: () => import('./features/auditoria/cajas-diferencia/cajas-diferencia').then(m => m.CajasDiferenciaComponent) },
-          { path: 'resumen-actividad', loadComponent: () => import('./features/auditoria/resumen-actividad/resumen-actividad').then(m => m.ResumenActividadComponent) },
-          { path: '', redirectTo: 'resumen-actividad', pathMatch: 'full' }
-        ]
+        loadComponent: () => import('./features/auditoria/auditoria/auditoria')
+          .then(m => m.AuditoriaComponent),
+        canActivate: [AuthGuard]
       },
 
       // ============================================================
