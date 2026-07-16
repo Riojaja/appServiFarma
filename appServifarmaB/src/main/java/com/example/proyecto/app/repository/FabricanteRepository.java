@@ -32,4 +32,6 @@ public interface FabricanteRepository extends JpaRepository<Fabricante, Integer>
      * Verifica si ya existe un fabricante con el nombre dado (ignorando mayúsculas/minúsculas).
      */
     boolean existsByNombreIgnoreCase(String nombre);
+    
+    Optional<Fabricante> findByNombreIgnoreCase(String nombre);
 }

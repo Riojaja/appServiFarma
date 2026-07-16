@@ -150,4 +150,6 @@ public interface ProductoService {
      * @return true si existe, false en caso contrario.
      */
     boolean existePorCodigoBarras(String codigoBarras);
+    
+    void actualizarImagenProducto(Integer id, String rutaImagen);
 }

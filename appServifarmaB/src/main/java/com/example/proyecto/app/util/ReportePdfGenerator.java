@@ -11,7 +11,7 @@ import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+
 
 /**
  * Generador de reportes en PDF con diseño profesional e institucional.

@@ -37,10 +37,21 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoMapper productoMapper;
     private final BitacoraComunicacionService bitacoraService;
     private final SecurityUtils securityUtils;
+    private final ProductoImportService productoImportService; // Inyectado para manejar imágenes
 
     // ==============================
     // OPERACIONES CRUD BÁSICAS
     // ==============================
+    
+    @Override
+    @Transactional
+    public void actualizarImagenProducto(Integer id, String rutaImagen) {
+        Producto producto = productoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado con ID: " + id));
+        producto.setImagen(rutaImagen);
+        productoRepository.save(producto);
+        log.info("Imagen actualizada para producto ID: {}", id);
+    }
 
     @Override
     @Transactional
@@ -77,8 +88,52 @@ public class ProductoServiceImpl implements ProductoService {
         producto.setFabricante(fabricante);
         producto.setProductoGenerico(productoGenerico);
 
+        // Procesar imagen: si es URL, descargarla y guardar localmente
+        String imagenOriginal = request.getImagen();
+        if (imagenOriginal != null && !imagenOriginal.isEmpty() 
+                && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
+            try {
+                // Guardar imagen con ID temporal (aún no tenemos ID, pasamos null)
+                String rutaLocal = productoImportService.guardarImagenDesdeUrl(imagenOriginal, null);
+                producto.setImagen(rutaLocal);
+                log.info("Imagen descargada desde URL: {}", rutaLocal);
+            } catch (Exception e) {
+                log.warn("No se pudo descargar la imagen desde URL: {}", e.getMessage());
+                // Si falla, guardamos la URL original (no la guardamos localmente)
+                producto.setImagen(imagenOriginal);
+            }
+        } else {
+            // Si es ruta local o null, se mantiene
+            producto.setImagen(imagenOriginal);
+        }
+
         Producto saved = productoRepository.save(producto);
         log.info("Producto creado: {} (ID: {})", saved.getNombre(), saved.getId());
+
+        // Si la imagen fue descargada con ID null, actualizar la ruta con el ID real
+        if (imagenOriginal != null && !imagenOriginal.isEmpty() 
+                && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
+            String rutaActual = saved.getImagen();
+            if (rutaActual != null && rutaActual.contains("temp")) {
+                // Reemplazar "temp" por el ID real
+                try {
+                    String nuevaRuta = rutaActual.replace("temp", "producto_" + saved.getId());
+                    // Renombrar el archivo físicamente
+                    java.nio.file.Path origen = java.nio.file.Paths.get("uploads/productos/", 
+                            rutaActual.substring(rutaActual.lastIndexOf('/') + 1));
+                    java.nio.file.Path destino = java.nio.file.Paths.get("uploads/productos/", 
+                            nuevaRuta.substring(nuevaRuta.lastIndexOf('/') + 1));
+                    if (java.nio.file.Files.exists(origen)) {
+                        java.nio.file.Files.move(origen, destino, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                        saved.setImagen("/uploads/productos/" + destino.getFileName());
+                        productoRepository.save(saved);
+                        log.info("Imagen renombrada a: {}", destino.getFileName());
+                    }
+                } catch (Exception e) {
+                    log.warn("No se pudo renombrar la imagen: {}", e.getMessage());
+                }
+            }
+        }
 
         // ==============================================================
         // CREAR MENSAJE EN BITÁCORA
@@ -149,6 +204,25 @@ public class ProductoServiceImpl implements ProductoService {
 
         // 6. Actualizar datos
         productoMapper.updateEntity(producto, request);
+
+        // Procesar imagen: si es URL, descargarla y guardar localmente
+        String imagenOriginal = request.getImagen();
+        if (imagenOriginal != null && !imagenOriginal.isEmpty() 
+                && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
+            try {
+                String rutaLocal = productoImportService.guardarImagenDesdeUrl(imagenOriginal, id);
+                producto.setImagen(rutaLocal);
+                log.info("Imagen descargada desde URL para actualización: {}", rutaLocal);
+            } catch (Exception e) {
+                log.warn("No se pudo descargar la imagen desde URL para actualización: {}", e.getMessage());
+                // Si falla, guardamos la URL original
+                producto.setImagen(imagenOriginal);
+            }
+        } else {
+            // Si es ruta local o null, se mantiene
+            producto.setImagen(imagenOriginal);
+        }
+
         producto.setCategoria(categoria);
         producto.setFabricante(fabricante);
         producto.setProductoGenerico(productoGenerico);

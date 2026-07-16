@@ -33,6 +33,11 @@ public class ProductoRequest {
     @Builder.Default
     private Boolean esGenerico = false;
 
+    // ✅ Agregado: precio de compra actual
+    @NotNull(message = "El precio de compra actual es obligatorio")
+    @Positive(message = "El precio de compra debe ser mayor a cero")
+    private BigDecimal precioCompraActual;
+
     @NotNull(message = "El precio de venta actual es obligatorio")
     @Positive(message = "El precio de venta debe ser mayor a cero")
     private BigDecimal precioVentaActual;
@@ -42,7 +47,7 @@ public class ProductoRequest {
     @Builder.Default
     private Integer stockMinimo = 5;
 
-    // Relaciones (IDs de las entidades relacionadas, pueden ser nulos)
+    // Relaciones
     private Integer categoriaId;
     private Integer fabricanteId;
     private Integer productoGenericoId;

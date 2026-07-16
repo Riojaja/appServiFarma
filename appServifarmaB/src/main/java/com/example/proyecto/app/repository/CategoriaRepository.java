@@ -32,4 +32,6 @@ public interface CategoriaRepository extends JpaRepository<Categoria, Integer> {
      * Verifica si ya existe una categoría con el nombre dado (case-insensitive).
      */
     boolean existsByNombreIgnoreCase(String nombre);
+    
+    Optional<Categoria> findByNombreIgnoreCase(String nombre);
 }
