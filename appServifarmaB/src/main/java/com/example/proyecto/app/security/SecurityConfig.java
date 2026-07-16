@@ -17,55 +17,40 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-// IMPORTANTE: sin esta anotación, Spring IGNORA EN SILENCIO todos los
-// @PreAuthorize/@PostAuthorize del proyecto (Auditoria, Estadistica, Reporte).
-// Antes de este fix, cualquier usuario autenticado (incluido "vendedor")
-// podía acceder a esos endpoints marcados como "solo ADMIN".
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
-    // Inyectado desde config/CorsConfig.java: única fuente de verdad para CORS.
     private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Deshabilitar CSRF ya que usamos JWT (stateless)
                 .csrf(csrf -> csrf.disable())
-
-                // CORS centralizado (ver config/CorsConfig.java)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
-
-                // Configurar manejo de excepciones de autenticación
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                 )
-
-                // Política de sesión sin estado (stateless)
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
-
-                // Autorización de peticiones
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos (autenticación)
+                        // Endpoints públicos
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Documentación Swagger / OpenAPI
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        // Endpoints de parámetros del sistema (solo admin)
+                        
+                        // ✅ NUEVO: Permitir acceso público a imágenes de productos
+                        .requestMatchers("/uploads/**").permitAll()
+
+                        // Endpoints restringidos a ADMIN
                         .requestMatchers("/api/parametros/**").hasRole("ADMIN")
-                        // Endpoints de usuarios (solo admin)
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
-                        // Los demás endpoints requieren autenticación;
-                        // las restricciones más finas (ej. solo ADMIN puede
-                        // eliminar catálogos) se hacen con @PreAuthorize
-                        // en el controlador correspondiente.
+
+                        // Cualquier otra petición requiere autenticación
                         .anyRequest().authenticated()
                 )
-                // Añadir el filtro JWT antes del filtro de autenticación por defecto
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

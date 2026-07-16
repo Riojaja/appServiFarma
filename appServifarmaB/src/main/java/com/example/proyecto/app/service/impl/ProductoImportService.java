@@ -44,6 +44,7 @@ public class ProductoImportService {
     private final CategoriaRepository categoriaRepository;
     private final FabricanteRepository fabricanteRepository;
     private final ProductoMapper productoMapper;
+    // ✅ Eliminada la dependencia a ProductoService para romper el ciclo
 
     // ============================================================
     // GENERACIÓN DE PLANTILLA
@@ -247,7 +248,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // IMPORTACIÓN (CORREGIDA - SIN DEPENDENCIA CÍCLICA)
+    // IMPORTACIÓN (CON DESCARGA DE IMÁGENES)
     // ============================================================
 
     @Transactional
@@ -265,9 +266,10 @@ public class ProductoImportService {
             try {
                 validarFila(dto);
                 ProductoRequest request = mapearARequest(dto);
-                // Mapear a entidad
+
+                // 1. Mapear a entidad
                 Producto producto = productoMapper.toEntity(request);
-                // Setear relaciones (categoría y fabricante)
+                // 2. Setear relaciones
                 if (request.getCategoriaId() != null) {
                     Categoria categoria = categoriaRepository.findById(request.getCategoriaId())
                             .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
@@ -278,11 +280,31 @@ public class ProductoImportService {
                             .orElseThrow(() -> new RuntimeException("Fabricante no encontrado"));
                     producto.setFabricante(fabricante);
                 }
-                // Guardar producto
+                // 3. Guardar producto (sin imagen aún)
                 Producto saved = productoRepository.save(producto);
+                log.debug("Producto guardado con ID: {}", saved.getId());
+
+                // 4. Procesar imagen (si es URL externa)
+                String imagenOriginal = request.getImagen();
+                if (imagenOriginal != null && !imagenOriginal.isEmpty()
+                        && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
+                    try {
+                        String rutaLocal = guardarImagenDesdeUrl(imagenOriginal, saved.getId());
+                        saved.setImagen(rutaLocal);
+                        productoRepository.save(saved);
+                        log.info("Imagen descargada desde URL para producto ID: {}", saved.getId());
+                    } catch (Exception e) {
+                        log.warn("No se pudo descargar imagen para producto ID {}: {}", saved.getId(), e.getMessage());
+                        // Dejamos la imagen como null (no guardamos la URL original)
+                    }
+                }
+                // Si es ruta local o null, no hacemos nada
+
+                // 5. Agregar al resultado
                 resultado.getProductosImportados().add(productoMapper.toResponse(saved));
                 resultado.setImportados(resultado.getImportados() + 1);
                 log.debug("Producto importado: {} (ID: {})", dto.getNombre(), saved.getId());
+
             } catch (Exception e) {
                 resultado.setErrores(resultado.getErrores() + 1);
                 resultado.getErroresDetalle().add(ErrorImportacion.builder()

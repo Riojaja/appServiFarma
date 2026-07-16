@@ -37,12 +37,12 @@ public class ProductoServiceImpl implements ProductoService {
     private final ProductoMapper productoMapper;
     private final BitacoraComunicacionService bitacoraService;
     private final SecurityUtils securityUtils;
-    private final ProductoImportService productoImportService; // Inyectado para manejar imágenes
+    private final ProductoImportService productoImportService;
 
     // ==============================
     // OPERACIONES CRUD BÁSICAS
     // ==============================
-    
+
     @Override
     @Transactional
     public void actualizarImagenProducto(Integer id, String rutaImagen) {
@@ -82,57 +82,38 @@ public class ProductoServiceImpl implements ProductoService {
                     .orElseThrow(() -> new ResourceNotFoundException("Producto genérico con ID " + request.getProductoGenericoId() + " no encontrado."));
         }
 
-        // 5. Mapear y guardar
+        // 5. Mapear a entidad (sin procesar imagen aún)
         Producto producto = productoMapper.toEntity(request);
         producto.setCategoria(categoria);
         producto.setFabricante(fabricante);
         producto.setProductoGenerico(productoGenerico);
 
-        // Procesar imagen: si es URL, descargarla y guardar localmente
+        // ✅ Guardar primero el producto para obtener un ID real
+        Producto saved = productoRepository.save(producto);
+        log.info("Producto creado (sin imagen aún): {} (ID: {})", saved.getNombre(), saved.getId());
+
+        // 6. Procesar imagen DESPUÉS de tener el ID
         String imagenOriginal = request.getImagen();
-        if (imagenOriginal != null && !imagenOriginal.isEmpty() 
+
+        // Caso 1: La imagen es una URL externa → descargar y guardar localmente
+        if (imagenOriginal != null && !imagenOriginal.isEmpty()
                 && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
             try {
-                // Guardar imagen con ID temporal (aún no tenemos ID, pasamos null)
-                String rutaLocal = productoImportService.guardarImagenDesdeUrl(imagenOriginal, null);
-                producto.setImagen(rutaLocal);
-                log.info("Imagen descargada desde URL: {}", rutaLocal);
+                String rutaLocal = productoImportService.guardarImagenDesdeUrl(imagenOriginal, saved.getId());
+                saved.setImagen(rutaLocal);
+                productoRepository.save(saved);
+                log.info("Imagen descargada desde URL y guardada para producto ID: {}", saved.getId());
             } catch (Exception e) {
-                log.warn("No se pudo descargar la imagen desde URL: {}", e.getMessage());
-                // Si falla, guardamos la URL original (no la guardamos localmente)
-                producto.setImagen(imagenOriginal);
+                log.warn("No se pudo descargar la imagen desde URL para producto ID {}: {}", saved.getId(), e.getMessage());
+                // No guardamos la URL original como imagen (dejamos null)
             }
-        } else {
-            // Si es ruta local o null, se mantiene
-            producto.setImagen(imagenOriginal);
         }
+        // Caso 2: La imagen es una ruta local (ya subida por el endpoint /imagen) → no hacer nada, ya está guardada
+        // Caso 3: No hay imagen → se queda null
 
-        Producto saved = productoRepository.save(producto);
-        log.info("Producto creado: {} (ID: {})", saved.getNombre(), saved.getId());
-
-        // Si la imagen fue descargada con ID null, actualizar la ruta con el ID real
-        if (imagenOriginal != null && !imagenOriginal.isEmpty() 
-                && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
-            String rutaActual = saved.getImagen();
-            if (rutaActual != null && rutaActual.contains("temp")) {
-                // Reemplazar "temp" por el ID real
-                try {
-                    String nuevaRuta = rutaActual.replace("temp", "producto_" + saved.getId());
-                    // Renombrar el archivo físicamente
-                    java.nio.file.Path origen = java.nio.file.Paths.get("uploads/productos/", 
-                            rutaActual.substring(rutaActual.lastIndexOf('/') + 1));
-                    java.nio.file.Path destino = java.nio.file.Paths.get("uploads/productos/", 
-                            nuevaRuta.substring(nuevaRuta.lastIndexOf('/') + 1));
-                    if (java.nio.file.Files.exists(origen)) {
-                        java.nio.file.Files.move(origen, destino, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-                        saved.setImagen("/uploads/productos/" + destino.getFileName());
-                        productoRepository.save(saved);
-                        log.info("Imagen renombrada a: {}", destino.getFileName());
-                    }
-                } catch (Exception e) {
-                    log.warn("No se pudo renombrar la imagen: {}", e.getMessage());
-                }
-            }
+        // 7. Actualizar la entidad si se cambió la imagen
+        if (saved.getImagen() != null) {
+            // Ya actualizado
         }
 
         // ==============================================================
@@ -202,31 +183,31 @@ public class ProductoServiceImpl implements ProductoService {
                     .orElseThrow(() -> new ResourceNotFoundException("Producto genérico con ID " + request.getProductoGenericoId() + " no encontrado."));
         }
 
-        // 6. Actualizar datos
+        // 6. Actualizar datos básicos (sin imagen)
         productoMapper.updateEntity(producto, request);
-
-        // Procesar imagen: si es URL, descargarla y guardar localmente
-        String imagenOriginal = request.getImagen();
-        if (imagenOriginal != null && !imagenOriginal.isEmpty() 
-                && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
-            try {
-                String rutaLocal = productoImportService.guardarImagenDesdeUrl(imagenOriginal, id);
-                producto.setImagen(rutaLocal);
-                log.info("Imagen descargada desde URL para actualización: {}", rutaLocal);
-            } catch (Exception e) {
-                log.warn("No se pudo descargar la imagen desde URL para actualización: {}", e.getMessage());
-                // Si falla, guardamos la URL original
-                producto.setImagen(imagenOriginal);
-            }
-        } else {
-            // Si es ruta local o null, se mantiene
-            producto.setImagen(imagenOriginal);
-        }
-
         producto.setCategoria(categoria);
         producto.setFabricante(fabricante);
         producto.setProductoGenerico(productoGenerico);
 
+        // 7. Procesar imagen DESPUÉS de actualizar los datos
+        String imagenOriginal = request.getImagen();
+
+        // Caso 1: La imagen es una URL externa → descargar y guardar localmente
+        if (imagenOriginal != null && !imagenOriginal.isEmpty()
+                && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
+            try {
+                String rutaLocal = productoImportService.guardarImagenDesdeUrl(imagenOriginal, id);
+                producto.setImagen(rutaLocal);
+                log.info("Imagen descargada desde URL para actualización de producto ID: {}", id);
+            } catch (Exception e) {
+                log.warn("No se pudo descargar la imagen desde URL para actualización de producto ID {}: {}", id, e.getMessage());
+                // No guardamos la URL original como imagen (dejamos null)
+            }
+        }
+        // Caso 2: La imagen es una ruta local (ya subida por el endpoint /imagen) → no hacer nada
+        // Caso 3: No hay imagen → se mantiene la anterior o se limpia si se envió null
+
+        // Guardar los cambios
         Producto updated = productoRepository.save(producto);
         log.info("Producto actualizado: {} (ID: {})", updated.getNombre(), updated.getId());
 
@@ -275,11 +256,9 @@ public class ProductoServiceImpl implements ProductoService {
     @Override
     @Transactional
     public void eliminarProducto(Integer id) {
-        // 1. Verificar que el producto existe
         Producto producto = productoRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + id + " no encontrado."));
 
-        // 2. Verificar que no tenga lotes asociados (integridad referencial)
         long lotesCount = loteRepository.countByProductoId(id);
         if (lotesCount > 0) {
             throw new BusinessException("No se puede eliminar el producto porque tiene " + lotesCount + " lotes asociados.");
@@ -289,9 +268,6 @@ public class ProductoServiceImpl implements ProductoService {
         productoRepository.deleteById(id);
         log.info("Producto eliminado: {} (ID: {})", nombreProducto, id);
 
-        // ==============================================================
-        // CREAR MENSAJE EN BITÁCORA
-        // ==============================================================
         try {
             Integer usuarioId = getUsuarioId();
             String mensaje = String.format(
