@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Producto } from '../models/producto.model';
 
@@ -12,12 +13,23 @@ export class ProductoService {
 
   constructor(private http: HttpClient) { }
 
+  // ==================== CRUD ====================
   listar(): Observable<Producto[]> {
-    return this.http.get<Producto[]>(this.apiUrl);
+    return this.http.get<Producto[]>(this.apiUrl).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   obtener(id: number): Observable<Producto> {
-    return this.http.get<Producto>(`${this.apiUrl}/${id}`);
+    return this.http.get<Producto>(`${this.apiUrl}/${id}`).pipe(
+      map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      }))
+    );
   }
 
   crear(data: Producto): Observable<Producto> {
@@ -32,32 +44,68 @@ export class ProductoService {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
+  // ==================== BÚSQUEDAS ====================
   buscarPorNombre(nombre: string): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/buscar?nombre=${nombre}`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/buscar?nombre=${nombre}`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   buscarPorCodigoBarras(codigo: string): Observable<Producto> {
-    return this.http.get<Producto>(`${this.apiUrl}/codigo-barras/${codigo}`);
+    return this.http.get<Producto>(`${this.apiUrl}/codigo-barras/${codigo}`).pipe(
+      map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      }))
+    );
   }
 
   buscarPorPrincipioActivo(principio: string): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/buscar/principio-activo?principioActivo=${principio}`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/buscar/principio-activo?principioActivo=${principio}`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   buscarPorNombreOCodigo(texto: string): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/buscar/texto?texto=${texto}`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/buscar/texto?texto=${texto}`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   listarPorCategoria(categoriaId: number): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/categoria/${categoriaId}`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/categoria/${categoriaId}`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   listarPorFabricante(fabricanteId: number): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/fabricante/${fabricanteId}`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/fabricante/${fabricanteId}`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   listarGenericos(): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/genericos`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/genericos`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   obtenerStock(id: number): Observable<number> {
@@ -65,20 +113,70 @@ export class ProductoService {
   }
 
   obtenerAlternativas(id: number): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/${id}/alternativas`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/${id}/alternativas`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
-
   obtenerProductosConStockBajo(): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/alertas/stock-bajo`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/alertas/stock-bajo`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
 
   obtenerProductosSinStock(): Observable<Producto[]> {
-    return this.http.get<Producto[]>(`${this.apiUrl}/alertas/sin-stock`);
+    return this.http.get<Producto[]>(`${this.apiUrl}/alertas/sin-stock`).pipe(
+      map(productos => productos.map(p => ({
+        ...p,
+        imagen: p.imagen ? this.obtenerUrlCompleta(p.imagen) : undefined
+      })))
+    );
   }
-
 
   existePorCodigoBarras(codigo: string): Observable<boolean> {
     return this.http.get<boolean>(`${this.apiUrl}/existe?codigo=${codigo}`);
+  }
+
+  // ==================== IMPORTACIÓN ====================
+  descargarPlantilla(): Observable<Blob> {
+    return this.http.get(`${this.apiUrl}/importacion/plantilla`, {
+      responseType: 'blob'
+    });
+  }
+
+  importarProductos(archivo: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('archivo', archivo);
+    return this.http.post(`${this.apiUrl}/importacion/subir`, formData);
+  }
+
+  // ==================== IMÁGENES ====================
+  subirImagen(id: number, imagen: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('imagen', imagen);
+    return this.http.post(`${this.apiUrl}/${id}/imagen`, formData);
+  }
+
+  actualizarImagenDesdeUrl(id: number, url: string): Observable<any> {
+    const params = new HttpParams().set('url', url);
+    return this.http.post(`${this.apiUrl}/${id}/imagen-url`, null, { params });
+  }
+
+  // ==================== UTILIDAD ====================
+  private obtenerUrlCompleta(ruta: string): string {
+    if (!ruta) return '';
+    if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
+      return ruta;
+    }
+    if (ruta.startsWith('/')) {
+      return `${environment.apiUrl}${ruta}`;
+    }
+    return `${environment.apiUrl}/${ruta}`;
   }
 }

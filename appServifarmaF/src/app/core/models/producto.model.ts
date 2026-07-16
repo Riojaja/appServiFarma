@@ -19,4 +19,5 @@ export interface Producto {
   stockActual?: number;  // <--- AGREGAR ESTA LÍNEA
   createdAt?: string;
   updatedAt?: string;
+
 }

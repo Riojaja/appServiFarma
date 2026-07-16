@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Fondo -->
+  <rect width="200" height="200" fill="#f8fafc" rx="12"/>
+  
+  <!-- Cápsula / Pastilla -->
+  <rect x="50" y="50" width="100" height="60" rx="30" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+  <rect x="50" y="70" width="100" height="20" fill="#f1f5f9"/>
+  
+  <!-- Sombra y detalle -->
+  <circle cx="80" cy="70" r="5" fill="#94a3b8" opacity="0.3"/>
+  <circle cx="120" cy="70" r="5" fill="#94a3b8" opacity="0.3"/>
+  
+  <!-- Texto -->
+  <text x="100" y="150" font-family="Arial, sans-serif" font-size="16" fill="#475569" text-anchor="middle" font-weight="500">
+    Sin imagen
+  </text>
+</svg>

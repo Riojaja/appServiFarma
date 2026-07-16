@@ -1,104 +1,243 @@
-/* ============================================================ */
-/* PRODUCTOS - LISTADO                                           */
-/* ============================================================ */
-
-.product-thumbnail img {
-  object-fit: cover;
-  border: 2px solid #e9ecef;
+/* ===== CONTENEDOR PRINCIPAL ===== */
+.productos-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 1rem;
 }
 
-.table > :not(caption) > * > * {
-  vertical-align: middle;
+/* ===== CABECERA FIJA ===== */
+.productos-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.table-hover tbody tr:hover {
-  background-color: #f8faff;
+/* ===== CUERPO SCROLLABLE ===== */
+.productos-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0.5rem 2rem;
+}
+
+/* ===== BOTONES ===== */
+.btn-farma-importar,
+.btn-farma-nuevo,
+.btn-farma-refrescar {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 1rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  gap: 0.3rem;
+}
+.btn-farma-importar {
+  background: #fef3c7;
+  color: #92400e;
+}
+.btn-farma-importar:hover {
+  background: #fde68a;
+}
+.btn-farma-nuevo {
+  background: #0d9488;
+  color: white;
+}
+.btn-farma-nuevo:hover {
+  background: #0f766e;
+}
+.btn-farma-refrescar {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.btn-farma-refrescar:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ===== TARJETAS ===== */
+.producto-card {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+.producto-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08) !important;
+}
+
+.producto-imagen-container {
+  position: relative;
+  height: 180px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+.producto-imagen {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 10px;
+  transition: transform 0.2s ease;
+}
+.producto-card:hover .producto-imagen {
+  transform: scale(1.03);
+}
+
+/* ===== PLACEHOLDER ICON ===== */
+.placeholder-icon {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
+
+.producto-stock-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 0.2rem 0.6rem;
+  border-radius: 30px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #22c55e;
+  color: white;
+}
+.stock-bajo {
+  background: #f59e0b !important;
+}
+.sin-stock {
+  background: #ef4444 !important;
+}
+
+.producto-precio {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0d9488;
+}
+
+/* ===== BOTONES DE ACCIÓN EN TARJETA ===== */
+.btn-farma-detalle {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.btn-farma-editar {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+.btn-farma-eliminar {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.btn-farma-detalle:hover,
+.btn-farma-editar:hover,
+.btn-farma-eliminar:hover {
+  transform: scale(1.05);
+}
+
+/* ===== OFFCANVAS Y MODALES LATERALES ===== */
+.offcanvas-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.offcanvas-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.offcanvas-slide {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 480px;
+  max-width: 92vw;
+  height: 100vh;
+  background: white;
+  z-index: 1050;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.offcanvas-slide.active {
+  transform: translateX(0);
+}
+
+.offcanvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.offcanvas-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+.offcanvas-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
   cursor: pointer;
+  padding: 0 0.5rem;
+  transition: transform 0.2s ease;
+}
+.offcanvas-close:hover {
+  transform: rotate(90deg);
+  color: #1e293b;
 }
 
-.badge {
-  font-weight: 500;
-  padding: 0.4rem 0.7rem;
-  font-size: 0.75rem;
+.offcanvas-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
 
-.btn-group .btn {
-  border-radius: 50px !important;
-  padding: 0.25rem 0.7rem;
+/* ===== FORMULARIO ===== */
+.form-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+.invalid-feedback {
+  display: block;
   font-size: 0.8rem;
 }
 
-.btn-group .btn-outline-primary:hover {
-  background-color: #0d6efd;
-  color: #fff;
-}
-
-.btn-group .btn-outline-danger:hover {
-  background-color: #dc3545;
-  color: #fff;
-}
-
-.input-group .form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
-}
-
-.card-footer .pagination .page-item.active .page-link {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-}
-
-@media (max-width: 767.98px) {
-  .table {
-    font-size: 0.8rem;
+/* ===== RESPONSIVE ===== */
+@media (max-width: 576px) {
+  .offcanvas-slide {
+    width: 100%;
+    max-width: 100%;
   }
-  .btn-group .btn {
-    padding: 0.15rem 0.5rem;
+  .producto-imagen-container {
+    height: 140px;
   }
-  .product-thumbnail img {
-    width: 30px;
-    height: 30px;
+  .productos-container {
+    padding: 0.5rem;
   }
-}
-
-/* Para que los offcanvas y modales se superpongan correctamente */
-.modal.show {
-  display: block;
-  overflow-y: auto;
-}
-.modal-dialog-centered {
-  min-height: calc(100% - 3.5rem);
-}
-.form-control:focus, .form-select:focus {
-  border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-.btn-sm.rounded-circle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.modal.show {
-  display: block;
-  overflow-y: auto;
-}
-.modal-dialog-centered {
-  min-height: calc(100% - 3.5rem);
-}
-.form-control:focus, .form-select:focus {
-  border-color: #86b7fe;
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
-}
-.btn-sm.rounded-circle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-.badge.rounded-pill {
-  min-width: 80px;
-  font-weight: 500;
-  letter-spacing: 0.3px;
 }
