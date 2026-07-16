@@ -174,9 +174,13 @@ export class ProductoService {
     if (ruta.startsWith('http://') || ruta.startsWith('https://')) {
       return ruta;
     }
-    if (ruta.startsWith('/')) {
-      return `${environment.apiUrl}${ruta}`;
-    }
-    return `${environment.apiUrl}/${ruta}`;
+
+    // Las imágenes/archivos estáticos casi siempre se sirven desde la raíz del
+    // servidor (ej. http://localhost:8080/uploads/xyz.jpg), NO bajo el prefijo
+    // de la API (ej. http://localhost:8080/api). Si usáramos environment.apiUrl
+    // directo, la URL quedaría con el /api de más y el navegador recibiría 404.
+    const hostBase = environment.apiUrl.replace(/\/api\/?$/, '');
+    const rutaLimpia = ruta.startsWith('/') ? ruta : `/${ruta}`;
+    return `${hostBase}${rutaLimpia}`;
   }
 }

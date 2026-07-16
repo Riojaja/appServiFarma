@@ -12,6 +12,9 @@ import { AuthService } from '../../../core/auth';
 import Swal from 'sweetalert2';
 import { Subject, takeUntil } from 'rxjs';
 
+/** Solo dígitos, entre 6 y 14 caracteres (cubre UPC-A, EAN-13, códigos internos, etc.) */
+const PATRON_CODIGO_BARRAS = /^[0-9]{6,14}$/;
+
 @Component({
   selector: 'app-listar-productos',
   standalone: true,
@@ -31,6 +34,9 @@ export class ListarComponent implements OnInit, OnDestroy {
   filtroEstado: string = '';
   cargando: boolean = false;
   isAdmin: boolean = false;
+
+  /** id del producto que se está eliminando (bloquea su botón, evita doble-click) */
+  eliminandoId: number | null = null;
 
   // ======== SCROLL INFINITO ========
   itemsPorPagina: number = 8;
@@ -78,7 +84,7 @@ export class ListarComponent implements OnInit, OnDestroy {
     // ======== FORMULARIO DE CREACIÓN ========
     this.formCrear = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(200)]],
-      codigoBarras: ['', [Validators.maxLength(50)]],
+      codigoBarras: ['', [Validators.maxLength(50), Validators.pattern(PATRON_CODIGO_BARRAS)]],
       principioActivo: ['', [Validators.maxLength(150)]],
       imagen: ['', [Validators.maxLength(255)]],
       esGenerico: [false],
@@ -93,7 +99,7 @@ export class ListarComponent implements OnInit, OnDestroy {
     // ======== FORMULARIO DE EDICIÓN ========
     this.formEditar = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(200)]],
-      codigoBarras: ['', [Validators.maxLength(50)]],
+      codigoBarras: ['', [Validators.maxLength(50), Validators.pattern(PATRON_CODIGO_BARRAS)]],
       principioActivo: ['', [Validators.maxLength(150)]],
       imagen: ['', [Validators.maxLength(255)]],
       esGenerico: [false],
@@ -116,7 +122,6 @@ export class ListarComponent implements OnInit, OnDestroy {
       }
       this.cargarProductos();
     });
-    this.cdr.detectChanges();
   }
 
   ngOnDestroy(): void {
@@ -145,25 +150,15 @@ export class ListarComponent implements OnInit, OnDestroy {
     this.productoService.listar().pipe(takeUntil(this.destroy$)).subscribe({
       next: (data: Producto[]) => {
         this.productos = data;
-        this.calcularStockParaTodos();
         this.aplicarFiltros();
         this.cargando = false;
         this.cdr.detectChanges();
-        setTimeout(() => this.cdr.detectChanges(), 50);
       },
       error: (err: any) => {
         console.error('Error al cargar productos:', err);
         this.cargando = false;
-        Swal.fire('Error', 'No se pudieron cargar los productos', 'error');
+        Swal.fire({ title: 'Error', text: 'No se pudieron cargar los productos', icon: 'error', customClass: { popup: 'swal-farmaceutico' } });
         this.cdr.detectChanges();
-      }
-    });
-  }
-
-  private calcularStockParaTodos(): void {
-    this.productos.forEach(p => {
-      if (p.stockActual === undefined) {
-        p.stockActual = Math.floor(Math.random() * 100);
       }
     });
   }
@@ -185,16 +180,31 @@ export class ListarComponent implements OnInit, OnDestroy {
   onImageError(event: Event): void {
     const img = event.target as HTMLImageElement;
     img.style.display = 'none';
+    const contenedor = img.parentElement;
+    const fallback = contenedor?.querySelector('.placeholder-icon-fallback') as HTMLElement | null;
+    if (fallback) { fallback.style.display = 'flex'; }
   }
 
   // ======== IMAGEN LOCAL ========
   onImagenSeleccionada(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
-      this.imagenArchivo = input.files[0];
+      const archivo = input.files[0];
+
+      if (!archivo.type.startsWith('image/')) {
+        Swal.fire({ title: 'Archivo inválido', text: 'Selecciona un archivo de imagen (JPG, PNG, GIF, WEBP).', icon: 'warning', customClass: { popup: 'swal-farmaceutico' } });
+        return;
+      }
+      if (archivo.size > 5 * 1024 * 1024) {
+        Swal.fire({ title: 'Imagen muy pesada', text: 'El tamaño máximo permitido es 5 MB.', icon: 'warning', customClass: { popup: 'swal-farmaceutico' } });
+        return;
+      }
+
+      this.imagenArchivo = archivo;
       const reader = new FileReader();
       reader.onload = (e) => {
         this.imagenPrevisualizacion = e.target?.result as string;
+        this.cdr.detectChanges();
       };
       reader.readAsDataURL(this.imagenArchivo);
     }
@@ -224,7 +234,6 @@ export class ListarComponent implements OnInit, OnDestroy {
     this.paginaActual = 1;
     this.todosCargados = false;
     this.cargarMasProductos();
-    this.cdr.detectChanges();
   }
 
   buscar(): void {
@@ -232,7 +241,6 @@ export class ListarComponent implements OnInit, OnDestroy {
       this.productoService.buscarPorNombreOCodigo(this.filtroTexto).pipe(takeUntil(this.destroy$)).subscribe({
         next: (data: Producto[]) => {
           this.productos = data;
-          this.calcularStockParaTodos();
           this.aplicarFiltros();
           this.cdr.detectChanges();
         },
@@ -281,30 +289,56 @@ export class ListarComponent implements OnInit, OnDestroy {
     }
   }
 
-  // ======== ELIMINAR ========
+  // ======== ELIMINAR (con actualización instantánea) ========
   eliminar(id: number): void {
-    if (!id) return;
+    if (!id || this.eliminandoId !== null) return;
+
+    const producto = this.productos.find(p => p.id === id);
+
     Swal.fire({
       title: '¿Eliminar producto?',
-      text: 'Esta acción no se puede deshacer',
+      html: `
+        <p style="color:#475569;margin-bottom:8px;">Esta acción no se puede deshacer.</p>
+        <div style="background:#f8fafc;border-radius:8px;padding:12px;border-left:4px solid #dc2626;text-align:left;">
+          <strong>${producto?.nombre || 'Producto #' + id}</strong>
+        </div>
+      `,
       icon: 'warning',
       showCancelButton: true,
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#6b7280',
       confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar'
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      customClass: { popup: 'swal-farmaceutico' }
     }).then((result) => {
       if (result.isConfirmed) {
+        this.eliminandoId = id;
         this.productoService.eliminar(id).pipe(takeUntil(this.destroy$)).subscribe({
           next: () => {
             this.productos = this.productos.filter(p => p.id !== id);
             this.aplicarFiltros();
-            Swal.fire('Eliminado', 'Producto eliminado correctamente', 'success');
-            this.cdr.detectChanges();
+            this.eliminandoId = null;
+            this.cargarProductos(); // Recarga para consistencia
+            Swal.fire({
+              title: 'Eliminado',
+              text: 'Producto eliminado correctamente',
+              icon: 'success',
+              timer: 2200,
+              showConfirmButton: false,
+              customClass: { popup: 'swal-farmaceutico' }
+            });
           },
           error: (err: any) => {
             console.error('Error al eliminar:', err);
-            Swal.fire('Error', err.error?.mensaje || 'No se pudo eliminar el producto', 'error');
+            this.eliminandoId = null;
+            const mensaje = err.error?.mensaje || err.error?.message || 'No se pudo eliminar el producto';
+            Swal.fire({
+              title: 'Error',
+              text: mensaje,
+              icon: 'error',
+              customClass: { popup: 'swal-farmaceutico' }
+            });
           }
         });
       }
@@ -328,19 +362,25 @@ export class ListarComponent implements OnInit, OnDestroy {
     });
     this.limpiarImagenSeleccionada();
     this.offcanvasCrearAbierto = true;
-    this.cdr.detectChanges();
   }
 
   cerrarOffcanvasCrear(): void {
+    if (this.enviandoCrear) return;
     this.offcanvasCrearAbierto = false;
-    this.enviandoCrear = false;
     this.limpiarImagenSeleccionada();
-    this.cdr.detectChanges();
   }
 
   guardarProducto(): void {
+    if (this.enviandoCrear) return;
+
     if (this.formCrear.invalid) {
-      Swal.fire('Error', 'Completa todos los campos obligatorios correctamente', 'warning');
+      this.formCrear.markAllAsTouched();
+      Swal.fire({
+        title: 'Formulario incompleto',
+        text: 'Completa todos los campos obligatorios correctamente.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
 
@@ -356,27 +396,46 @@ export class ListarComponent implements OnInit, OnDestroy {
               this.enviandoCrear = false;
               this.cerrarOffcanvasCrear();
               this.cargarProductos();
-              Swal.fire('Éxito', 'Producto creado con imagen correctamente', 'success');
+              Swal.fire({
+                title: 'Éxito',
+                text: 'Producto creado con imagen correctamente',
+                icon: 'success',
+                customClass: { popup: 'swal-farmaceutico' }
+              });
             },
             error: () => {
               this.enviandoCrear = false;
               this.cerrarOffcanvasCrear();
               this.cargarProductos();
-              Swal.fire('Advertencia', 'Producto creado pero no se pudo subir la imagen', 'warning');
+              Swal.fire({
+                title: 'Advertencia',
+                text: 'Producto creado pero no se pudo subir la imagen',
+                icon: 'warning',
+                customClass: { popup: 'swal-farmaceutico' }
+              });
             }
           });
         } else {
           this.enviandoCrear = false;
           this.cerrarOffcanvasCrear();
           this.cargarProductos();
-          Swal.fire('Éxito', 'Producto creado exitosamente', 'success');
+          Swal.fire({
+            title: 'Éxito',
+            text: 'Producto creado exitosamente',
+            icon: 'success',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         }
       },
       error: (err) => {
         this.enviandoCrear = false;
         const mensaje = err.error?.mensaje || err.error?.message || 'Error al crear producto';
-        Swal.fire('Error', mensaje, 'error');
-        this.cdr.detectChanges();
+        Swal.fire({
+          title: 'Error',
+          text: mensaje,
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }
@@ -394,6 +453,7 @@ export class ListarComponent implements OnInit, OnDestroy {
           principioActivo: data.principioActivo,
           imagen: data.imagen,
           esGenerico: data.esGenerico,
+          // ✅ CORREGIDO: precioCompraActual no viene del backend, se deja en 0
           precioCompraActual: 0,
           precioVentaActual: data.precioVentaActual,
           stockMinimo: data.stockMinimo,
@@ -408,21 +468,33 @@ export class ListarComponent implements OnInit, OnDestroy {
         console.error(err);
         this.cargando = false;
         this.cerrarModalEditar();
-        Swal.fire('Error', 'No se pudo cargar el producto', 'error');
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo cargar el producto',
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }
 
   cerrarModalEditar(): void {
+    if (this.enviandoEditar) return;
     this.modalEditarAbierto = false;
-    this.enviandoEditar = false;
     this.formEditar.reset();
-    this.cdr.detectChanges();
   }
 
   actualizarProducto(): void {
+    if (this.enviandoEditar) return;
+
     if (this.formEditar.invalid) {
-      Swal.fire('Error', 'Completa todos los campos obligatorios correctamente', 'warning');
+      this.formEditar.markAllAsTouched();
+      Swal.fire({
+        title: 'Formulario incompleto',
+        text: 'Completa todos los campos obligatorios correctamente.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
     this.enviandoEditar = true;
@@ -431,13 +503,22 @@ export class ListarComponent implements OnInit, OnDestroy {
         this.enviandoEditar = false;
         this.cerrarModalEditar();
         this.cargarProductos();
-        Swal.fire('Éxito', 'Producto actualizado exitosamente', 'success');
-        this.cdr.detectChanges();
+        Swal.fire({
+          title: 'Éxito',
+          text: 'Producto actualizado exitosamente',
+          icon: 'success',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       },
       error: (err) => {
         this.enviandoEditar = false;
-        Swal.fire('Error', err.error?.mensaje || 'Error al actualizar producto', 'error');
-        this.cdr.detectChanges();
+        const mensaje = err.error?.mensaje || err.error?.message || 'Error al actualizar producto';
+        Swal.fire({
+          title: 'Error',
+          text: mensaje,
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }
@@ -446,13 +527,11 @@ export class ListarComponent implements OnInit, OnDestroy {
   abrirModalDetalle(producto: Producto): void {
     this.productoDetalle = producto;
     this.modalDetalleAbierto = true;
-    this.cdr.detectChanges();
   }
 
   cerrarModalDetalle(): void {
     this.modalDetalleAbierto = false;
     this.productoDetalle = null;
-    this.cdr.detectChanges();
   }
 
   // ======== MODAL IMPORTAR ========
@@ -461,22 +540,19 @@ export class ListarComponent implements OnInit, OnDestroy {
     this.archivoImportar = null;
     this.resultadoImportacion = null;
     this.importando = false;
-    this.cdr.detectChanges();
   }
 
   cerrarModalImportar(): void {
+    if (this.importando) return;
     this.modalImportarAbierto = false;
     this.archivoImportar = null;
     this.resultadoImportacion = null;
-    this.importando = false;
-    this.cdr.detectChanges();
   }
 
   onArchivoSeleccionado(event: Event): void {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.archivoImportar = input.files[0];
-      this.cdr.detectChanges();
     }
   }
 
@@ -490,15 +566,34 @@ export class ListarComponent implements OnInit, OnDestroy {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(link.href);
-        Swal.fire('Éxito', 'Plantilla descargada correctamente', 'success');
+        Swal.fire({
+          title: 'Éxito',
+          text: 'Plantilla descargada correctamente',
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       },
-      error: () => Swal.fire('Error', 'No se pudo descargar la plantilla', 'error')
+      error: () => Swal.fire({
+        title: 'Error',
+        text: 'No se pudo descargar la plantilla',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      })
     });
   }
 
   importarProductos(): void {
+    if (this.importando) return;
+
     if (!this.archivoImportar) {
-      Swal.fire('Advertencia', 'Selecciona un archivo primero', 'warning');
+      Swal.fire({
+        title: 'Advertencia',
+        text: 'Selecciona un archivo primero',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
 
@@ -507,19 +602,33 @@ export class ListarComponent implements OnInit, OnDestroy {
       next: (res) => {
         this.resultadoImportacion = res;
         this.importando = false;
-        this.cdr.detectChanges();
         if (res.errores === 0) {
-          Swal.fire('Éxito', `${res.importados} productos importados correctamente`, 'success');
+          Swal.fire({
+            title: 'Éxito',
+            text: `${res.importados} productos importados correctamente`,
+            icon: 'success',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
           this.cerrarModalImportar();
           this.cargarProductos();
         } else {
-          Swal.fire('Importación parcial', `${res.importados} importados, ${res.errores} errores. Revisa los detalles.`, 'warning');
+          Swal.fire({
+            title: 'Importación parcial',
+            text: `${res.importados} importados, ${res.errores} errores. Revisa los detalles.`,
+            icon: 'warning',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         }
       },
       error: (err) => {
         this.importando = false;
-        Swal.fire('Error', err.error?.mensaje || 'No se pudo importar el archivo', 'error');
-        this.cdr.detectChanges();
+        const mensaje = err.error?.mensaje || err.error?.message || 'No se pudo importar el archivo';
+        Swal.fire({
+          title: 'Error',
+          text: mensaje,
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }

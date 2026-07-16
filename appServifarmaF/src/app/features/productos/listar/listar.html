@@ -26,7 +26,7 @@
           <div class="input-group shadow-sm">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
             <input type="text" class="form-control border-start-0" 
-                   placeholder="Buscar productos por nombre o categoría..."
+                   placeholder="Buscar productos por nombre o código de barras..."
                    [(ngModel)]="filtroTexto" (input)="buscar()">
             <button class="btn btn-outline-secondary" (click)="limpiarFiltros()" *ngIf="filtroTexto || filtroCategoria || filtroEstado">
               <i class="bi bi-x-circle"></i>
@@ -73,15 +73,18 @@
            class="col-xl-3 col-lg-4 col-md-6 col-sm-6">
         <div class="card producto-card shadow-sm border-0 rounded-4 h-100">
           <div class="producto-imagen-container">
-            <!-- ✅ Si hay imagen, mostramos la imagen -->
-            <img *ngIf="producto.imagen" 
-                 [src]="producto.imagen" 
+            <!-- Imagen real del producto -->
+            <img *ngIf="producto.imagen"
+                 [src]="producto.imagen"
                  [alt]="producto.nombre"
+                 loading="lazy"
                  class="producto-imagen"
                  (error)="onImageError($event)">
-            <!-- ✅ Si no hay imagen, mostramos un ícono -->
-            <div *ngIf="!producto.imagen" class="placeholder-icon">
-              <i class="bi bi-capsule" style="font-size: 4rem; color: #94a3b8;"></i>
+            <!-- Ícono de respaldo: se muestra si no hay imagen, o si la imagen falló al cargar -->
+            <div class="placeholder-icon"
+                 [ngClass]="{ 'placeholder-icon-fallback': producto.imagen }"
+                 [style.display]="producto.imagen ? 'none' : 'flex'">
+              <i class="bi bi-capsule"></i>
             </div>
             <span class="producto-stock-badge" 
                   [ngClass]="{
@@ -107,8 +110,11 @@
                   <button *ngIf="isAdmin" class="btn btn-sm btn-farma-editar" (click)="abrirModalEditar(producto.id!)" title="Editar">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <button *ngIf="isAdmin" class="btn btn-sm btn-farma-eliminar" (click)="eliminar(producto.id!)" title="Eliminar">
-                    <i class="bi bi-trash"></i>
+                  <button *ngIf="isAdmin" class="btn btn-sm btn-farma-eliminar"
+                          [disabled]="eliminandoId === producto.id"
+                          (click)="eliminar(producto.id!)" title="Eliminar">
+                    <span *ngIf="eliminandoId === producto.id" class="spinner-border spinner-border-sm"></span>
+                    <i *ngIf="eliminandoId !== producto.id" class="bi bi-trash"></i>
                   </button>
                 </div>
               </div>
@@ -142,14 +148,22 @@
       <form [formGroup]="formCrear" (ngSubmit)="guardarProducto()">
         <div class="mb-3">
           <label class="form-label fw-semibold">Nombre *</label>
-          <input type="text" class="form-control" formControlName="nombre" placeholder="Ej: Paracetamol 500mg">
+          <input type="text" class="form-control"
+                 [class.is-invalid]="formCrear.get('nombre')?.invalid && formCrear.get('nombre')?.touched"
+                 formControlName="nombre" placeholder="Ej: Paracetamol 500mg">
           <div class="invalid-feedback" *ngIf="formCrear.get('nombre')?.invalid && formCrear.get('nombre')?.touched">
-            El nombre es obligatorio
+            <i class="bi bi-exclamation-circle me-1"></i> El nombre es obligatorio.
           </div>
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Código de barras</label>
-          <input type="text" class="form-control" formControlName="codigoBarras" placeholder="Ej: 7891234567890">
+          <input type="text" class="form-control"
+                 [class.is-invalid]="formCrear.get('codigoBarras')?.invalid && formCrear.get('codigoBarras')?.touched"
+                 formControlName="codigoBarras" placeholder="Ej: 7891234567890" inputmode="numeric">
+          <div class="invalid-feedback" *ngIf="formCrear.get('codigoBarras')?.errors?.['pattern'] && formCrear.get('codigoBarras')?.touched">
+            <i class="bi bi-exclamation-circle me-1"></i> Debe ser solo números, entre 6 y 14 dígitos.
+          </div>
+          <small class="text-muted">Ingresa el número exacto tal como aparece en el empaque.</small>
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Principio activo</label>
@@ -170,8 +184,8 @@
             <small class="text-muted d-block mt-1">Formatos: JPG, PNG, GIF, WEBP (máx. 5 MB)</small>
           </div>
 
-          <div *ngIf="imagenPrevisualizacion" class="position-relative mb-2">
-            <img [src]="imagenPrevisualizacion" class="img-fluid rounded-4" style="max-height:150px;object-fit:contain;background:#f8fafc;">
+          <div *ngIf="imagenPrevisualizacion" class="position-relative mb-2 imagen-preview-wrapper">
+            <img [src]="imagenPrevisualizacion" class="img-fluid rounded-4 imagen-preview">
             <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
                     style="border-radius:50%;width:28px;height:28px;padding:0;"
                     (click)="limpiarImagenSeleccionada()">
@@ -210,6 +224,7 @@
         <div class="mb-3">
           <label class="form-label fw-semibold">Stock mínimo *</label>
           <input type="number" class="form-control" formControlName="stockMinimo" min="1">
+          <small class="text-muted">El stock inicial/actual se gestiona desde Inventario, no aquí.</small>
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Categoría</label>
@@ -247,11 +262,21 @@
       <form [formGroup]="formEditar" (ngSubmit)="actualizarProducto()">
         <div class="mb-3">
           <label class="form-label fw-semibold">Nombre *</label>
-          <input type="text" class="form-control" formControlName="nombre">
+          <input type="text" class="form-control"
+                 [class.is-invalid]="formEditar.get('nombre')?.invalid && formEditar.get('nombre')?.touched"
+                 formControlName="nombre">
+          <div class="invalid-feedback" *ngIf="formEditar.get('nombre')?.invalid && formEditar.get('nombre')?.touched">
+            <i class="bi bi-exclamation-circle me-1"></i> El nombre es obligatorio.
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Código de barras</label>
-          <input type="text" class="form-control" formControlName="codigoBarras">
+          <input type="text" class="form-control"
+                 [class.is-invalid]="formEditar.get('codigoBarras')?.invalid && formEditar.get('codigoBarras')?.touched"
+                 formControlName="codigoBarras" inputmode="numeric">
+          <div class="invalid-feedback" *ngIf="formEditar.get('codigoBarras')?.errors?.['pattern'] && formEditar.get('codigoBarras')?.touched">
+            <i class="bi bi-exclamation-circle me-1"></i> Debe ser solo números, entre 6 y 14 dígitos.
+          </div>
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold">Principio activo</label>
@@ -313,14 +338,12 @@
     </div>
     <div class="offcanvas-body" *ngIf="productoDetalle">
       <div class="text-center mb-3">
-        <!-- ✅ Si hay imagen, mostramos la imagen -->
-        <img *ngIf="productoDetalle.imagen" 
-             [src]="productoDetalle.imagen" 
-             class="img-fluid rounded-4" style="max-height:150px;object-fit:contain;"
+        <img *ngIf="productoDetalle.imagen"
+             [src]="productoDetalle.imagen"
+             class="img-fluid rounded-4 imagen-detalle"
              (error)="onImageError($event)">
-        <!-- ✅ Si no hay imagen, mostramos un ícono -->
-        <div *ngIf="!productoDetalle.imagen" class="placeholder-icon" style="height:150px;">
-          <i class="bi bi-capsule" style="font-size: 3rem; color: #94a3b8;"></i>
+        <div class="placeholder-icon" *ngIf="!productoDetalle.imagen" style="height:150px;">
+          <i class="bi bi-capsule" style="font-size: 3rem;"></i>
         </div>
       </div>
       <ul class="list-group list-group-flush">
