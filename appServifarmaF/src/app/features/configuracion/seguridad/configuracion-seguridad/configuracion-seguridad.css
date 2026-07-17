@@ -1,196 +1,271 @@
-/* ===================== VARIABLES ===================== */
-.seguridad-panel {
-  --azul-primario: #2563eb;
-  --azul-claro: #3b82f6;
-  --azul-oscuro: #1d4ed8;
-  --azul-fondo-suave: #eff6ff;
-  --azul-borde-suave: #dbeafe;
-  --alerta-suave: #fff7ed;
-  --alerta-borde: #f59e0b;
-  --texto: #1e293b;
-  --texto-suave: #64748b;
+/* ============================================================
+   VARIABLES GLOBALES
+   ============================================================ */
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --gray-100: #f1f5f9;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-400: #94a3b8;
+  --gray-500: #64748b;
+  --gray-600: #475569;
+  --gray-700: #334155;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --radius: 0.75rem;
+  --radius-lg: 1.25rem;
+  --transition: all 0.2s ease-in-out;
 }
 
-/* ===================== ENCABEZADO ===================== */
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+.seguridad-panel {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem 2rem;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ============================================================
+   ENCABEZADO
+   ============================================================ */
 .titulo-principal {
-  color: var(--texto);
+  font-size: 1.75rem;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 .titulo-principal i {
-  color: var(--azul-primario);
+  color: var(--primary);
+}
+
+/* ============================================================
+   BOTONES
+   ============================================================ */
+.btn-seguridad-guardar,
+.btn-seguridad-recargar,
+.btn-seguridad-recargar-secundario,
+.btn-seguridad-reiniciar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  border: none;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.btn-seguridad-guardar {
+  background: var(--primary);
+  color: white;
+}
+.btn-seguridad-guardar:hover:not(:disabled) {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.btn-seguridad-guardar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
 }
 
 .btn-seguridad-recargar {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1.1rem;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 0.875rem;
-  background-color: var(--azul-fondo-suave);
-  color: var(--azul-oscuro);
-  border: 1px solid var(--azul-borde-suave);
-  transition: all 0.2s ease;
+  background: var(--gray-100);
+  color: var(--gray-600);
 }
 .btn-seguridad-recargar:hover:not(:disabled) {
-  background-color: var(--azul-borde-suave);
-  transform: translateY(-1px);
+  background: var(--gray-200);
 }
 .btn-seguridad-recargar:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.spin {
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* ===================== TARJETAS DE SECCIÓN ===================== */
-.seccion-card {
-  border-left: 4px solid var(--azul-primario);
-  transition: all 0.2s ease;
-}
-.seccion-card:hover {
-  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.10) !important;
-  transform: translateY(-2px);
-}
-
-.seccion-header {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.seccion-icono {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: var(--azul-fondo-suave);
-  color: var(--azul-primario);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.3rem;
-  flex-shrink: 0;
-}
-.seccion-icono-alerta {
-  background: var(--alerta-suave);
-  color: var(--alerta-borde);
-}
-
-/* ===================== INPUTS ===================== */
-.input-group-text {
-  background: #fff;
-  color: var(--azul-primario);
-  border-right: none;
-}
-.input-group .form-control {
-  border-left: none;
-}
-.form-control {
-  border-radius: 0 10px 10px 0;
-  padding: 0.6rem 0.9rem;
-}
-.input-group-text {
-  border-radius: 10px 0 0 10px;
-}
-.form-control:focus {
-  border-color: var(--azul-primario);
-  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
-}
-.input-group:focus-within .input-group-text {
-  border-color: var(--azul-primario);
-}
-
-/* ===================== BOTONES DE ACCIÓN ===================== */
-.btn-seguridad-guardar,
 .btn-seguridad-recargar-secundario {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.65rem 1.5rem;
-  border-radius: 30px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  border: none;
-  transition: all 0.2s ease;
-}
-
-.btn-seguridad-guardar {
-  background-color: var(--azul-primario);
-  color: #fff;
-}
-.btn-seguridad-guardar:hover:not(:disabled) {
-  background-color: var(--azul-oscuro);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
-}
-.btn-seguridad-guardar:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.btn-seguridad-recargar-secundario {
-  background-color: #fff;
-  color: var(--texto);
-  border: 1.5px solid #e2e8f0;
+  background: var(--gray-100);
+  color: var(--gray-600);
 }
 .btn-seguridad-recargar-secundario:hover:not(:disabled) {
-  background-color: #f8fafc;
-  border-color: var(--azul-claro);
-  color: var(--azul-oscuro);
+  background: var(--gray-200);
 }
 .btn-seguridad-recargar-secundario:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-/* ===================== ALERTA INFORMATIVA ===================== */
-.alert-seguridad {
-  background-color: var(--azul-fondo-suave);
-  border: 1px solid var(--azul-borde-suave);
-  border-left: 4px solid var(--azul-primario);
-  color: #1e3a8a;
-  border-radius: 14px;
-  padding: 1rem 1.25rem;
+.btn-seguridad-reiniciar {
+  background: #fef3c7;
+  color: #92400e;
+}
+.btn-seguridad-reiniciar:hover:not(:disabled) {
+  background: #fde68a;
+}
+.btn-seguridad-reiniciar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   TARJETAS DE SECCIÓN
+   ============================================================ */
+.seccion-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  transition: var(--transition);
+}
+.seccion-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.seccion-header {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.seccion-icono {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+.seccion-icono-alerta {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+/* ============================================================
+   FORMULARIO
+   ============================================================ */
+.form-label {
+  font-weight: 600;
   font-size: 0.9rem;
+  color: var(--gray-700);
+}
+
+.input-group-text {
+  background: white;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-500);
+}
+
+.form-control {
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-200);
+  padding: 0.6rem 0.75rem;
+  transition: var(--transition);
+}
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.form-control:disabled {
+  background: var(--gray-100);
+  cursor: not-allowed;
+}
+
+.input-group .form-control {
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.text-muted {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  display: block;
+  margin-top: 0.2rem;
+}
+
+/* ============================================================
+   SKELETON
+   ============================================================ */
+.skeleton-card {
+  background: var(--gray-100);
+  border-radius: var(--radius-lg);
+  height: 250px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* ============================================================
+   ALERTA INFORMATIVA
+   ============================================================ */
+.alert-seguridad {
+  background: var(--gray-100);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
 }
 .alert-seguridad i {
-  color: var(--azul-primario);
+  color: var(--primary);
+  font-size: 1.2rem;
+  margin-top: 0.1rem;
 }
 
-/* ===================== SKELETON DE CARGA ===================== */
-.skeleton-card {
-  height: 260px;
-  border-radius: 1rem;
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 37%, #f1f5f9 63%);
-  background-size: 400% 100%;
-  animation: skeleton-loading 1.4s ease infinite;
-}
-@keyframes skeleton-loading {
-  0% { background-position: 100% 50%; }
-  100% { background-position: 0 50%; }
-}
-
-/* ===================== RESPONSIVE ===================== */
-@media (max-width: 576px) {
-  .titulo-principal {
-    font-size: 1.35rem;
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .seguridad-panel {
+    padding: 0.5rem 0.5rem 1.5rem;
   }
-  .seccion-icono {
-    width: 42px;
-    height: 42px;
-    font-size: 1.1rem;
+  .titulo-principal {
+    font-size: 1.4rem;
   }
   .btn-seguridad-guardar,
-  .btn-seguridad-recargar-secundario {
+  .btn-seguridad-recargar,
+  .btn-seguridad-recargar-secundario,
+  .btn-seguridad-reiniciar {
     width: 100%;
+    justify-content: center;
+  }
+  .mt-4.d-flex.gap-2 {
+    flex-direction: column;
+  }
+  .seccion-card .card-body {
+    padding: 1.25rem !important;
+  }
+  .seccion-icono {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+  }
+  .alert-seguridad {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .seccion-card .card-body {
+    padding: 1.5rem !important;
   }
 }

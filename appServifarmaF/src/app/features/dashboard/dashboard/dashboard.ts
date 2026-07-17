@@ -17,26 +17,17 @@ import { catchError } from 'rxjs/operators';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    FormsModule,
-    BaseChartDirective
-  ],
-  providers: [
-    provideCharts(withDefaultRegisterables())
-  ],
+  imports: [CommonModule, RouterModule, FormsModule, BaseChartDirective],
+  providers: [provideCharts(withDefaultRegisterables())],
   templateUrl: './dashboard.html',
   styleUrls: ['./dashboard.css']
 })
 export class DashboardComponent implements OnInit, OnDestroy {
-  // ========== DATOS DEL USUARIO ==========
   usuario: string = '';
   rol: string = '';
   isAdmin: boolean = false;
   errorGeneral: string = '';
 
-  // ========== KPIs ==========
   kpis: any[] = [
     { label: 'Ventas del Día', displayValue: 'S/ 0.00', icon: 'bi-cart3', color: '#16a34a', ruta: '/ventas' },
     { label: 'Caja Actual', displayValue: 'S/ 0.00', icon: 'bi-wallet2', color: '#2563eb', ruta: '/caja' },
@@ -44,7 +35,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     { label: 'Próximos a Vencer', displayValue: '0', icon: 'bi-archive-fill', color: '#f59e0b', ruta: '/lotes/proximos-a-vencer' }
   ];
 
-  // ========== LISTAS ==========
   ventasRecientes: any[] = [];
   stockCritico: any[] = [];
   topProductos: any[] = [];
@@ -52,15 +42,11 @@ export class DashboardComponent implements OnInit, OnDestroy {
   alertasVencimiento: any[] = [];
   actividadReciente: any[] = [];
 
-  // ========== GRÁFICO ==========
   public barChartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'top',
-        labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 12 } }
-      },
+      legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { size: 12 } } },
       tooltip: {
         backgroundColor: 'rgba(255,255,255,0.95)',
         titleColor: '#1f2937',
@@ -90,7 +76,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     datasets: [{ data: [], label: 'Ventas (S/)', backgroundColor: '#0d6efd' }]
   };
 
-  // ========== ESTADO DE CARGA ==========
   cargando: boolean = true;
 
   constructor(
@@ -113,7 +98,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     } else if (this.rol) {
       this.cargarDatosVendedor();
     } else {
-      // Si el rol aún no está disponible, esperar 100ms y reintentar
       setTimeout(() => {
         this.rol = this.authService.getRol() || '';
         this.isAdmin = this.rol?.toUpperCase() === 'ADMIN';
@@ -133,19 +117,25 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {}
 
   // ==============================
-  // ADMIN - CARGA INSTANTÁNEA
+  // ADMIN - CARGA INSTANTÁNEA CON FORMATO DE FECHA CORREGIDO
   // ==============================
   private cargarDatosAdmin(): void {
     this.cargando = true;
     this.errorGeneral = '';
 
+    // ✅ Formato de fecha CORREGIDO: yyyy-MM-dd (sin Z)
     const hoy = new Date();
     const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 0, 0, 0);
     const fin = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 23, 59, 59);
-    const inicioStr = inicio.toISOString();
-    const finStr = fin.toISOString();
 
-    // 🔥 1. Cargar datos principales en paralelo
+    // Quitamos la 'Z' y también los milisegundos para simplificar
+    const inicioStr = inicio.toISOString().split('T')[0]; // "2026-07-17"
+    const finStr = fin.toISOString().split('T')[0];       // "2026-07-17"
+
+    // Si el backend espera fecha-hora sin Z, usa esto en lugar de split:
+    // const inicioStr = inicio.toISOString().replace('Z', '');
+    // const finStr = fin.toISOString().replace('Z', '');
+
     forkJoin({
       ventasHoy: this.estadisticaService.obtenerTotalVentas(inicioStr, finStr).pipe(catchError(() => of(0))),
       cajaAbierta: this.cajaService.obtenerCajaAbierta().pipe(catchError(() => of(null))),
@@ -212,12 +202,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
         // ---- Alertas laterales ----
         this.mapearAlertasLaterales(criticos, proximos);
 
-        // 🔥 2. Ocultar spinner INMEDIATAMENTE después de asignar datos
+        // ✅ Ocultar spinner INMEDIATAMENTE
         this.cargando = false;
-        // Forzar detección de cambios en el siguiente ciclo
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error cargando dashboard:', err);
@@ -253,11 +240,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
           resultados.proximosVencer || []
         );
 
-        // 🔥 Ocultar spinner inmediatamente
         this.cargando = false;
-        setTimeout(() => {
-          this.cdr.detectChanges();
-        }, 0);
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Error cargando dashboard del vendedor:', err);
@@ -271,7 +255,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
   // ==============================
   // MÉTODOS COMPARTIDOS
   // ==============================
-
   private mapearAlertasLaterales(criticos: any[], proximos: any[]): void {
     this.alertasStock = criticos.map(p => ({ producto: p.nombre, stock: p.stockMinimo || 0 }));
     this.alertasVencimiento = proximos

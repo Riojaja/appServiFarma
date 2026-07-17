@@ -22,7 +22,6 @@ export class TokenInterceptor implements HttpInterceptor {
   ) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // 🔥 CAMBIO CLAVE: Obtener el token directamente de localStorage
     const token = localStorage.getItem('token');
     
     console.log('🔑 Token obtenido:', token ? '✅ Existe' : '❌ No existe');
@@ -30,7 +29,6 @@ export class TokenInterceptor implements HttpInterceptor {
 
     let authReq = req;
 
-    // Si hay token, clonar la petición y agregar el header Authorization
     if (token) {
       authReq = req.clone({
         setHeaders: {
@@ -42,10 +40,12 @@ export class TokenInterceptor implements HttpInterceptor {
       console.warn('⚠️ No hay token, request sin autorización');
     }
 
-    // Continuar con la petición y manejar errores
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
         console.error('❌ Error en la petición:', error.status, error.message);
+        console.error('❌ URL:', req.url);
+        console.error('❌ Body del error:', error.error);
+
         // 401: sesión inválida o expirada -> cerrar sesión y redirigir a login
         if (error.status === 401 && !req.url.includes('/auth/login')) {
           this.authService.logout();
@@ -56,6 +56,8 @@ export class TokenInterceptor implements HttpInterceptor {
         else if (error.status === 403) {
           const mensaje = error.error?.mensaje || 'No tienes permisos para realizar esta acción.';
           this.notificacionService.error(mensaje);
+          // ⚠️ IMPORTANTE: NO hacer logout aquí, solo mostrar error.
+          // Si el backend invalida el token, el siguiente 401 hará logout.
         }
         return throwError(() => error);
       })

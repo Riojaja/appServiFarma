@@ -7,258 +7,304 @@
       <p class="text-muted small mb-0">Gestión de usuarios y sus sesiones</p>
     </div>
     <div class="d-flex flex-wrap gap-2">
-      <button class="btn-usuarios-cierre" (click)="ejecutarCierreTurno()" [disabled]="hayOperacionEnCurso" *ngIf="isAdmin">
+      <button class="btn-usuarios-cierre" (click)="ejecutarCierreTurno()" [disabled]="ejecutandoCierreTurno"
+        *ngIf="isAdmin">
         <span *ngIf="ejecutandoCierreTurno" class="spinner-border spinner-border-sm me-1"></span>
         <i *ngIf="!ejecutandoCierreTurno" class="bi bi-clock me-1"></i>
         {{ ejecutandoCierreTurno ? 'Ejecutando...' : 'Cierre de Turno' }}
       </button>
-      <!-- ✅ Botón Crear Usuario con modal -->
-      <button class="btn-usuarios-nuevo" (click)="abrirModalCrear()">
+      <button class="btn-usuarios-nuevo" (click)="abrirModalCrear()" [disabled]="cargando">
         <i class="bi bi-plus-circle me-1"></i> Crear Usuario
       </button>
-      <button class="btn-usuarios-recargar" (click)="cargarUsuarios()" [disabled]="hayOperacionEnCurso">
+      <button class="btn-usuarios-recargar" (click)="cargarUsuarios()" [disabled]="cargando">
         <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
       </button>
-    </div>
-  </div>
-
-  <div class="card shadow-sm border-0 rounded-4">
-    <div class="card-body">
-
-      <!-- ======== SPINNER ======== -->
-      <div *ngIf="cargando" class="text-center py-4">
-        <div class="spinner-border text-primary"></div>
-      </div>
-
-      <div *ngIf="!cargando">
-
-        <!-- ======== TABLA (desktop / tablet) ======== -->
-        <div class="table-responsive d-none d-md-block">
-          <table class="table table-hover align-middle usuarios-tabla">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Estado</th>
-                <th>Último acceso</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let u of usuarios; trackBy: trackByUsuarioId" [class.fila-procesando]="procesandoId === u.id">
-                <td class="fw-semibold">{{ u.nombreCompleto }}</td>
-                <td class="text-muted">{{ u.usuario }}</td>
-                <td>
-                  <span class="badge-rol" [ngClass]="u.rol?.nombre === 'Administrador' ? 'badge-rol-admin' : 'badge-rol-vendedor'">
-                    {{ u.rol?.nombre }}
-                  </span>
-                </td>
-                <td>
-                  <button class="badge-estado" [ngClass]="u.activo ? 'badge-estado-activo' : 'badge-estado-inactivo'"
-                          [disabled]="estaBloqueado(u.id)" (click)="cambiarEstado(u.id, !u.activo)"
-                          [title]="u.activo ? 'Clic para desactivar' : 'Clic para activar'">
-                    {{ u.activo ? 'Activo' : 'Inactivo' }}
-                  </button>
-                </td>
-                <td class="text-muted small">{{ u.ultimoAcceso ? (u.ultimoAcceso | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
-                <td>
-                  <div class="acciones-usuario">
-                    <!-- ✅ Editar con modal -->
-                    <button class="btn-accion btn-accion-editar" title="Editar" (click)="abrirModalEditar(u.id)">
-                      <i class="bi bi-pencil"></i>
-                    </button>
-                    <button class="btn-accion btn-accion-sesiones" title="Cerrar sesiones"
-                            [disabled]="estaBloqueado(u.id)" (click)="cerrarSesiones(u.id)" *ngIf="isAdmin">
-                      <i class="bi bi-shield-lock"></i>
-                    </button>
-                    <button class="btn-accion btn-accion-eliminar" title="Eliminar"
-                            [disabled]="estaBloqueado(u.id)" (click)="eliminarUsuario(u)" *ngIf="isAdmin">
-                      <span *ngIf="procesandoId === u.id" class="spinner-border spinner-border-sm"></span>
-                      <i *ngIf="procesandoId !== u.id" class="bi bi-trash"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- ======== TARJETAS (mobile) ======== -->
-        <div class="d-md-none usuarios-grid-mobile">
-          <div *ngFor="let u of usuarios; trackBy: trackByUsuarioId" class="usuario-card-mobile" [class.fila-procesando]="procesandoId === u.id">
-            <div class="d-flex align-items-center gap-3">
-              <div class="avatar-circle" [style.background]="obtenerColorAvatar(u.nombreCompleto)">
-                {{ (u.nombreCompleto || '?').charAt(0).toUpperCase() }}
-              </div>
-              <div class="flex-grow-1 min-w-0">
-                <div class="fw-bold text-truncate">{{ u.nombreCompleto }}</div>
-                <div class="text-muted small text-truncate">{{ u.usuario }}</div>
-              </div>
-              <button class="badge-estado" [ngClass]="u.activo ? 'badge-estado-activo' : 'badge-estado-inactivo'"
-                      [disabled]="estaBloqueado(u.id)" (click)="cambiarEstado(u.id, !u.activo)">
-                {{ u.activo ? 'Activo' : 'Inactivo' }}
-              </button>
-            </div>
-
-            <div class="usuario-card-detalles">
-              <span class="badge-rol" [ngClass]="u.rol?.nombre === 'Administrador' ? 'badge-rol-admin' : 'badge-rol-vendedor'">
-                {{ u.rol?.nombre }}
-              </span>
-              <span class="text-muted small" *ngIf="u.ultimoAcceso">
-                <i class="bi bi-clock-history me-1"></i>{{ u.ultimoAcceso | date:'dd/MM/yyyy HH:mm' }}
-              </span>
-            </div>
-
-            <div class="acciones-usuario mt-2">
-              <button class="btn-accion btn-accion-editar" title="Editar" (click)="abrirModalEditar(u.id)">
-                <i class="bi bi-pencil"></i> Editar
-              </button>
-              <button class="btn-accion btn-accion-sesiones" title="Cerrar sesiones"
-                      [disabled]="estaBloqueado(u.id)" (click)="cerrarSesiones(u.id)" *ngIf="isAdmin">
-                <i class="bi bi-shield-lock"></i>
-              </button>
-              <button class="btn-accion btn-accion-eliminar" title="Eliminar"
-                      [disabled]="estaBloqueado(u.id)" (click)="eliminarUsuario(u)" *ngIf="isAdmin">
-                <span *ngIf="procesandoId === u.id" class="spinner-border spinner-border-sm"></span>
-                <i *ngIf="procesandoId !== u.id" class="bi bi-trash"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div *ngIf="usuarios.length === 0" class="text-center py-4 text-muted">
-          <i class="bi bi-inbox display-6 d-block mb-2"></i>
-          <p>No hay usuarios registrados</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======== ROLES Y PERMISOS ======== -->
-  <div class="card shadow-sm border-0 rounded-4 mt-4 roles-permisos-card">
-    <div class="card-body">
-      <h6 class="fw-bold mb-3"><i class="bi bi-key me-2" style="color:#0d9488;"></i>Roles y Permisos</h6>
-      <div class="row g-3">
-        <div class="col-md-6" *ngFor="let rol of rolesPermisos">
-          <div class="rol-permiso-card" [ngClass]="rol.color === 'admin' ? 'rol-permiso-admin' : 'rol-permiso-vendedor'">
-            <div class="rol-permiso-titulo">{{ rol.nombre }}</div>
-            <ul class="rol-permiso-lista">
-              <li *ngFor="let p of rol.permisos">{{ p }}</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================== -->
-  <!-- ======== MODAL LATERAL (SLIDE-OUT) ======== -->
-  <!-- ========================================================== -->
-  <div class="modal-overlay" [class.active]="showModal" (click)="cerrarModal()"></div>
-
-  <div class="modal-slide" [class.active]="showModal" (keydown)="onKeydown($event)">
-    <div class="modal-header">
-      <div>
-        <h5 class="modal-title">
-          <i class="bi" [ngClass]="esEdicion ? 'bi-pencil-square' : 'bi-person-plus'" style="color: #0d9488;"></i>
-          {{ esEdicion ? 'Editar Usuario' : 'Crear Usuario' }}
-        </h5>
-        <p class="modal-subtitle">
-          {{ esEdicion ? 'Modifica los datos del usuario' : 'Registra un nuevo usuario en el sistema' }}
-        </p>
-      </div>
-      <button class="modal-close" (click)="cerrarModal()">
-        <i class="bi bi-x-lg"></i>
+      <button class="btn-usuarios-salir" (click)="cerrarSesion()">
+        <i class="bi bi-box-arrow-right me-1"></i> Salir
       </button>
     </div>
+  </div>
 
-    <div class="modal-body">
-      <!-- Spinner de carga del modal -->
-      <div *ngIf="cargandoModal" class="text-center py-5">
-        <div class="spinner-border text-primary"></div>
-        <p class="text-muted mt-2">Cargando datos...</p>
+  <!-- ======== BARRA DE BÚSQUEDA (con contador debajo) ======== -->
+  <div class="card shadow-sm border-0 rounded-4 p-3 mb-4">
+    <div class="row g-2 align-items-center">
+      <div class="col-md-8 col-lg-9">
+        <input type="text" class="form-control form-control-lg shadow-sm" placeholder="Buscar usuario..."
+          [(ngModel)]="filtroBusqueda" (input)="aplicarFiltro()">
+      </div>
+      <div class="col-md-4 col-lg-3 text-md-end">
+        <span class="badge bg-light text-dark p-2 shadow-sm">
+          <i class="bi bi-database me-1"></i> {{ usuariosFiltrados.length }} usuarios
+        </span>
+      </div>
+    </div>
+  </div>
+  <!-- Fila 2: Contador de usuarios (alineado a la derecha) -->
+  <div class="row mt-2">
+    <div class="col-12 text-end">
+      <span class="badge bg-light text-dark p-2 shadow-sm">
+        <i class="bi bi-database me-1"></i> {{ usuariosFiltrados.length }} usuarios
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ======== TABLA DE USUARIOS ======== -->
+<div class="card shadow-sm border-0 rounded-4">
+  <div class="card-body">
+
+    <div *ngIf="cargando" class="text-center py-4">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <div *ngIf="!cargando">
+
+      <div class="table-responsive d-none d-md-block">
+        <table class="table table-hover align-middle usuarios-tabla">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Nombre</th>
+              <th>Usuario</th>
+              <th>Rol</th>
+              <th>Estado</th>
+              <th>Último acceso</th>
+              <th class="text-center" style="width: 200px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuarioId"
+              [class.fila-procesando]="procesandoId === u.id">
+              <td>
+                <div class="avatar-circle" [style.background-color]="obtenerColorAvatar(u.nombreCompleto || u.usuario)">
+                  {{ (u.nombreCompleto || u.usuario).charAt(0).toUpperCase() }}
+                </div>
+              </td>
+              <td class="fw-semibold">{{ u.nombreCompleto }}</td>
+              <td class="text-muted">{{ u.usuario }}</td>
+              <td>
+                <span class="badge-rol" [ngClass]="getRolBadgeClass(u)">
+                  <strong>{{ getRolNombre(u) }}</strong>
+                </span>
+              </td>
+              <td>
+                <button *ngIf="isAdmin && !esAdministrador(u) && u.id !== usuarioActualId" class="badge-estado"
+                  [ngClass]="u.activo ? 'badge-estado-activo' : 'badge-estado-inactivo'"
+                  [disabled]="estaBloqueado(u.id)" (click)="cambiarEstado(u.id, !u.activo)"
+                  [title]="u.activo ? 'Clic para desactivar' : 'Clic para activar'">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </button>
+                <span *ngIf="!isAdmin || esAdministrador(u) || u.id === usuarioActualId" class="badge-estado"
+                  [ngClass]="u.activo ? 'badge-estado-activo' : 'badge-estado-inactivo'">
+                  {{ u.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td class="text-muted small">{{ u.ultimoAcceso ? (u.ultimoAcceso | date:'dd/MM/yyyy HH:mm') : '-' }}</td>
+              <td>
+                <div class="acciones-usuario">
+                  <button class="btn-accion btn-accion-editar" title="Editar" (click)="abrirModalEditar(u.id)"
+                    [disabled]="estaBloqueado(u.id)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button *ngIf="isAdmin" class="btn-accion btn-accion-sesiones" title="Cerrar sesiones"
+                    [disabled]="estaBloqueado(u.id)" (click)="cerrarSesiones(u.id)">
+                    <i class="bi bi-shield-lock"></i>
+                  </button>
+                  <button *ngIf="isAdmin && !esAdministrador(u)" class="btn-accion btn-accion-eliminar" title="Eliminar"
+                    [disabled]="estaBloqueado(u.id)" (click)="eliminarUsuario(u)">
+                    <span *ngIf="procesandoId === u.id" class="spinner-border spinner-border-sm"></span>
+                    <i *ngIf="procesandoId !== u.id" class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="usuariosFiltrados.length === 0">
+              <td colspan="7" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                No hay usuarios que coincidan con la búsqueda
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <!-- Formulario -->
-      <form #formUsuario="ngForm" (ngSubmit)="guardarUsuario(formUsuario)" *ngIf="!cargandoModal">
-        <!-- Nombre Completo -->
-        <div class="form-group">
-          <label class="form-label required">Nombre Completo</label>
-          <input type="text" class="form-control" [(ngModel)]="usuarioForm.nombreCompleto" name="nombreCompleto"
-                 required minlength="3" maxlength="100" placeholder="Ej: Juan Pérez García">
-          <small class="form-text text-muted">Nombre completo del usuario</small>
-          <div class="invalid-feedback" *ngIf="formUsuario.submitted && !usuarioForm.nombreCompleto">
-            El nombre completo es obligatorio
-          </div>
-        </div>
-
-        <!-- Usuario -->
-        <div class="form-group">
-          <label class="form-label required">Usuario</label>
-          <input type="text" class="form-control" [(ngModel)]="usuarioForm.usuario" name="usuario"
-                 required minlength="3" maxlength="50" placeholder="Ej: juan.perez">
-          <small class="form-text text-muted">Nombre de usuario para iniciar sesión</small>
-          <div class="invalid-feedback" *ngIf="formUsuario.submitted && !usuarioForm.usuario">
-            El nombre de usuario es obligatorio
-          </div>
-        </div>
-
-        <!-- Contraseña -->
-        <div class="form-group">
-          <label class="form-label" [ngClass]="{'required': !esEdicion}">
-            {{ esEdicion ? 'Nueva Contraseña (opcional)' : 'Contraseña' }}
-          </label>
-          <input type="password" class="form-control" [(ngModel)]="usuarioForm.contrasena" name="contrasena"
-                 [required]="!esEdicion" minlength="6" placeholder="Mínimo 6 caracteres">
-          <small class="form-text text-muted">
-            {{ esEdicion ? 'Dejar en blanco para mantener la contraseña actual' : 'Mínimo 6 caracteres' }}
-          </small>
-          <div class="invalid-feedback" *ngIf="!esEdicion && formUsuario.submitted && !usuarioForm.contrasena">
-            La contraseña es obligatoria
-          </div>
-        </div>
-
-        <!-- Rol -->
-        <div class="form-group">
-          <label class="form-label required">Rol</label>
-          <select class="form-select" [(ngModel)]="usuarioForm.rolId" name="rolId" required>
-            <option *ngFor="let rol of roles" [value]="rol.id">{{ rol.nombre }}</option>
-          </select>
-          <small class="form-text text-muted">Define los permisos del usuario en el sistema</small>
-          <div class="invalid-feedback" *ngIf="formUsuario.submitted && !usuarioForm.rolId">
-            El rol es obligatorio
-          </div>
-        </div>
-
-        <!-- Estado Activo/Inactivo -->
-        <div class="form-group form-check-group">
-          <label class="form-label">Estado</label>
-          <div class="toggle-container">
-            <label class="toggle-switch">
-              <input type="checkbox" [(ngModel)]="usuarioForm.activo" name="activo">
-              <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label" [ngClass]="usuarioForm.activo ? 'text-success' : 'text-danger'">
-              <i class="bi" [ngClass]="usuarioForm.activo ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
-              {{ usuarioForm.activo ? 'Activo' : 'Inactivo' }}
+      <!-- TARJETAS (móvil) -->
+      <div class="d-md-none usuarios-grid-mobile">
+        <div *ngFor="let u of usuariosFiltrados; trackBy: trackByUsuarioId" class="usuario-card-mobile"
+          [class.fila-procesando]="procesandoId === u.id">
+          <div class="d-flex align-items-center gap-3">
+            <div class="avatar-circle" [style.background]="obtenerColorAvatar(u.nombreCompleto || u.usuario)">
+              {{ (u.nombreCompleto || u.usuario).charAt(0).toUpperCase() }}
+            </div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-bold text-truncate">{{ u.nombreCompleto }}</div>
+              <div class="text-muted small text-truncate">{{ u.usuario }}</div>
+            </div>
+            <button *ngIf="isAdmin && !esAdministrador(u) && u.id !== usuarioActualId" class="badge-estado"
+              [ngClass]="u.activo ? 'badge-estado-activo' : 'badge-estado-inactivo'" [disabled]="estaBloqueado(u.id)"
+              (click)="cambiarEstado(u.id, !u.activo)">
+              {{ u.activo ? 'Activo' : 'Inactivo' }}
+            </button>
+            <span *ngIf="!isAdmin || esAdministrador(u) || u.id === usuarioActualId" class="badge-estado"
+              [ngClass]="u.activo ? 'badge-estado-activo' : 'badge-estado-inactivo'">
+              {{ u.activo ? 'Activo' : 'Inactivo' }}
             </span>
           </div>
-          <small class="form-text text-muted">Los usuarios inactivos no pueden iniciar sesión</small>
-        </div>
 
-        <!-- Botones -->
-        <div class="form-actions">
-          <button type="button" class="btn-cancelar" (click)="cerrarModal()">
-            Cancelar
-          </button>
-          <button type="submit" class="btn-guardar" [disabled]="cargandoModal">
-            <span *ngIf="cargandoModal" class="spinner-border spinner-border-sm me-1"></span>
-            <i *ngIf="!cargandoModal" class="bi" [ngClass]="esEdicion ? 'bi-pencil' : 'bi-plus-circle'"></i>
-            {{ cargandoModal ? 'Guardando...' : (esEdicion ? 'Actualizar' : 'Guardar') }}
-          </button>
+          <div class="usuario-card-detalles">
+            <span class="badge-rol" [ngClass]="getRolBadgeClass(u)">
+              <strong>{{ getRolNombre(u) }}</strong>
+            </span>
+            <span class="text-muted small" *ngIf="u.ultimoAcceso">
+              <i class="bi bi-clock-history me-1"></i>{{ u.ultimoAcceso | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+          </div>
+
+          <div class="acciones-usuario mt-2">
+            <button class="btn-accion btn-accion-editar" title="Editar" (click)="abrirModalEditar(u.id)"
+              [disabled]="estaBloqueado(u.id)">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+            <button *ngIf="isAdmin" class="btn-accion btn-accion-sesiones" title="Cerrar sesiones"
+              [disabled]="estaBloqueado(u.id)" (click)="cerrarSesiones(u.id)">
+              <i class="bi bi-shield-lock"></i>
+            </button>
+            <button *ngIf="isAdmin && !esAdministrador(u)" class="btn-accion btn-accion-eliminar" title="Eliminar"
+              [disabled]="estaBloqueado(u.id)" (click)="eliminarUsuario(u)">
+              <span *ngIf="procesandoId === u.id" class="spinner-border spinner-border-sm"></span>
+              <i *ngIf="procesandoId !== u.id" class="bi bi-trash"></i>
+            </button>
+          </div>
         </div>
-      </form>
+        <div *ngIf="usuariosFiltrados.length === 0" class="text-center py-4 text-muted">
+          <i class="bi bi-inbox display-6 d-block mb-2"></i>
+          No hay usuarios que coincidan con la búsqueda
+        </div>
+      </div>
+
+      <div *ngIf="usuarios.length === 0 && !cargando" class="text-center py-4 text-muted">
+        <i class="bi bi-inbox display-6 d-block mb-2"></i>
+        <p>No hay usuarios registrados</p>
+      </div>
     </div>
+  </div>
+</div>
+
+<!-- ======== ROLES Y PERMISOS ======== -->
+<div class="card shadow-sm border-0 rounded-4 mt-4 roles-permisos-card">
+  <div class="card-body">
+    <h6 class="fw-bold mb-3"><i class="bi bi-key me-2" style="color:#0d9488;"></i>Roles y Permisos</h6>
+    <div class="row g-3">
+      <div class="col-md-6" *ngFor="let rol of rolesPermisos">
+        <div class="rol-permiso-card" [ngClass]="rol.color === 'admin' ? 'rol-permiso-admin' : 'rol-permiso-vendedor'">
+          <div class="rol-permiso-titulo">{{ rol.nombre }}</div>
+          <ul class="rol-permiso-lista">
+            <li *ngFor="let p of rol.permisos">{{ p }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== MODAL LATERAL ======== -->
+<div class="modal-overlay" [class.active]="showModal" (click)="cerrarModal()"></div>
+
+<div class="modal-slide" [class.active]="showModal" (keydown)="onKeydown($event)">
+  <div class="modal-header">
+    <div>
+      <h5 class="modal-title">
+        <i class="bi" [ngClass]="esEdicion ? 'bi-pencil-square' : 'bi-person-plus'" style="color: #0d9488;"></i>
+        {{ esEdicion ? 'Editar Usuario' : 'Crear Usuario' }}
+      </h5>
+      <p class="modal-subtitle">
+        {{ esEdicion ? 'Modifica los datos del usuario' : 'Registra un nuevo usuario en el sistema' }}
+      </p>
+    </div>
+    <button class="modal-close" (click)="cerrarModal()">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="modal-body">
+    <div *ngIf="cargandoModal" class="text-center py-5">
+      <div class="spinner-border text-primary"></div>
+      <p class="text-muted mt-2">Cargando datos...</p>
+    </div>
+
+    <form #formUsuario="ngForm" (ngSubmit)="guardarUsuario(formUsuario)" *ngIf="!cargandoModal">
+      <div class="form-group">
+        <label class="form-label required">Nombre Completo</label>
+        <input type="text" class="form-control" [(ngModel)]="usuarioForm.nombreCompleto" name="nombreCompleto" required
+          minlength="3" maxlength="100" placeholder="Ej: Juan Pérez García">
+        <small class="form-text text-muted">Nombre completo del usuario</small>
+        <div class="invalid-feedback" *ngIf="formUsuario.submitted && !usuarioForm.nombreCompleto">
+          El nombre completo es obligatorio
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label required">Usuario</label>
+        <input type="text" class="form-control" [(ngModel)]="usuarioForm.usuario" name="usuario" required minlength="3"
+          maxlength="50" placeholder="Ej: juan.perez">
+        <small class="form-text text-muted">Nombre de usuario para iniciar sesión</small>
+        <div class="invalid-feedback" *ngIf="formUsuario.submitted && !usuarioForm.usuario">
+          El nombre de usuario es obligatorio
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" [ngClass]="{'required': !esEdicion}">
+          {{ esEdicion ? 'Nueva Contraseña (opcional)' : 'Contraseña' }}
+        </label>
+        <input type="password" class="form-control" [(ngModel)]="usuarioForm.contrasena" name="contrasena"
+          [required]="!esEdicion" minlength="6" placeholder="Mínimo 6 caracteres">
+        <small class="form-text text-muted">
+          {{ esEdicion ? 'Dejar en blanco para mantener la contraseña actual' : 'Mínimo 6 caracteres' }}
+        </small>
+        <div class="invalid-feedback" *ngIf="!esEdicion && formUsuario.submitted && !usuarioForm.contrasena">
+          La contraseña es obligatoria
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label required">Rol</label>
+        <select class="form-select" [(ngModel)]="usuarioForm.rolId" name="rolId" required>
+          <option *ngFor="let rol of roles" [value]="rol.id">{{ rol.nombre }}</option>
+        </select>
+        <small class="form-text text-muted">Define los permisos del usuario en el sistema</small>
+        <div class="invalid-feedback" *ngIf="formUsuario.submitted && !usuarioForm.rolId">
+          El rol es obligatorio
+        </div>
+      </div>
+
+      <div class="form-group form-check-group">
+        <label class="form-label">Estado</label>
+        <div class="toggle-container">
+          <label class="toggle-switch">
+            <input type="checkbox" [(ngModel)]="usuarioForm.activo" name="activo">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label" [ngClass]="usuarioForm.activo ? 'text-success' : 'text-danger'">
+            <i class="bi" [ngClass]="usuarioForm.activo ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+            {{ usuarioForm.activo ? 'Activo' : 'Inactivo' }}
+          </span>
+        </div>
+        <small class="form-text text-muted">Los usuarios inactivos no pueden iniciar sesión</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancelar" (click)="cerrarModal()" [disabled]="cargandoModal">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-guardar" [disabled]="cargandoModal">
+          <span *ngIf="cargandoModal" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!cargandoModal" class="bi" [ngClass]="esEdicion ? 'bi-pencil' : 'bi-plus-circle'"></i>
+          {{ cargandoModal ? 'Guardando...' : (esEdicion ? 'Actualizar' : 'Guardar') }}
+        </button>
+      </div>
+    </form>
   </div>
 </div>

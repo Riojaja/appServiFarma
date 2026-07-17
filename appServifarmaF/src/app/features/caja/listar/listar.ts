@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -7,6 +7,7 @@ import { VentaService } from '../../../core/services/venta';
 import { AuthService } from '../../../core/auth';
 import { Caja } from '../../../core/models/caja.model';
 import { Venta } from '../../../core/models/venta.model';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-listar-caja',
@@ -15,13 +16,14 @@ import { Venta } from '../../../core/models/venta.model';
   templateUrl: './listar.html',
   styleUrls: ['./listar.css']
 })
-export class ListarComponent implements OnInit {
+export class ListarComponent implements OnInit, AfterViewInit {
   // ======== ESTADO DE LA CAJA ========
   caja: Caja | null = null;
   existeCajaAbierta: boolean = false;
   cargando: boolean = false;
   errorMessage: string = '';
   usuarioId: number = 0;
+  private primeraCarga: boolean = true;
 
   // ======== RESUMEN DE VENTAS (DATOS REALES) ========
   resumenVentas = {
@@ -53,7 +55,8 @@ export class ListarComponent implements OnInit {
     private fb: FormBuilder,
     private cajaService: CajaService,
     private ventaService: VentaService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {
     this.formApertura = this.fb.group({
       montoApertura: ['', [Validators.required, Validators.min(0.01)]]
@@ -65,17 +68,34 @@ export class ListarComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    console.log('🔄 ngOnInit ejecutado');
     this.usuarioId = Number(this.authService.getUsuarioId()) || 0;
-    this.cargarEstado();
+    // La carga se hará en ngAfterViewInit para asegurar que la vista esté lista
+  }
+
+  ngAfterViewInit(): void {
+    console.log('🔄 ngAfterViewInit ejecutado');
+    if (this.primeraCarga) {
+      this.primeraCarga = false;
+      setTimeout(() => {
+        this.cargarEstado();
+      }, 100);
+    }
   }
 
   cargarEstado(): void {
+    if (this.cargando) return;
+
+    console.log('🔄 Cargando estado de caja...');
     this.cargando = true;
+    this.errorMessage = '';
+
     this.cajaService.obtenerCajaAbierta().subscribe({
       next: (data: Caja) => {
         this.caja = data;
         this.existeCajaAbierta = true;
         this.cargando = false;
+        this.cdr.detectChanges();
         this.cargarResumenVentas();
       },
       error: (err: any) => {
@@ -84,10 +104,20 @@ export class ListarComponent implements OnInit {
           this.caja = null;
           this.resumenVentas = { efectivo: 0, tarjeta: 0, transferencia: 0, yape: 0, total: 0 };
           this.montoEsperado = 0;
+          this.cargando = false;
+          this.cdr.detectChanges();
         } else {
           this.errorMessage = 'Error al obtener el estado de la caja.';
+          this.cargando = false;
+          this.cdr.detectChanges();
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: this.errorMessage,
+            confirmButtonColor: '#2563eb',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         }
-        this.cargando = false;
         console.error('Error:', err);
       }
     });
@@ -99,16 +129,14 @@ export class ListarComponent implements OnInit {
       console.warn('No hay caja abierta o ID inválido');
       this.resumenVentas = { efectivo: 0, tarjeta: 0, transferencia: 0, yape: 0, total: 0 };
       this.montoEsperado = 0;
+      this.cdr.detectChanges();
       return;
     }
 
-    // Obtener TODAS las ventas y filtrar por cajaId
     this.ventaService.listar().subscribe({
       next: (ventas: Venta[]) => {
-        // Filtrar ventas de esta caja
         const ventasCaja = ventas.filter(v => v.cajaId === this.caja?.id);
         
-        // Calcular totales por método de pago
         let totalEfectivo = 0;
         let totalTarjeta = 0;
         let totalTransferencia = 0;
@@ -143,13 +171,22 @@ export class ListarComponent implements OnInit {
           total: totalGeneral
         };
 
-        // Calcular monto esperado (monto inicial + ventas en efectivo)
         this.montoEsperado = (this.caja?.montoApertura || 0) + totalEfectivo;
+        this.cdr.detectChanges();
+        console.log('✅ Resumen de ventas actualizado:', this.resumenVentas);
       },
       error: (err: any) => {
         console.error('Error al cargar ventas:', err);
         this.resumenVentas = { efectivo: 0, tarjeta: 0, transferencia: 0, yape: 0, total: 0 };
         this.montoEsperado = this.caja?.montoApertura || 0;
+        this.cdr.detectChanges();
+        Swal.fire({
+          icon: 'warning',
+          title: 'Advertencia',
+          text: 'No se pudieron cargar las ventas. Los totales pueden estar incompletos.',
+          confirmButtonColor: '#2563eb',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }
@@ -165,35 +202,42 @@ export class ListarComponent implements OnInit {
 
   // ======== MODALES ========
   abrirModalApertura(): void {
+    if (this.modalAperturaAbierto) return;
     this.formApertura.reset({ montoApertura: '' });
     this.errorApertura = '';
     this.modalAperturaAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalApertura(): void {
+    if (this.enviandoApertura) return;
     this.modalAperturaAbierto = false;
     this.enviandoApertura = false;
+    this.cdr.detectChanges();
   }
 
   abrirModalCierre(): void {
+    if (this.modalCierreAbierto) return;
     this.formCierre.reset({ montoCierreDeclarado: '' });
     this.errorCierre = '';
     this.modalCierreAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalCierre(): void {
+    if (this.enviandoCierre) return;
     this.modalCierreAbierto = false;
     this.enviandoCierre = false;
+    this.cdr.detectChanges();
   }
 
   // ======== APERTURA ========
   abrirCaja(): void {
-    if (this.formApertura.invalid || this.enviandoApertura) {
-      return;
-    }
+    if (this.formApertura.invalid || this.enviandoApertura) return;
 
     this.enviandoApertura = true;
     this.errorApertura = '';
+    this.cdr.detectChanges();
 
     const request = {
       usuarioAperturaId: this.usuarioId,
@@ -205,11 +249,27 @@ export class ListarComponent implements OnInit {
         this.enviandoApertura = false;
         this.cerrarModalApertura();
         this.cargarEstado();
-        alert('✅ Caja abierta exitosamente');
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Caja abierta',
+          text: 'La caja ha sido abierta exitosamente.',
+          timer: 2000,
+          showConfirmButton: false,
+          customClass: { popup: 'swal-farmaceutico' }
+        });
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.enviandoApertura = false;
         this.errorApertura = err.error?.mensaje || 'Error al abrir la caja';
+        this.cdr.detectChanges();
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: this.errorApertura,
+          confirmButtonColor: '#2563eb',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
         console.error('Error:', err);
       }
     });
@@ -217,12 +277,11 @@ export class ListarComponent implements OnInit {
 
   // ======== CIERRE ========
   cerrarCaja(): void {
-    if (this.formCierre.invalid || this.enviandoCierre || !this.caja) {
-      return;
-    }
+    if (this.formCierre.invalid || this.enviandoCierre || !this.caja) return;
 
     this.enviandoCierre = true;
     this.errorCierre = '';
+    this.cdr.detectChanges();
 
     const request = {
       usuarioCierreId: this.usuarioId,
@@ -234,16 +293,32 @@ export class ListarComponent implements OnInit {
         this.enviandoCierre = false;
         this.cerrarModalCierre();
         this.cargarEstado();
-        alert(
-          `✅ Caja cerrada exitosamente!\n\n` +
-          `Total ventas: S/ ${response.totalVentas?.toFixed(2) || '0.00'}\n` +
-          `Monto declarado: S/ ${response.montoDeclarado?.toFixed(2) || '0.00'}\n` +
-          `Diferencia: S/ ${response.diferencia?.toFixed(2) || '0.00'}`
-        );
+        Swal.fire({
+          icon: 'success',
+          title: '✅ Caja cerrada',
+          html: `
+            <div style="text-align: left;">
+              <p><strong>Total ventas:</strong> S/ ${response.totalVentas?.toFixed(2) || '0.00'}</p>
+              <p><strong>Monto declarado:</strong> S/ ${response.montoDeclarado?.toFixed(2) || '0.00'}</p>
+              <p><strong>Diferencia:</strong> S/ ${response.diferencia?.toFixed(2) || '0.00'}</p>
+            </div>
+          `,
+          confirmButtonColor: '#2563eb',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.enviandoCierre = false;
         this.errorCierre = err.error?.mensaje || 'Error al cerrar la caja';
+        this.cdr.detectChanges();
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: this.errorCierre,
+          confirmButtonColor: '#2563eb',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
         console.error('Error:', err);
       }
     });

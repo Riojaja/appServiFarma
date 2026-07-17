@@ -1,10 +1,10 @@
 <div class="container-fluid mt-4 seguridad-panel">
 
   <!-- ======== ENCABEZADO ======== -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
     <div>
       <h2 class="fw-bold mb-0 titulo-principal">
-        <i class="bi bi-shield-lock"></i> Configuración de Seguridad
+        <i class="bi bi-shield-lock me-2" style="color: #2563eb;"></i> Configuración de Seguridad
       </h2>
       <p class="text-muted small mb-0">Controla sesiones, turnos e intentos de acceso al sistema</p>
     </div>
@@ -20,14 +20,25 @@
     <div class="col-md-6"><div class="skeleton-card"></div></div>
   </div>
 
-  <form #formConfig="ngForm" *ngIf="!cargando">
+  <!-- ======== MENSAJE DE ERROR AL CARGAR ======== -->
+  <div *ngIf="!cargando && errorCarga" class="text-center py-5">
+    <i class="bi bi-exclamation-triangle display-4 text-warning d-block mb-3"></i>
+    <h5 class="fw-bold">No se pudo cargar la configuración</h5>
+    <p class="text-muted">{{ mensajeError || 'Hubo un problema al obtener los datos.' }}</p>
+    <button class="btn-seguridad-guardar mt-3" (click)="cargarConfiguracion()">
+      <i class="bi bi-arrow-clockwise me-1"></i> Reintentar
+    </button>
+  </div>
+
+  <!-- ======== FORMULARIO (solo si no hay error de carga) ======== -->
+  <form #formConfig="ngForm" *ngIf="!cargando && !errorCarga">
     <div class="row g-4">
 
       <!-- ======== SECCIÓN: SESIÓN Y TURNOS ======== -->
       <div class="col-md-6">
         <div class="card seccion-card shadow-sm border-0 rounded-4 h-100">
-          <div class="card-body">
-            <div class="seccion-header">
+          <div class="card-body p-4">
+            <div class="seccion-header d-flex align-items-center gap-3 mb-3">
               <div class="seccion-icono">
                 <i class="bi bi-clock-history"></i>
               </div>
@@ -63,8 +74,8 @@
       <!-- ======== SECCIÓN: ACCESO Y BLOQUEO ======== -->
       <div class="col-md-6">
         <div class="card seccion-card shadow-sm border-0 rounded-4 h-100">
-          <div class="card-body">
-            <div class="seccion-header">
+          <div class="card-body p-4">
+            <div class="seccion-header d-flex align-items-center gap-3 mb-3">
               <div class="seccion-icono seccion-icono-alerta">
                 <i class="bi bi-shield-exclamation"></i>
               </div>
@@ -100,7 +111,7 @@
     </div>
 
     <!-- ======== ACCIONES ======== -->
-    <div class="mt-4 d-flex gap-2">
+    <div class="mt-4 d-flex flex-wrap gap-2">
       <button type="button" class="btn-seguridad-guardar" (click)="guardarConfiguracion()" [disabled]="operacionEnCurso || formConfig.invalid">
         <span *ngIf="guardando" class="spinner-border spinner-border-sm me-2"></span>
         <i *ngIf="!guardando" class="bi bi-save me-1"></i>
@@ -109,11 +120,14 @@
       <button type="button" class="btn-seguridad-recargar-secundario" (click)="cargarConfiguracion()" [disabled]="operacionEnCurso">
         <i class="bi bi-arrow-clockwise me-1"></i> Recargar
       </button>
+      <button type="button" class="btn-seguridad-reiniciar" (click)="reiniciarFormulario()" [disabled]="operacionEnCurso">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Reiniciar
+      </button>
     </div>
   </form>
 
   <!-- ======== INFORMACIÓN ADICIONAL ======== -->
-  <div class="alert-seguridad mt-4">
+  <div class="alert-seguridad mt-4" *ngIf="!cargando && !errorCarga">
     <i class="bi bi-info-circle me-2"></i>
     <strong>Nota:</strong> Los cambios se aplicarán inmediatamente para nuevos inicios de sesión y para el control de inactividad.
     Los usuarios con sesiones activas no se verán afectados hasta que reinicien su sesión.

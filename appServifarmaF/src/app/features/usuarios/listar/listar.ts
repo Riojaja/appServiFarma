@@ -1,7 +1,6 @@
-// src/app/features/usuarios/listar/listar.component.ts
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Subject, finalize, takeUntil } from 'rxjs';
 import { UsuarioService } from '../../../core/services/usuario';
@@ -16,41 +15,35 @@ import Swal from 'sweetalert2';
   styleUrls: ['./listar.css']
 })
 export class ListarUsuariosComponent implements OnInit, OnDestroy {
-  // ========== ESTADO PRINCIPAL ==========
   usuarios: any[] = [];
+  usuariosFiltrados: any[] = [];
   cargando: boolean = false;
   isAdmin: boolean = false;
+  filtroBusqueda: string = '';
+  usuarioActualId: number | null = null;
 
-  /** ID del usuario sobre el que hay una acción en curso (bloquea sus botones) */
   procesandoId: number | null = null;
-  /** true mientras se ejecuta el cierre de turno general */
   ejecutandoCierreTurno: boolean = false;
-
-  /** Subject para cancelar suscripciones al destruir el componente */
   private destroy$ = new Subject<void>();
 
-  // ========== MODAL ==========
   showModal: boolean = false;
   esEdicion: boolean = false;
   cargandoModal: boolean = false;
   usuarioId: number | null = null;
 
-  // ========== DATOS DEL FORMULARIO ==========
   usuarioForm = {
     nombreCompleto: '',
     usuario: '',
     contrasena: '',
-    rolId: 2, // 2 = Vendedor por defecto
+    rolId: 2, // 2 = Vendedor por defecto (para el formulario)
     activo: true
   };
 
-  // ========== OPCIONES ==========
   roles = [
     { id: 1, nombre: 'Administrador' },
     { id: 2, nombre: 'Vendedor' }
   ];
 
-  // ========== ROLES Y PERMISOS (información estática) ==========
   rolesPermisos = [
     {
       nombre: 'Administrador',
@@ -77,12 +70,14 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
   constructor(
     private usuarioService: UsuarioService,
     private authService: AuthService,
+    private router: Router,
     private cdr: ChangeDetectorRef
   ) { }
 
-  // ========== CICLO DE VIDA ==========
   ngOnInit(): void {
     this.isAdmin = this.authService.isAdmin();
+    const id = this.authService.getUsuarioId();
+    this.usuarioActualId = id ? Number(id) : null;
     this.cargarUsuarios();
   }
 
@@ -91,7 +86,6 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  // ========== GETTERS ==========
   get hayOperacionEnCurso(): boolean {
     return this.cargando || this.procesandoId !== null || this.ejecutandoCierreTurno;
   }
@@ -100,10 +94,38 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     return this.procesandoId === usuarioId || this.cargando || this.ejecutandoCierreTurno;
   }
 
-  // ========== CARGA DE DATOS ==========
+  // ======== FUNCIONES PARA OBTENER DATOS DEL ROL ========
+
+  /** Obtiene el nombre del rol de un usuario, soportando diferentes estructuras */
+  getRolNombre(usuario: any): string {
+    if (!usuario) return '—';
+    // Prioridad: rol.nombre, luego si es string directo
+    if (usuario.rol?.nombre) return usuario.rol.nombre;
+    if (typeof usuario.rol === 'string') return usuario.rol;
+    if (usuario.rolNombre) return usuario.rolNombre;
+    // Si solo tiene rol.id, buscar en la lista de roles
+    if (usuario.rol?.id) {
+      const encontrado = this.roles.find(r => r.id === usuario.rol.id);
+      return encontrado ? encontrado.nombre : '—';
+    }
+    return '—';
+  }
+
+  /** Devuelve la clase CSS para el badge según el rol */
+  getRolBadgeClass(usuario: any): string {
+    const nombre = this.getRolNombre(usuario);
+    return nombre === 'Administrador' ? 'badge-rol-admin' : 'badge-rol-vendedor';
+  }
+
+  /** Verifica si un usuario es administrador */
+  esAdministrador(usuario: any): boolean {
+    return this.getRolNombre(usuario) === 'Administrador';
+  }
+
+  // ======== CARGA DE DATOS ========
+
   cargarUsuarios(): void {
     if (this.cargando) return;
-
     this.cargando = true;
     this.usuarioService.listar()
       .pipe(
@@ -116,6 +138,8 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (data) => {
           this.usuarios = data;
+          console.log('📦 Usuarios recibidos:', this.usuarios);
+          this.aplicarFiltro();
           this.cdr.detectChanges();
         },
         error: () => {
@@ -130,7 +154,18 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ========== COLOR DE AVATAR ==========
+  aplicarFiltro(): void {
+    if (!this.filtroBusqueda.trim()) {
+      this.usuariosFiltrados = [...this.usuarios];
+      return;
+    }
+    const texto = this.filtroBusqueda.toLowerCase().trim();
+    this.usuariosFiltrados = this.usuarios.filter(u =>
+      u.nombreCompleto.toLowerCase().includes(texto) ||
+      u.usuario.toLowerCase().includes(texto)
+    );
+  }
+
   obtenerColorAvatar(nombre: string): string {
     const colores = ['#0d9488', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
     const texto = nombre || '';
@@ -138,8 +173,10 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     return colores[index];
   }
 
-  // ========== MODAL: ABRIR / CERRAR ==========
+  // ======== MODAL ========
+
   abrirModalCrear(): void {
+    if (this.cargando) return;
     this.esEdicion = false;
     this.usuarioId = null;
     this.usuarioForm = {
@@ -154,6 +191,7 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
   }
 
   abrirModalEditar(id: number): void {
+    if (this.cargando || this.procesandoId !== null) return;
     this.esEdicion = true;
     this.usuarioId = id;
     this.cargandoModal = true;
@@ -170,10 +208,11 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
       )
       .subscribe({
         next: (data) => {
+          // ✅ CORREGIDO: usar data.rol?.id en lugar de data.rolId
           this.usuarioForm = {
             nombreCompleto: data.nombreCompleto || '',
             usuario: data.usuario || '',
-            contrasena: '', // No se muestra la contraseña en edición
+            contrasena: '',
             rolId: data.rol?.id || 2,
             activo: data.activo !== undefined ? data.activo : true
           };
@@ -196,7 +235,6 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  // ========== MODAL: GUARDAR ==========
   guardarUsuario(form: NgForm): void {
     if (form.invalid) {
       Swal.fire({
@@ -208,7 +246,6 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Validar contraseña (solo en creación)
     if (!this.esEdicion && (!this.usuarioForm.contrasena || this.usuarioForm.contrasena.length < 6)) {
       Swal.fire({
         title: 'Error',
@@ -251,7 +288,7 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
             customClass: { popup: 'swal-farmaceutico' }
           });
           this.cerrarModal();
-          this.cargarUsuarios(); // Recargar la lista
+          this.cargarUsuarios();
         },
         error: (err) => {
           const mensaje = err?.error?.mensaje || err?.error?.message || 'Error al guardar el usuario';
@@ -265,15 +302,39 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
       });
   }
 
-  // ========== ACCIONES SOBRE USUARIOS ==========
+  // ======== ACCIONES SOBRE USUARIOS ========
 
   cambiarEstado(id: number, activo: boolean): void {
     if (this.procesandoId !== null) return;
 
+    const usuario = this.usuarios.find(u => u.id === id);
+    if (!usuario) return;
+
+    // 🔒 No permitir cambiar estado de administradores
+    if (this.esAdministrador(usuario)) {
+      Swal.fire({
+        title: 'Operación no permitida',
+        text: 'No se puede cambiar el estado de un administrador.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      return;
+    }
+
+    if (this.usuarioActualId === id) {
+      Swal.fire({
+        title: 'Operación no permitida',
+        text: 'No puedes cambiar tu propio estado.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      return;
+    }
+
     const mensaje = activo ? 'activar' : 'desactivar';
     Swal.fire({
       title: `¿${mensaje.charAt(0).toUpperCase() + mensaje.slice(1)} usuario?`,
-      text: `¿Está seguro de ${mensaje} este usuario?`,
+      text: `¿Está seguro de ${mensaje} a "${usuario.nombreCompleto}"?`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#0d9488',
@@ -295,11 +356,12 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
           )
           .subscribe({
             next: () => {
-              const usuario = this.usuarios.find(u => u.id === id);
-              if (usuario) usuario.activo = activo;
+              const usuarioActualizado = this.usuarios.find(u => u.id === id);
+              if (usuarioActualizado) usuarioActualizado.activo = activo;
+              this.aplicarFiltro();
               this.cdr.detectChanges();
               Swal.fire({
-                title: 'Éxito',
+                title: '✅ Éxito',
                 text: `Usuario ${activo ? 'activado' : 'desactivado'} correctamente`,
                 icon: 'success',
                 timer: 2200,
@@ -307,13 +369,17 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
                 customClass: { popup: 'swal-farmaceutico' }
               });
             },
-            error: () => {
+            error: (err) => {
+              // Mostrar el mensaje real del backend
+              const mensajeError = err?.error?.mensaje || err?.error?.message || 'No se pudo cambiar el estado.';
               Swal.fire({
-                title: 'Error',
-                text: 'No se pudo cambiar el estado',
+                title: '❌ Error',
+                text: mensajeError,
                 icon: 'error',
                 customClass: { popup: 'swal-farmaceutico' }
               });
+              // Recargar la lista para asegurar consistencia
+              this.cargarUsuarios();
             }
           });
       }
@@ -372,6 +438,17 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
   eliminarUsuario(usuario: any): void {
     if (this.procesandoId !== null) return;
 
+    // No permitir eliminar administradores
+    if (this.esAdministrador(usuario)) {
+      Swal.fire({
+        title: 'Operación no permitida',
+        text: 'No se puede eliminar a un administrador.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      return;
+    }
+
     Swal.fire({
       title: '¿Eliminar usuario?',
       html: `
@@ -380,7 +457,7 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
         </p>
         <div style="background:#f8fafc;border-radius:8px;padding:12px;border-left:4px solid #dc2626;text-align:left;">
           <strong>${usuario.nombreCompleto}</strong><br>
-          <span style="font-size:0.85rem;color:#475569;">Usuario: ${usuario.usuario} · Rol: ${usuario.rol?.nombre || '—'}</span>
+          <span style="font-size:0.85rem;color:#475569;">Usuario: ${usuario.usuario} · Rol: ${this.getRolNombre(usuario)}</span>
         </div>
       `,
       icon: 'warning',
@@ -405,6 +482,7 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
           .subscribe({
             next: () => {
               this.usuarios = this.usuarios.filter(u => u.id !== usuario.id);
+              this.aplicarFiltro();
               this.cdr.detectChanges();
               Swal.fire({
                 title: 'Eliminado',
@@ -478,11 +556,30 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     });
   }
 
+  cerrarSesion(): void {
+    Swal.fire({
+      title: '¿Cerrar sesión?',
+      text: '¿Estás seguro de que deseas salir del sistema?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, cerrar sesión',
+      cancelButtonText: 'Cancelar',
+      reverseButtons: true,
+      customClass: { popup: 'swal-farmaceutico' }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+      }
+    });
+  }
+
   trackByUsuarioId(index: number, usuario: any): number {
     return usuario.id;
   }
 
-  // ========== TECLADO: CERRAR MODAL CON ESC ==========
   onKeydown(event: KeyboardEvent): void {
     if (event.key === 'Escape') {
       this.cerrarModal();
