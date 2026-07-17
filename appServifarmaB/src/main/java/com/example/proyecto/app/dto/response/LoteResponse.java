@@ -34,4 +34,6 @@ public class LoteResponse {
     // Datos del proveedor (mapeados desde Proveedor en LoteMapper)
     private Integer proveedorId;
     private String proveedorRazonSocial;
+    
+    private String productoImagen;
 }

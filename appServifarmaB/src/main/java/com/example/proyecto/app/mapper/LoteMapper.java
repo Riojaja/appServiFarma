@@ -27,9 +27,11 @@ public interface LoteMapper {
     /**
      * Convierte una entidad Lote a LoteResponse.
      * Mapea los IDs y nombres de las entidades relacionadas (Producto, Proveedor).
+     * ✅ Ahora también mapea la imagen del producto para mostrarla en el frontend.
      */
     @Mapping(source = "producto.id", target = "productoId")
     @Mapping(source = "producto.nombre", target = "productoNombre")
+    @Mapping(source = "producto.imagen", target = "productoImagen") // ✅ NUEVO: imagen del producto
     @Mapping(source = "proveedor.id", target = "proveedorId")
     @Mapping(source = "proveedor.razonSocial", target = "proveedorRazonSocial")
     LoteResponse toResponse(Lote entity);

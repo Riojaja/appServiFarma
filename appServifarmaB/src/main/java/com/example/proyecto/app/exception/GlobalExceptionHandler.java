@@ -2,6 +2,7 @@ package com.example.proyecto.app.exception;
 
 import com.example.proyecto.app.dto.response.MensajeResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -22,10 +23,6 @@ public class GlobalExceptionHandler {
     // EXCEPCIONES DE NEGOCIO (HTTP 400 y 409)
     // ==============================
 
-    /**
-     * Maneja excepciones de negocio genéricas (BusinessException).
-     * Retorna HTTP 400 BAD REQUEST.
-     */
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<MensajeResponse> handleBusinessException(BusinessException ex) {
         log.warn("Error de negocio: {}", ex.getMessage());
@@ -33,10 +30,6 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(ex.getMessage()));
     }
 
-    /**
-     * Maneja excepciones de duplicidad (DuplicadoException).
-     * Retorna HTTP 409 CONFLICT.
-     */
     @ExceptionHandler(DuplicadoException.class)
     public ResponseEntity<MensajeResponse> handleDuplicadoException(DuplicadoException ex) {
         log.warn("Conflicto de duplicidad: {}", ex.getMessage());
@@ -44,10 +37,6 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(ex.getMessage()));
     }
 
-    /**
-     * Maneja excepciones de recurso no encontrado (ResourceNotFoundException).
-     * Retorna HTTP 404 NOT FOUND.
-     */
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<MensajeResponse> handleResourceNotFoundException(ResourceNotFoundException ex) {
         log.warn("Recurso no encontrado: {}", ex.getMessage());
@@ -55,10 +44,6 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(ex.getMessage()));
     }
 
-    /**
-     * Maneja excepciones de autenticación (AuthException).
-     * Retorna HTTP 401 UNAUTHORIZED.
-     */
     @ExceptionHandler(com.example.proyecto.app.auth.AuthException.class)
     public ResponseEntity<MensajeResponse> handleAuthException(com.example.proyecto.app.auth.AuthException ex) {
         log.warn("Error de autenticación: {}", ex.getMessage());
@@ -66,10 +51,6 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(ex.getMessage()));
     }
 
-    /**
-     * Maneja excepciones de permiso denegado propias del negocio (PermisoDenegadoException).
-     * Retorna HTTP 403 FORBIDDEN.
-     */
     @ExceptionHandler(PermisoDenegadoException.class)
     public ResponseEntity<MensajeResponse> handlePermisoDenegadoException(PermisoDenegadoException ex) {
         log.warn("Permiso denegado: {}", ex.getMessage());
@@ -77,13 +58,6 @@ public class GlobalExceptionHandler {
                 .body(new MensajeResponse(ex.getMessage()));
     }
 
-    /**
-     * Maneja el rechazo de Spring Security cuando un @PreAuthorize bloquea el acceso
-     * (ej. un "vendedor" intentando eliminar un producto o entrar a /api/auditoria).
-     * Sin este handler, la excepción caía en handleGenericException() y el usuario
-     * recibía un 500 genérico en vez de un 403 con mensaje claro.
-     * Retorna HTTP 403 FORBIDDEN.
-     */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<MensajeResponse> handleAccessDeniedException(AccessDeniedException ex) {
         log.warn("Acceso denegado: {}", ex.getMessage());
@@ -92,13 +66,35 @@ public class GlobalExceptionHandler {
     }
 
     // ==============================
-    // EXCEPCIONES DE VALIDACIÓN (HTTP 400)
+    // EXCEPCIONES DE INTEGRIDAD DE BASE DE DATOS (HTTP 409)
     // ==============================
 
     /**
-     * Maneja errores de validación de DTOs con @Valid.
-     * Retorna HTTP 400 BAD REQUEST con un mapa de errores por campo.
+     * Maneja violaciones de integridad referencial (ej. eliminar un lote con movimientos de stock).
+     * Retorna HTTP 409 CONFLICT con un mensaje claro.
      */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<MensajeResponse> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
+        log.warn("Violación de integridad de datos: {}", ex.getMessage());
+
+        // Mensaje personalizado para el usuario
+        String mensaje = "No se puede eliminar este registro porque tiene información relacionada en el sistema.";
+
+        // Opcional: puedes personalizar según el mensaje de la excepción
+        if (ex.getMessage() != null && ex.getMessage().contains("movimientos_stock")) {
+            mensaje = "No se puede eliminar este lote porque tiene movimientos de stock asociados.";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("detalle_ventas")) {
+            mensaje = "No se puede eliminar este lote porque tiene ventas asociadas.";
+        }
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new MensajeResponse(mensaje));
+    }
+
+    // ==============================
+    // EXCEPCIONES DE VALIDACIÓN (HTTP 400)
+    // ==============================
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
@@ -111,10 +107,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
 
-    /**
-     * Maneja errores de formato de JSON mal estructurado.
-     * Retorna HTTP 400 BAD REQUEST.
-     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<MensajeResponse> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
         log.warn("Error en el formato del JSON: {}", ex.getMessage());
@@ -126,10 +118,6 @@ public class GlobalExceptionHandler {
     // EXCEPCIONES NO CONTROLADAS (HTTP 500)
     // ==============================
 
-    /**
-     * Maneja cualquier otra excepción no capturada por los handlers específicos.
-     * Retorna HTTP 500 INTERNAL SERVER ERROR con un mensaje genérico.
-     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<MensajeResponse> handleGenericException(Exception ex) {
         log.error("Error interno del servidor: {}", ex.getMessage(), ex);

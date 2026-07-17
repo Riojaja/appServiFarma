@@ -75,4 +75,5 @@ public interface DetalleVentaRepository extends JpaRepository<DetalleVenta, Inte
            "ORDER BY SUM(d.cantidad) DESC")
     List<Object[]> findTopProductosVendidos(@Param("inicio") LocalDateTime inicio, @Param("fin") LocalDateTime fin,
                                             @Param("limite") int limite);
+    
 }

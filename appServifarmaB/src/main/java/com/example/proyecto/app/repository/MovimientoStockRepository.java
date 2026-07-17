@@ -108,4 +108,6 @@ public interface MovimientoStockRepository extends JpaRepository<MovimientoStock
      * Obtiene movimientos de stock de un lote específico, filtrados por tipo.
      */
     List<MovimientoStock> findByLoteIdAndTipoMovimiento(Integer loteId, MovimientoStock.TipoMovimiento tipoMovimiento);
+
+ 
 }
