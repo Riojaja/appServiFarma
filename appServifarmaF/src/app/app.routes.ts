@@ -102,7 +102,6 @@ export const routes: Routes = [
       {
         path: 'demanda',
         children: [
-          { path: 'registrar', loadComponent: () => import('./features/demanda/registrar/registrar').then(m => m.RegistrarComponent) },
           { path: 'listar', loadComponent: () => import('./features/demanda/listar/listar').then(m => m.ListarComponent) },
           { path: '', redirectTo: 'listar', pathMatch: 'full' }
         ]
