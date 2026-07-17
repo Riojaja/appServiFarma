@@ -197,43 +197,7 @@ CREATE INDEX idx_movimientos_tipo ON movimientos_stock(tipo_movimiento);
 CREATE INDEX idx_demanda_fecha ON demanda_insatisfecha(fecha);
 CREATE INDEX idx_bitacora_fecha ON bitacora_comunicacion(fecha_hora);
 
-
-
-INSERT INTO roles (nombre, descripcion)
-SELECT 'admin', 'Administrador del sistema con acceso total'
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'admin');
-
-INSERT INTO roles (nombre, descripcion)
-SELECT 'vendedor', 'Personal de atención al público con acceso restringido'
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'vendedor');
-
-INSERT INTO usuarios (rol_id, nombre_completo, usuario, contrasena, activo)
-SELECT 
-    r.id,
-    'Administrador del Sistema',
-    'admin',
-    '$2a$12$3vY0DqKluJYMPr4s.RrG5e4ZDOELikY3gGXaLZ.A8Fv8pleh8rb56', -- admin123
-    TRUE
-FROM roles r
-WHERE r.nombre = 'admin'
-AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin');
-
-INSERT INTO roles (nombre, descripcion)
-SELECT 'vendedor', 'Personal de atención al público con acceso restringido'
-WHERE NOT EXISTS (SELECT 1 FROM roles WHERE nombre = 'vendedor');
-
-INSERT INTO usuarios (rol_id, nombre_completo, usuario, contrasena, activo)
-SELECT 
-    r.id,
-    'Vendedor del Sistema',
-    'vendedor',
-    '$2a$12$sQHGdNSrB9rfc94ihfWOTOoWjDg1RVdJ0LSqhTGnxq2PsZJcpFs7i', -- vendedor123
-    TRUE
-FROM roles r
-WHERE r.nombre = 'vendedor'
-AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'vendedor');
-
-
-
-select * from usuarios
-select * from roles
+ALTER TABLE usuarios 
+ADD COLUMN intentos_fallidos INT DEFAULT 0,
+ADD COLUMN bloqueado_hasta DATETIME,
+ADD COLUMN ultimo_acceso DATETIME;
