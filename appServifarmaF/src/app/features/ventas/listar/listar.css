@@ -1,3 +1,6 @@
+/* ============================================================
+   TUS ESTILOS QUE FUNCIONAN (mantenidos)
+   ============================================================ */
 .badge.rounded-pill {
   min-width: 80px;
   font-weight: 500;
@@ -10,7 +13,8 @@
 .modal-dialog-centered {
   min-height: calc(100% - 3.5rem);
 }
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
@@ -22,4 +26,238 @@
 }
 .badge.rounded-pill {
   min-width: 80px;
+}
+
+/* ============================================================
+   ESTILOS ADICIONALES - BOTÓN NUEVA VENTA VISIBLE
+   ============================================================ */
+
+/* Variables */
+:root {
+  --primary: #0d9488;
+  --primary-dark: #0f766e;
+  --primary-light: #ccfbf1;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --radius-lg: 1.25rem;
+  --transition: all 0.2s ease-in-out;
+}
+
+/* Estilos generales */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: #f8f9fa;
+}
+
+/* ============================================================
+   🔥 BOTÓN NUEVA VENTA - COLOR VISIBLE Y CONTRASTANTE
+   ============================================================ */
+.btn-primary {
+  background-color: #0d9488 !important;
+  border-color: #0d9488 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  transition: var(--transition);
+  box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3);
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: #0f766e !important;
+  border-color: #0f766e !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px -3px rgba(13, 148, 136, 0.4);
+}
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0px);
+  box-shadow: 0 2px 4px -1px rgba(13, 148, 136, 0.3);
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   TABLA
+   ============================================================ */
+.table {
+  font-size: 0.875rem;
+}
+.table thead th {
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.025em;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+.table tbody td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #e2e8f0;
+}
+.table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* ============================================================
+   BADGES DE ESTADO
+   ============================================================ */
+.badge.bg-success {
+  background-color: #10b981 !important;
+}
+.badge.bg-danger {
+  background-color: #ef4444 !important;
+}
+.badge.bg-warning {
+  background-color: #f59e0b !important;
+}
+.badge.bg-secondary {
+  background-color: #64748b !important;
+}
+
+/* ============================================================
+   MODALES
+   ============================================================ */
+.modal-content {
+  border: none;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.modal-header {
+  padding: 1.5rem 1.5rem 0.5rem 1.5rem;
+  border-bottom: none;
+}
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* ============================================================
+   MODAL DE SELECCIÓN DE PRODUCTOS
+   ============================================================ */
+.producto-item-modal {
+  background: white;
+  border: 1px solid #e2e8f0;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.producto-item-modal:hover {
+  background: #f1f5f9;
+  border-color: #0d9488;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+/* Mientras se procesa el agregado al carrito (evita doble-click visual) */
+.producto-item-modal.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.producto-imagen-mini {
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+.producto-imagen-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Scroll personalizado */
+.productos-lista-modal::-webkit-scrollbar {
+  width: 6px;
+}
+.productos-lista-modal::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.productos-lista-modal::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.productos-lista-modal::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================================
+   CARRITO
+   ============================================================ */
+.table .table-active {
+  background: #f1f5f9;
+}
+.table .table-active td {
+  font-weight: 600;
+}
+
+/* ============================================================
+   BOTONES CIRCULARES (acciones)
+   ============================================================ */
+.btn-outline-info {
+  color: #0891b2;
+  border-color: #0891b2;
+}
+.btn-outline-info:hover {
+  background: #0891b2;
+  color: white;
+}
+.btn-outline-danger {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+.btn-outline-danger:hover:not(:disabled) {
+  background: #dc2626;
+  color: white;
+}
+.btn-outline-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 767.98px) {
+  .modal-dialog {
+    margin: 0.5rem;
+  }
+  .modal-body {
+    padding: 1rem;
+  }
+  .producto-item-modal {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+  .producto-imagen-mini {
+    width: 100%;
+    height: 120px;
+    margin-bottom: 0.5rem;
+  }
+}
+
+.btn-nueva-venta {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+.btn-nueva-venta:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+.btn-nueva-venta:disabled {
+  opacity: 0.6;
+  transform: none;
+  cursor: not-allowed;
 }

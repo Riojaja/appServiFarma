@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
@@ -11,10 +11,19 @@ import { CajaService } from '../../../core/services/caja';
 import { Venta, VentaRequest, DetalleVentaRequest } from '../../../core/models/venta.model';
 import { Producto } from '../../../core/models/producto.model';
 import { Cliente } from '../../../core/models/cliente.model';
+import { environment } from '../../../../environments/environment';
+import Swal from 'sweetalert2';
 
 // ===== IMPORTACIONES PARA PDF =====
 import * as jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+
+// ===== DATOS DE LA BOTICA =====
+const NOMBRE_BOTICA = 'ServiFarma';
+const DIRECCION_BOTICA = 'Av. sinchi roca, Abancay - Apurimac';
+const RUC_BOTICA = '10474101156';
+const TELEFONO_BOTICA = '992859321';
+const LOGO_BOTICA = '/logoServifarma.jpeg';
 
 @Component({
   selector: 'app-listar-ventas',
@@ -45,7 +54,6 @@ export class ListarComponent implements OnInit {
   clientes: Cliente[] = [];
   carrito: { productoId: number, nombre: string, cantidad: number, precio: number }[] = [];
   total: number = 0;
-  productoSeleccionado: number = 0;
   cantidadProducto: number = 1;
   enviandoRegistro: boolean = false;
   errorRegistro: string = '';
@@ -70,6 +78,17 @@ export class ListarComponent implements OnInit {
   modalBoletaAbierto: boolean = false;
   ventaRecienCreada: Venta | null = null;
   enviandoCorreo: boolean = false;
+  generandoPDF: boolean = false;
+
+  // ======== MODAL DE SELECCIÓN DE PRODUCTOS ========
+  modalProductosAbierto: boolean = false;
+  productosModal: Producto[] = [];
+  filtroProductoModal: string = '';
+  cargandoProductosModal: boolean = false;
+  agregandoProducto: boolean = false;
+
+  // ======== ANULAR VENTA ========
+  anulando: boolean = false;
 
   constructor(
     private ventaService: VentaService,
@@ -79,11 +98,11 @@ export class ListarComponent implements OnInit {
     private cajaService: CajaService,
     private authService: AuthService,
     private fb: FormBuilder,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef // 🔹 Para forzar detección de cambios
   ) {
     this.formRegistro = this.fb.group({
-      medioPago: ['', Validators.required],
-      codigoAutorizacion: ['']
+      medioPago: ['', Validators.required]
     });
   }
 
@@ -100,6 +119,8 @@ export class ListarComponent implements OnInit {
 
   // ======== MÉTODOS DEL LISTADO ========
   cargarVentas(): void {
+    if (this.cargando) return;
+
     this.cargando = true;
     this.ventaService.listar().subscribe({
       next: (data: Venta[]) => {
@@ -110,23 +131,46 @@ export class ListarComponent implements OnInit {
         }
         this.aplicarFiltros();
         this.cargando = false;
+        // 🔹 Forzar actualización de la vista
+        this.cdr.detectChanges();
+        console.log('✅ Ventas cargadas:', this.ventas.length);
       },
       error: (err: any) => {
-        console.error('Error al cargar ventas:', err);
+        console.error('❌ Error al cargar ventas:', err);
         this.cargando = false;
+        this.cdr.detectChanges();
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar las ventas',
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }
 
   aplicarFiltros(): void {
-    this.ventasFiltradas = this.ventas.filter(v => {
-      if (this.filtros.fechaInicio && new Date(v.fecha) < new Date(this.filtros.fechaInicio)) return false;
-      if (this.filtros.fechaFin && new Date(v.fecha) > new Date(this.filtros.fechaFin)) return false;
-      if (this.filtros.cliente && !v.clienteId?.toString().includes(this.filtros.cliente)) return false;
-      if (this.filtros.usuario && !v.usuarioId?.toString().includes(this.filtros.usuario)) return false;
-      if (this.filtros.estado && v.estado !== this.filtros.estado) return false;
-      return true;
-    });
+    let filtradas = this.ventas;
+
+    if (this.filtros.fechaInicio) {
+      filtradas = filtradas.filter(v => new Date(v.fecha) >= new Date(this.filtros.fechaInicio));
+    }
+    if (this.filtros.fechaFin) {
+      filtradas = filtradas.filter(v => new Date(v.fecha) <= new Date(this.filtros.fechaFin));
+    }
+    if (this.filtros.cliente) {
+      filtradas = filtradas.filter(v => v.clienteId?.toString().includes(this.filtros.cliente));
+    }
+    if (this.filtros.usuario) {
+      filtradas = filtradas.filter(v => v.usuarioId?.toString().includes(this.filtros.usuario));
+    }
+    if (this.filtros.estado) {
+      filtradas = filtradas.filter(v => v.estado === this.filtros.estado);
+    }
+
+    this.ventasFiltradas = filtradas;
+    // 🔹 Forzar actualización de la vista después de filtrar
+    this.cdr.detectChanges();
   }
 
   limpiarFiltros(): void {
@@ -145,10 +189,10 @@ export class ListarComponent implements OnInit {
 
   // ======== MODAL DE REGISTRO ========
   abrirModalRegistro(): void {
+    if (this.modalRegistroAbierto) return;
     this.formRegistro.reset({ medioPago: '' });
     this.carrito = [];
     this.total = 0;
-    this.productoSeleccionado = 0;
     this.cantidadProducto = 1;
     this.errorRegistro = '';
     this.dniBusqueda = '';
@@ -164,6 +208,7 @@ export class ListarComponent implements OnInit {
   }
 
   cerrarModalRegistro(): void {
+    if (this.enviandoRegistro) return;
     this.modalRegistroAbierto = false;
     this.enviandoRegistro = false;
   }
@@ -174,17 +219,25 @@ export class ListarComponent implements OnInit {
       next: (caja) => {
         if (caja && caja.id) {
           this.cajaId = caja.id;
-          console.log('✅ Caja abierta ID:', this.cajaId);
         } else {
-          this.errorRegistro = 'No hay una caja abierta. Debe abrir la caja antes de registrar una venta.';
-          alert('⚠️ No hay una caja abierta. Por favor, abre la caja primero.');
+          this.errorRegistro = 'No hay una caja abierta.';
+          Swal.fire({
+            title: 'Atención',
+            text: 'No hay una caja abierta. Debe abrir la caja primero.',
+            icon: 'warning',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
           this.cajaId = null;
         }
       },
-      error: (err) => {
-        console.error('Error al obtener caja abierta:', err);
-        this.errorRegistro = 'No se pudo verificar la caja. Asegúrate de tener una caja abierta.';
-        alert('⚠️ No hay una caja abierta. Por favor, abre la caja primero.');
+      error: () => {
+        this.errorRegistro = 'No se pudo verificar la caja.';
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudo verificar la caja. Asegúrate de tener una caja abierta.',
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
         this.cajaId = null;
       }
     });
@@ -194,8 +247,7 @@ export class ListarComponent implements OnInit {
     this.productoService.listar().subscribe({
       next: (data) => {
         this.productos = data;
-        console.log('✅ Productos cargados:', this.productos.length);
-        console.log('🔍 Primer producto:', this.productos[0]);
+        this.productosModal = data;
       },
       error: (err) => {
         console.error('❌ Error al cargar productos:', err);
@@ -212,6 +264,8 @@ export class ListarComponent implements OnInit {
 
   // ======== BÚSQUEDA DE CLIENTE CON RENIEC ========
   buscarCliente(): void {
+    if (this.buscarClienteCargando) return;
+
     if (!this.dniBusqueda || this.dniBusqueda.length < 8) {
       this.clienteEncontrado = null;
       this.nombreCliente = '';
@@ -229,6 +283,14 @@ export class ListarComponent implements OnInit {
         this.telefonoCliente = cliente.telefono || '';
         this.emailCliente = cliente.email || '';
         this.buscarClienteCargando = false;
+        Swal.fire({
+          title: 'Cliente encontrado',
+          text: `Cliente registrado: ${cliente.nombre}`,
+          icon: 'success',
+          timer: 2000,
+          showConfirmButton: false,
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       },
       error: (err: any) => {
         if (err.status === 404) {
@@ -236,7 +298,12 @@ export class ListarComponent implements OnInit {
         } else {
           console.error('Error al buscar cliente:', err);
           this.buscarClienteCargando = false;
-          alert('Error al buscar cliente en la base de datos.');
+          Swal.fire({
+            title: 'Error',
+            text: 'Error al buscar cliente en la base de datos.',
+            icon: 'error',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         }
       }
     });
@@ -252,27 +319,37 @@ export class ListarComponent implements OnInit {
           this.datosDesdeReniec = true;
           this.telefonoCliente = '';
           this.emailCliente = '';
+          Swal.fire({
+            title: 'Datos de RENIEC',
+            text: `Nombre: ${this.nombreCliente}`,
+            icon: 'info',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         } else {
           this.clienteEncontrado = null;
           this.nombreCliente = '';
           this.telefonoCliente = '';
           this.emailCliente = '';
-          alert(response.message || 'DNI no encontrado en RENIEC. Ingresa el nombre manualmente.');
+          Swal.fire({
+            title: 'No encontrado',
+            text: response.message || 'DNI no encontrado en RENIEC. Ingresa el nombre manualmente.',
+            icon: 'warning',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         }
       },
       error: (err) => {
         this.buscarClienteCargando = false;
         console.error('Error al consultar RENIEC:', err);
-
-        let mensaje = 'Error al consultar RENIEC. ';
-        if (err.status === 429) {
-          mensaje += 'Límite de consultas alcanzado. Intenta mañana.';
-        } else if (err.status === 401 || err.status === 403) {
-          mensaje += 'Credenciales inválidas. Contacta al administrador.';
-        } else {
-          mensaje += 'Ingresa el nombre manualmente.';
-        }
-        alert(mensaje);
+        let mensaje = 'Error al consultar RENIEC. Ingresa el nombre manualmente.';
+        if (err.status === 429) mensaje = 'Límite de consultas alcanzado. Intenta mañana.';
+        else if (err.status === 401 || err.status === 403) mensaje = 'Credenciales inválidas. Contacta al administrador.';
+        Swal.fire({
+          title: 'Error',
+          text: mensaje,
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
         this.nombreCliente = '';
         this.telefonoCliente = '';
         this.emailCliente = '';
@@ -280,51 +357,63 @@ export class ListarComponent implements OnInit {
     });
   }
 
-  // ======== AGREGAR PRODUCTOS AL CARRITO ========
-  agregarProducto(): void {
-    console.log('📦 Agregar producto llamado');
-    console.log('productoSeleccionado:', this.productoSeleccionado);
-    console.log('cantidadProducto:', this.cantidadProducto);
-    console.log('productos disponibles:', this.productos.length);
+  // ======== FUNCIONES DE IMAGEN ========
+  public obtenerUrlCompleta(ruta: string): string {
+    if (!ruta) return '';
+    if (ruta.startsWith('http://') || ruta.startsWith('https://')) return ruta;
+    const hostBase = environment.apiUrl.replace(/\/api\/?$/, '');
+    const rutaLimpia = ruta.startsWith('/') ? ruta : `/${ruta}`;
+    return `${hostBase}${rutaLimpia}`;
+  }
 
-    const productoId = Number(this.productoSeleccionado);
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.src = 'assets/placeholder-producto.svg';
+  }
+
+  // ======== MODAL DE SELECCIÓN DE PRODUCTOS ========
+  abrirModalProductos(): void {
+    if (this.modalProductosAbierto) return;
+    this.modalProductosAbierto = true;
+    this.filtroProductoModal = '';
+    this.productosModal = this.productos.slice();
+  }
+
+  cerrarModalProductos(): void {
+    this.modalProductosAbierto = false;
+  }
+
+  buscarProductosModal(): void {
+    const term = this.filtroProductoModal.toLowerCase().trim();
+    if (!term) {
+      this.productosModal = this.productos.slice();
+      return;
+    }
+    this.productosModal = this.productos.filter(p =>
+      p.nombre.toLowerCase().includes(term)
+    );
+  }
+
+  seleccionarProductoModal(producto: Producto): void {
+    if (this.agregandoProducto) return;
+    this.agregandoProducto = true;
+
     const cantidad = this.cantidadProducto || 1;
-
-    if (!productoId || productoId === 0) {
-      console.warn('❌ No se seleccionó producto');
-      alert('Selecciona un producto primero.');
-      return;
-    }
-
-    const producto = this.productos.find(p => p.id === productoId);
-
-    if (!producto) {
-      console.warn('❌ Producto no encontrado en la lista:', productoId);
-      console.log('🔍 Lista de productos (IDs):', this.productos.map(p => p.id));
-      alert('Producto no encontrado.');
-      return;
-    }
-
-    console.log('✅ Producto encontrado:', producto.nombre);
-
-    const existente = this.carrito.find(item => item.productoId === productoId);
+    const existente = this.carrito.find(item => item.productoId === producto.id!);
     if (existente) {
       existente.cantidad += cantidad;
-      console.log('➕ Cantidad actualizada:', existente.cantidad);
     } else {
       this.carrito.push({
         productoId: producto.id!,
         nombre: producto.nombre,
         cantidad: cantidad,
-        precio: producto.precioVentaActual
+        precio: producto.precioVentaActual || 0
       });
-      console.log('🆕 Producto agregado al carrito');
     }
-
     this.calcularTotal();
-    this.productoSeleccionado = 0;
+    this.cerrarModalProductos();
     this.cantidadProducto = 1;
-    console.log('📊 Carrito actual:', this.carrito);
+    this.agregandoProducto = false;
   }
 
   eliminarDelCarrito(index: number): void {
@@ -338,231 +427,387 @@ export class ListarComponent implements OnInit {
 
   // ======== REGISTRAR VENTA CON CLIENTE ========
   registrarVenta(): void {
-    if (this.formRegistro.invalid || this.carrito.length === 0) {
-      this.errorRegistro = 'Debe agregar al menos un producto y completar los datos obligatorios.';
+    if (this.enviandoRegistro) return;
+
+    if (this.formRegistro.invalid) {
+      this.formRegistro.markAllAsTouched();
+      Swal.fire({
+        title: 'Formulario incompleto',
+        text: 'Selecciona un método de pago.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
-
+    if (this.carrito.length === 0) {
+      Swal.fire({
+        title: 'Carrito vacío',
+        text: 'Agrega al menos un producto.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      return;
+    }
     if (!this.cajaId) {
-      this.errorRegistro = 'No hay una caja abierta. Debe abrir la caja antes de registrar una venta.';
-      alert('⚠️ No hay una caja abierta. Por favor, abre la caja primero.');
+      Swal.fire({
+        title: 'Caja cerrada',
+        text: 'Debe abrir la caja antes de registrar una venta.',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
 
     this.enviandoRegistro = true;
-    this.errorRegistro = '';
 
-    const documentoNumero = this.dniBusqueda.trim();
+    Swal.fire({
+      title: '¿Confirmar venta?',
+      text: `Total: S/ ${this.total.toFixed(2)}`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#0d9488',
+      cancelButtonColor: '#dc2626',
+      confirmButtonText: 'Sí, registrar',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'swal-farmaceutico' }
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        this.enviandoRegistro = false;
+        return;
+      }
 
-    const continuarRegistro = (clienteId?: number) => {
-      const detalles: DetalleVentaRequest[] = this.carrito.map(item => ({
-        productoId: item.productoId,
-        cantidad: item.cantidad
-      }));
+      this.errorRegistro = '';
+      const documentoNumero = this.dniBusqueda.trim();
 
-      const request: VentaRequest = {
-        usuarioId: this.usuarioIdActual!,
-        clienteId: clienteId,
-        medioPago: this.formRegistro.value.medioPago,
-        codigoAutorizacion: this.formRegistro.value.codigoAutorizacion || undefined,
-        cajaId: this.cajaId!,
-        detalles: detalles
+      const continuarRegistro = (clienteId?: number) => {
+        const detalles: DetalleVentaRequest[] = this.carrito.map(item => ({
+          productoId: item.productoId,
+          cantidad: item.cantidad
+        }));
+
+        const request: VentaRequest = {
+          usuarioId: this.usuarioIdActual!,
+          clienteId: clienteId,
+          medioPago: this.formRegistro.value.medioPago,
+          cajaId: this.cajaId!,
+          detalles: detalles
+        };
+
+        this.ventaService.registrar(request).subscribe({
+          next: (ventaCreada: Venta) => {
+            this.enviandoRegistro = false;
+            this.cerrarModalRegistroForzado();
+            // 🔹 Recargar ventas inmediatamente
+            this.cargarVentas();
+            this.ventaRecienCreada = ventaCreada;
+            Swal.fire({
+              title: '¡Venta registrada!',
+              text: `Venta #${ventaCreada.id} registrada exitosamente`,
+              icon: 'success',
+              timer: 1500,
+              showConfirmButton: false,
+              customClass: { popup: 'swal-farmaceutico' }
+            });
+            // 🔹 Mostrar opciones de boleta después de un breve retraso
+            setTimeout(() => {
+              this.mostrarOpcionesBoleta(ventaCreada);
+            }, 500);
+          },
+          error: (err) => {
+            this.enviandoRegistro = false;
+            console.error('❌ Error al registrar venta:', err);
+            const mensaje = err.error?.mensaje || err.error?.message || 'Error al registrar la venta';
+            this.errorRegistro = mensaje;
+            Swal.fire({
+              title: 'Error',
+              text: mensaje,
+              icon: 'error',
+              customClass: { popup: 'swal-farmaceutico' }
+            });
+          }
+        });
       };
 
-      console.log('📦 Enviando venta:', request);
+      if (!documentoNumero) {
+        continuarRegistro(undefined);
+        return;
+      }
 
-      this.ventaService.registrar(request).subscribe({
-        next: (ventaCreada: Venta) => {
-          this.enviandoRegistro = false;
-          this.cerrarModalRegistro();
-          this.cargarVentas();
-          this.ventaRecienCreada = ventaCreada;
-          this.mostrarOpcionesBoleta(ventaCreada);
+      if (this.clienteEncontrado) {
+        continuarRegistro(this.clienteEncontrado.id);
+        return;
+      }
+
+      if (!this.nombreCliente.trim()) {
+        Swal.fire({
+          title: 'Datos incompletos',
+          text: 'Ingresa el nombre del cliente o verifica el DNI.',
+          icon: 'warning',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
+        this.enviandoRegistro = false;
+        return;
+      }
+
+      const nuevoCliente: Cliente = {
+        documentoTipo: 'DNI',
+        documentoNumero: documentoNumero,
+        nombre: this.nombreCliente.trim(),
+        telefono: this.telefonoCliente || '',
+        email: this.emailCliente || ''
+      };
+
+      this.clienteService.crear(nuevoCliente).subscribe({
+        next: (cliente) => {
+          continuarRegistro(cliente.id);
         },
         error: (err) => {
           this.enviandoRegistro = false;
-          console.error('❌ Error al registrar venta:', err);
-          const mensaje = err.error?.mensaje || err.error?.message || 'Error al registrar la venta';
-          this.errorRegistro = mensaje;
-          alert(mensaje);
+          this.errorRegistro = err.error?.mensaje || 'Error al crear el cliente.';
+          Swal.fire({
+            title: 'Error',
+            text: this.errorRegistro,
+            icon: 'error',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
         }
       });
-    };
-
-    if (!documentoNumero) {
-      continuarRegistro(undefined);
-      return;
-    }
-
-    if (this.clienteEncontrado) {
-      continuarRegistro(this.clienteEncontrado.id);
-      return;
-    }
-
-    if (!this.nombreCliente.trim()) {
-      this.errorRegistro = 'Debe ingresar el nombre del cliente o verificar el DNI.';
-      this.enviandoRegistro = false;
-      return;
-    }
-
-    const nuevoCliente: Cliente = {
-      documentoTipo: 'DNI',
-      documentoNumero: documentoNumero,
-      nombre: this.nombreCliente.trim(),
-      telefono: this.telefonoCliente || '',
-      email: this.emailCliente || ''
-    };
-
-    this.clienteService.crear(nuevoCliente).subscribe({
-      next: (cliente) => {
-        continuarRegistro(cliente.id);
-      },
-      error: (err) => {
-        this.enviandoRegistro = false;
-        this.errorRegistro = err.error?.mensaje || 'Error al crear el cliente.';
-        console.error('Error:', err);
-      }
     });
+  }
+
+  private cerrarModalRegistroForzado(): void {
+    this.modalRegistroAbierto = false;
   }
 
   // ======== OPCIONES DE BOLETA ========
   mostrarOpcionesBoleta(venta: Venta): void {
     this.ventaRecienCreada = venta;
     this.modalBoletaAbierto = true;
+    this.generandoPDF = false;
+    this.enviandoCorreo = false;
+    this.cdr.detectChanges();
   }
 
   cerrarModalBoleta(): void {
+    if (this.enviandoCorreo || this.generandoPDF) return;
     this.modalBoletaAbierto = false;
     this.ventaRecienCreada = null;
     this.enviandoCorreo = false;
+    this.generandoPDF = false;
+  }
+
+  private cerrarModalBoletaForzado(): void {
+    this.modalBoletaAbierto = false;
+    this.ventaRecienCreada = null;
+    this.enviandoCorreo = false;
+    this.generandoPDF = false;
+    this.cdr.detectChanges();
   }
 
   // ============================================================
-  // ✅ EXPORTAR A PDF (vista previa en nueva pestaña)
+  // PLANTILLA ÚNICA DE LA BOLETA
+  // ============================================================
+  private construirHtmlBoleta(venta: Venta): string {
+    const fecha = venta.fecha ? new Date(venta.fecha) : new Date();
+    const subtotal = this.total / 1.18;
+    const igv = this.total - subtotal;
+    const medioPago = (this.formRegistro.value.medioPago || 'efectivo').toUpperCase();
+
+    const filas = this.carrito.map(item => `
+      <tr>
+        <td style="padding:4px 2px;text-align:center;">${item.cantidad}</td>
+        <td style="padding:4px 2px;">${item.nombre}</td>
+        <td style="padding:4px 2px;text-align:right;">${item.precio.toFixed(2)}</td>
+        <td style="padding:4px 2px;text-align:right;">${(item.cantidad * item.precio).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div style="width:300px;font-family:'Courier New',monospace;padding:18px;background:#ffffff;color:#1e293b;">
+        <div style="text-align:center;margin-bottom:10px;">
+          <img src="${LOGO_BOTICA}" style="max-width:70px;max-height:70px;object-fit:contain;margin-bottom:6px;" />
+          <div style="font-size:1.15rem;font-weight:bold;letter-spacing:1px;color:#0d9488;">${NOMBRE_BOTICA}</div>
+          <div style="font-size:0.7rem;color:#475569;">${DIRECCION_BOTICA}</div>
+          <div style="font-size:0.7rem;color:#475569;">RUC: ${RUC_BOTICA} · Telf: ${TELEFONO_BOTICA}</div>
+        </div>
+
+        <div style="border-top:1px dashed #94a3b8;margin:8px 0;"></div>
+
+        <div style="font-size:0.78rem;line-height:1.5;">
+          <div><strong>Ticket:</strong> #${String(venta.id ?? 0).padStart(6, '0')}</div>
+          <div><strong>Fecha:</strong> ${fecha.toLocaleString('es-PE')}</div>
+          <div><strong>Cliente:</strong> ${this.nombreCliente || 'Público en general'}</div>
+          <div><strong>Vendedor:</strong> ${this.usuarioIdActual ?? 'Sistema'}</div>
+        </div>
+
+        <div style="border-top:1px dashed #94a3b8;margin:8px 0;"></div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+          <thead>
+            <tr style="border-bottom:1px solid #1e293b;">
+              <th style="text-align:center;padding:4px 2px;">Cant.</th>
+              <th style="text-align:left;padding:4px 2px;">Descripción</th>
+              <th style="text-align:right;padding:4px 2px;">P.Unit</th>
+              <th style="text-align:right;padding:4px 2px;">Importe</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+
+        <div style="border-top:1px dashed #94a3b8;margin:8px 0;"></div>
+
+        <div style="font-size:0.78rem;">
+          <div style="display:flex;justify-content:space-between;"><span>Subtotal</span><span>S/ ${subtotal.toFixed(2)}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span>IGV (18%)</span><span>S/ ${igv.toFixed(2)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:bold;font-size:0.95rem;border-top:1px solid #1e293b;margin-top:4px;padding-top:4px;">
+            <span>TOTAL</span><span>S/ ${this.total.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style="border-top:1px dashed #94a3b8;margin:8px 0;"></div>
+
+        <div style="font-size:0.78rem;"><strong>Medio de pago:</strong> ${medioPago}</div>
+
+        <div style="text-align:center;margin-top:14px;">
+          <div style="font-size:0.85rem;font-weight:bold;color:#0d9488;">¡Gracias por su compra!</div>
+          <div style="font-size:0.68rem;color:#94a3b8;margin-top:2px;">Conserve este comprobante</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // EXPORTAR A PDF
   // ============================================================
   exportarPDF(): void {
+    if (this.generandoPDF) return;
+
     if (!this.ventaRecienCreada) {
-      alert('No hay datos de la venta para exportar.');
+      Swal.fire({
+        title: 'Error',
+        text: 'No hay datos de la venta para exportar.',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
 
-    // 1. Crear el contenedor en memoria
-    const content = document.createElement('div');
-    content.innerHTML = `
-    <div style="width: 300px; font-family: Arial, sans-serif; padding: 20px; border: 1px solid #ccc; margin: 0 auto; background: white;">
-      <h2 style="text-align: center; color: #2c3e50;">BOLETA DE VENTA</h2>
-      <hr>
-      <p><strong>N° Venta:</strong> ${this.ventaRecienCreada.id}</p>
-      <p><strong>Fecha:</strong> ${new Date(this.ventaRecienCreada.fecha).toLocaleString()}</p>
-      <p><strong>Cliente:</strong> ${this.nombreCliente || 'Anónimo'}</p>
-      <p><strong>Vendedor:</strong> ${this.usuarioIdActual || 'Sistema'}</p>
-      <hr>
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr style="background-color: #f8f9fa;">
-            <th style="padding: 5px; text-align: left;">Producto</th>
-            <th style="padding: 5px; text-align: center;">Cant.</th>
-            <th style="padding: 5px; text-align: right;">Precio</th>
-            <th style="padding: 5px; text-align: right;">Subtotal</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${this.carrito.map(item => `
-            <tr>
-              <td style="padding: 5px;">${item.nombre}</td>
-              <td style="padding: 5px; text-align: center;">${item.cantidad}</td>
-              <td style="padding: 5px; text-align: right;">S/ ${item.precio.toFixed(2)}</td>
-              <td style="padding: 5px; text-align: right;">S/ ${(item.cantidad * item.precio).toFixed(2)}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-        <tfoot>
-          <tr style="border-top: 2px solid #000;">
-            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">TOTAL</td>
-            <td style="padding: 10px; text-align: right; font-weight: bold;">S/ ${this.total.toFixed(2)}</td>
-          </tr>
-        </tfoot>
-      </table>
-      <hr>
-      <p style="text-align: center; font-size: 12px; color: #7f8c8d;">¡Gracias por su compra!</p>
-    </div>
-  `;
+    this.generandoPDF = true;
 
-    // 2. Insertar el contenedor en el DOM (de forma oculta)
+    const content = document.createElement('div');
+    content.innerHTML = this.construirHtmlBoleta(this.ventaRecienCreada);
     content.style.position = 'absolute';
     content.style.left = '-9999px';
     content.style.top = '0';
     content.style.width = '300px';
     document.body.appendChild(content);
 
-    // 3. Renderizar con html2canvas
     html2canvas(content, {
       scale: 2,
       useCORS: true,
       backgroundColor: '#ffffff',
       logging: false
     }).then((canvas) => {
-      // 4. Generar el PDF
       const imgData = canvas.toDataURL('image/png');
       const doc = new jsPDF.jsPDF('p', 'mm', 'a4');
-      const imgWidth = 190;
+      const imgWidth = 100;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
 
-      // 5. Abrir en nueva pestaña (vista previa)
       const pdfBlob = doc.output('blob');
       const url = URL.createObjectURL(pdfBlob);
       window.open(url, '_blank');
       URL.revokeObjectURL(url);
 
-      // 6. Eliminar el contenedor del DOM
       document.body.removeChild(content);
+      // ✅ Cerrar modal y limpiar estado
+      this.cerrarModalBoletaForzado();
     }).catch((error) => {
       console.error('Error al generar el PDF:', error);
-      alert('Error al generar el PDF.');
-      // Asegurar que se elimine el contenedor en caso de error
-      if (content.parentNode) {
-        document.body.removeChild(content);
-      }
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al generar el PDF.',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      if (content.parentNode) document.body.removeChild(content);
+      this.generandoPDF = false;
+      this.cerrarModalBoletaForzado();
     });
   }
+
   // ======== ENVIAR BOLETA POR CORREO ========
   enviarBoletaCorreo(): void {
+    if (this.enviandoCorreo) return;
+
     if (!this.ventaRecienCreada) {
-      alert('No hay datos de la venta para enviar.');
+      Swal.fire({
+        title: 'Error',
+        text: 'No hay datos de la venta para enviar.',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
-
     if (!this.ventaRecienCreada.id) {
-      alert('La venta no tiene un ID válido.');
+      Swal.fire({
+        title: 'Error',
+        text: 'La venta no tiene un ID válido.',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
 
     const correoDestino = this.emailCliente?.trim() || '';
     if (!correoDestino) {
-      alert('El cliente no tiene un correo registrado. Por favor, ingrese un correo.');
+      Swal.fire({
+        title: 'Sin correo',
+        text: 'El cliente no tiene correo registrado. No se puede enviar.',
+        icon: 'warning',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
       return;
     }
 
     this.enviandoCorreo = true;
 
+    Swal.fire({
+      title: 'Enviando boleta...',
+      text: `Se enviará al correo: ${correoDestino}`,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+      customClass: { popup: 'swal-farmaceutico' }
+    });
+
     this.ventaService.enviarBoletaCorreo(this.ventaRecienCreada.id, correoDestino).subscribe({
-      next: (response: any) => {
+      next: () => {
         this.enviandoCorreo = false;
-        alert('Boleta enviada exitosamente al correo ' + correoDestino);
-        this.cerrarModalBoleta();
+        Swal.fire({
+          title: '¡Enviado!',
+          text: `Boleta enviada a ${correoDestino}`,
+          icon: 'success',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
+        this.cerrarModalBoletaForzado();
       },
-      error: (err: any) => {
+      error: (err) => {
         this.enviandoCorreo = false;
         console.error('Error al enviar boleta:', err);
-        alert('Error al enviar la boleta: ' + (err.error?.mensaje || 'Intente nuevamente.'));
+        Swal.fire({
+          title: 'Error',
+          text: err.error?.mensaje || 'Error al enviar la boleta.',
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
       }
     });
   }
 
   // ======== MODAL DE DETALLE ========
   abrirModalDetalle(venta: Venta): void {
+    if (this.modalDetalleAbierto) return;
     this.ventaSeleccionada = venta;
     this.modalDetalleAbierto = true;
   }
@@ -573,6 +818,25 @@ export class ListarComponent implements OnInit {
   }
 
   irAnular(id: number): void {
-    this.router.navigate(['/ventas/anular', id]);
+    if (this.anulando) return;
+    this.anulando = true;
+
+    Swal.fire({
+      title: '¿Anular venta?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Sí, anular',
+      cancelButtonText: 'Cancelar',
+      customClass: { popup: 'swal-farmaceutico' }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.router.navigate(['/ventas/anular', id]);
+      } else {
+        this.anulando = false;
+      }
+    });
   }
 }
