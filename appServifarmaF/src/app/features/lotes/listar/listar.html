@@ -1,406 +1,601 @@
-<div class="container-fluid mt-4">
+<div class="inventario-container">
 
-  <!-- ======== ENCABEZADO ======== -->
-  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-    <div>
-      <h2 class="fw-bold mb-0">
-        <i class="bi bi-box-seam text-primary me-2"></i>Inventario
-      </h2>
-      <p class="text-muted small mb-0">Gestión de productos y stock</p>
+  <!-- ========================================================== -->
+  <!-- CABECERA FIJA (sticky)                                     -->
+  <!-- ========================================================== -->
+  <div class="inventario-header">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <div>
+        <h2 class="fw-bold mb-0">
+          <i class="bi bi-boxes me-2" style="color: #0d9488;"></i>Inventario
+        </h2>
+        <p class="text-muted small mb-0">Gestión de lotes y stock</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn-farma-refrescar" (click)="cargarLotes()" [disabled]="cargando">
+          <i class="bi bi-arrow-clockwise" [ngClass]="{'spin': cargando}"></i>
+        </button>
+        <button *ngIf="isAdmin" class="btn-farma-nuevo" (click)="abrirOffcanvasCrear()">
+          <i class="bi bi-plus-circle me-1"></i> Nuevo Lote
+        </button>
+      </div>
     </div>
-    <!-- Botón que abre el OFFCANVAS (panel lateral) -->
-    <button class="btn btn-primary rounded-pill px-4" (click)="abrirOffcanvasCrear()">
-      <i class="bi bi-plus-circle me-1"></i> Nuevo Lote
-    </button>
+
+    <!-- Filtros y búsqueda -->
+    <div class="card shadow-sm border-0 rounded-4 p-3 mb-3">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <div class="input-group shadow-sm">
+            <span class="input-group-text bg-white border-end-0">
+              <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" class="form-control border-start-0" placeholder="Buscar por producto o lote..."
+              [(ngModel)]="filtroProducto" (keyup.enter)="buscar()">
+            <button class="btn btn-outline-secondary" type="button" (click)="buscar()">
+              Buscar
+            </button>
+            <button class="btn btn-outline-danger" type="button" (click)="limpiarFiltros()">
+              <i class="bi bi-x-circle"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select class="form-select shadow-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+            <option value="">Todos los estados</option>
+            <option value="activo">Activo</option>
+            <option value="deteriorado">Deteriorado</option>
+            <option value="vencido">Vencido</option>
+            <option value="agotado">Agotado</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm flex-fill" [class.active]="filtroVencimiento === 'proximo'"
+              (click)="filtroVencimiento = filtroVencimiento === 'proximo' ? '' : 'proximo'; cargarLotes()">
+              <i class="bi bi-clock-history me-1"></i> Próximos a vencer
+            </button>
+          </div>
+        </div>
+        <div class="col-md-2 text-md-end">
+          <span class="badge bg-light text-dark p-2 shadow-sm">
+            <i class="bi bi-database me-1"></i> {{ lotesFiltrados.length }} lotes
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alertas rápidas -->
+    <div class="row g-2 mb-2" *ngIf="stockBajo.length > 0 || proximoVencer.length > 0">
+      <div class="col-md-6" *ngIf="stockBajo.length > 0">
+        <div class="alert alert-warning py-1 px-3 mb-0 d-flex align-items-center gap-2" style="border-radius:30px;">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+          <span class="small">{{ stockBajo.length }} lote(s) con stock bajo (≤ 10)</span>
+        </div>
+      </div>
+      <div class="col-md-6" *ngIf="proximoVencer.length > 0">
+        <div class="alert alert-info py-1 px-3 mb-0 d-flex align-items-center gap-2" style="border-radius:30px;">
+          <i class="bi bi-clock-fill"></i>
+          <span class="small">{{ proximoVencer.length }} lote(s) por vencer en 30 días</span>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- ======== FILTROS Y BÚSQUEDA ======== -->
-  <div class="row g-3 mb-4">
-    <div class="col-md-6">
-      <div class="input-group shadow-sm">
-        <span class="input-group-text bg-white border-end-0">
-          <i class="bi bi-search text-muted"></i>
-        </span>
-        <input type="text" class="form-control border-start-0"
-          placeholder="Buscar por ID de producto o número de lote..." [(ngModel)]="filtroProducto"
-          (keyup.enter)="buscar()">
-        <button class="btn btn-outline-secondary" type="button" (click)="buscar()">
-          Buscar
+  <!-- ========================================================== -->
+  <!-- CUERPO SCROLLABLE (tabla / grid)                          -->
+  <!-- ========================================================== -->
+  <div class="inventario-body">
+    <!-- Spinner de carga -->
+    <div *ngIf="cargando" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <!-- Tabla (vista desktop/tablet) -->
+    <div *ngIf="!cargando" class="table-responsive d-none d-md-block">
+      <table class="table table-hover align-middle inventario-tabla">
+        <thead>
+          <tr>
+            <th style="width:60px;">Imagen</th>
+            <th>Producto</th>
+            <th>Lote</th>
+            <th class="text-center">Stock</th>
+            <th>Vencimiento</th>
+            <th>Estado</th>
+            <th class="text-center" style="width:120px;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="lotesFiltrados.length === 0">
+            <td colspan="7" class="text-center py-4 text-muted">
+              <i class="bi bi-inbox display-6 d-block mb-2"></i>
+              No hay lotes que coincidan con los filtros
+            </td>
+          </tr>
+          <tr *ngFor="let lote of lotesMostrados; trackBy: trackByLoteId">
+            <!-- Imagen del producto -->
+            <td>
+              <div class="producto-imagen-mini">
+                <img [src]="obtenerImagenProducto(lote)" alt="Producto" class="img-fluid rounded-3"
+                  (error)="onImageError($event)">
+              </div>
+            </td>
+            <!-- Producto -->
+            <td>
+              <div class="fw-semibold">{{ getProductoNombre(lote.productoId) }}</div>
+            </td>
+            <!-- Lote -->
+            <td><span class="badge bg-light text-dark">{{ lote.lote }}</span></td>
+            <!-- Stock -->
+            <td class="text-center">
+              <span class="fw-bold" [ngClass]="{
+                'text-danger': lote.cantidad === 0,
+                'text-warning': lote.cantidad > 0 && lote.cantidad <= 10,
+                'text-success': lote.cantidad > 10
+              }">{{ lote.cantidad }}</span>
+            </td>
+            <!-- Vencimiento -->
+            <td>
+              <span [class.text-danger]="diasParaVencer(lote.fechaVencimiento) < 0"
+                [class.text-warning]="diasParaVencer(lote.fechaVencimiento) >= 0 && diasParaVencer(lote.fechaVencimiento) <= 30">
+                {{ lote.fechaVencimiento | date:'dd/MM/yyyy' }}
+              </span>
+              <span class="text-muted small d-block">
+                {{ diasParaVencer(lote.fechaVencimiento) < 0 ? 'Vencido' : diasParaVencer(lote.fechaVencimiento)===0
+                  ? 'Hoy vence' : diasParaVencer(lote.fechaVencimiento) + ' días' }} </span>
+            </td>
+            <!-- Estado -->
+            <td>
+              <span class="badge rounded-pill px-3 py-2" [ngClass]="getEstadoBadge(lote.estado || 'activo')">
+                {{ (lote.estado || 'activo') | titlecase }}
+              </span>
+            </td>
+            <!-- Acciones -->
+            <td>
+              <div class="d-flex justify-content-center gap-1">
+                <button class="btn btn-sm btn-outline-primary rounded-circle" style="width:32px;height:32px;padding:0;"
+                  title="Ver detalle" (click)="abrirModalDetalle(lote.id!)">
+                  <i class="bi bi-eye"></i>
+                </button>
+                <button *ngIf="isAdmin" class="btn btn-sm btn-outline-warning rounded-circle"
+                  style="width:32px;height:32px;padding:0;" title="Ajustar stock" (click)="abrirModalAjustar(lote.id!)">
+                  <i class="bi bi-sliders"></i>
+                </button>
+                <button *ngIf="isAdmin" class="btn btn-sm btn-outline-secondary rounded-circle"
+                  style="width:32px;height:32px;padding:0;" title="Editar" (click)="abrirModalEditar(lote.id!)">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger rounded-circle"
+                  style="width:32px;height:32px;padding:0;" title="Eliminar" (click)="eliminar(lote.id!)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Vista móvil: tarjetas -->
+    <div *ngIf="!cargando" class="d-md-none">
+      <div *ngFor="let lote of lotesMostrados; trackBy: trackByLoteId"
+        class="card lote-card-mobile shadow-sm border-0 rounded-4 mb-3">
+        <div class="card-body">
+          <div class="d-flex align-items-center gap-3">
+            <div class="producto-imagen-mini">
+              <img [src]="obtenerImagenProducto(lote)" alt="Producto" class="img-fluid rounded-3"
+                (error)="onImageError($event)">
+            </div>
+            <div class="flex-grow-1">
+              <div class="fw-bold">{{ getProductoNombre(lote.productoId) }}</div>
+              <div class="text-muted small">Lote: {{ lote.lote }}</div>
+              <div class="d-flex gap-3 mt-1">
+                <span class="badge" [ngClass]="getEstadoBadge(lote.estado || 'activo')">{{ lote.estado }}</span>
+                <span class="fw-bold" [ngClass]="{
+                  'text-danger': lote.cantidad === 0,
+                  'text-warning': lote.cantidad > 0 && lote.cantidad <= 10,
+                  'text-success': lote.cantidad > 10
+                }">Stock: {{ lote.cantidad }}</span>
+              </div>
+              <div class="text-muted small">Vence: {{ lote.fechaVencimiento | date:'dd/MM/yyyy' }}</div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end gap-1 mt-2">
+            <button class="btn btn-sm btn-outline-primary rounded-circle" title="Ver"
+              (click)="abrirModalDetalle(lote.id!)">
+              <i class="bi bi-eye"></i>
+            </button>
+            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-warning rounded-circle" title="Ajustar"
+              (click)="abrirModalAjustar(lote.id!)">
+              <i class="bi bi-sliders"></i>
+            </button>
+            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-secondary rounded-circle" title="Editar"
+              (click)="abrirModalEditar(lote.id!)">
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button *ngIf="isAdmin" class="btn btn-sm btn-outline-danger rounded-circle" title="Eliminar"
+              (click)="eliminar(lote.id!)">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="lotesFiltrados.length === 0" class="text-center py-4 text-muted">
+        <i class="bi bi-inbox display-6 d-block mb-2"></i>
+        No hay lotes
+      </div>
+    </div>
+
+    <!-- Scroll infinito indicadores -->
+    <div *ngIf="!todosCargados && lotesFiltrados.length > 0 && !cargando" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm text-secondary" role="status">
+        <span class="visually-hidden">Cargando más...</span>
+      </div>
+      <span class="text-muted small ms-2">Cargando más lotes...</span>
+    </div>
+    <div *ngIf="todosCargados && lotesFiltrados.length > 0 && !cargando" class="text-center py-3 text-muted small">
+      <i class="bi bi-check-circle me-1"></i> Todos los lotes cargados
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- OFFCANVAS CREAR LOTE                                       -->
+  <!-- ========================================================== -->
+  <div class="offcanvas-overlay" [class.active]="offcanvasCrearAbierto" (click)="cerrarOffcanvasCrear()"></div>
+  <div class="offcanvas-slide" [class.active]="offcanvasCrearAbierto">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title"><i class="bi bi-plus-circle me-2" style="color:#0d9488;"></i>Nuevo Lote</h5>
+      <button class="offcanvas-close" (click)="cerrarOffcanvasCrear()">&times;</button>
+    </div>
+    <div class="offcanvas-body">
+      <form [formGroup]="formCrear">
+        <!-- Producto -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Producto</label>
+          <div class="input-group">
+            <input type="text" class="form-control" [value]="getProductoNombre(formCrear.get('productoId')?.value)"
+              placeholder="Seleccionar producto..." readonly>
+            <button class="btn btn-outline-secondary" type="button" (click)="abrirModalProductos()">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback"
+            *ngIf="formCrear.get('productoId')?.invalid && formCrear.get('productoId')?.touched">
+            Selecciona un producto.
+          </div>
+        </div>
+
+        <!-- Proveedor -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Proveedor</label>
+          <div class="input-group">
+            <input type="text" class="form-control" [value]="getProveedorNombre(formCrear.get('proveedorId')?.value)"
+              placeholder="Seleccionar proveedor..." readonly>
+            <button class="btn btn-outline-secondary" type="button" (click)="abrirModalProveedores()">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+          <div class="invalid-feedback"
+            *ngIf="formCrear.get('proveedorId')?.invalid && formCrear.get('proveedorId')?.touched">
+            Selecciona un proveedor.
+          </div>
+        </div>
+
+        <!-- Número de Lote -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Número de Lote</label>
+          <input type="text" class="form-control" formControlName="lote" placeholder="Ej: LOT2026-001">
+          <div class="invalid-feedback" *ngIf="formCrear.get('lote')?.invalid && formCrear.get('lote')?.touched">
+            El número de lote es obligatorio.
+          </div>
+        </div>
+
+        <!-- Fechas -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Fecha Ingreso</label>
+            <!-- Campo de solo lectura con la fecha actual -->
+            <input type="text" class="form-control" [value]="fechaIngresoActual" readonly
+              style="background-color: #e9ecef; cursor: default;">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Fecha Vencimiento</label>
+            <input type="date" class="form-control" formControlName="fechaVencimiento">
+          </div>
+        </div>
+
+        <!-- Cantidad y Precios -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Cantidad</label>
+          <input type="number" class="form-control" formControlName="cantidad" min="1">
+          <div class="invalid-feedback"
+            *ngIf="formCrear.get('cantidad')?.invalid && formCrear.get('cantidad')?.touched">
+            Cantidad mayor a 0.
+          </div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Precio Compra (S/)</label>
+            <input type="number" class="form-control" formControlName="precioCompra" step="0.01" min="0.01">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Precio Venta (S/)</label>
+            <input type="number" class="form-control" formControlName="precioVenta" step="0.01" min="0.01">
+          </div>
+        </div>
+
+        <button class="btn btn-primary w-100 mt-3" style="background-color:#0d9488;border-color:#0d9488;"
+          (click)="guardarLote()" [disabled]="guardando || formCrear.invalid">
+          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-1"></span>
+          {{ guardando ? 'Guardando...' : 'Guardar' }}
         </button>
-        <button class="btn btn-outline-danger" type="button" (click)="filtroProducto=''; cargarLotes()">
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- MODAL DE SELECCIÓN DE PRODUCTO (centrado)                 -->
+  <!-- ========================================================== -->
+  <div class="modal-overlay" [class.active]="modalProductosAbierto" (click)="cerrarModalProductos()"></div>
+  <div class="modal-seleccion" [class.active]="modalProductosAbierto">
+    <div class="modal-seleccion-header">
+      <h5 class="modal-seleccion-title"><i class="bi bi-box-seam me-2" style="color:#0d9488;"></i>Seleccionar Producto
+      </h5>
+      <button class="modal-seleccion-close" (click)="cerrarModalProductos()">&times;</button>
+    </div>
+    <div class="modal-seleccion-body">
+      <div class="input-group mb-3">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Buscar producto..."
+          [(ngModel)]="filtroProductoModal" (input)="buscarProductosModal()">
+        <button class="btn btn-outline-secondary" (click)="filtroProductoModal=''; buscarProductosModal()">
           <i class="bi bi-x-circle"></i>
         </button>
       </div>
-    </div>
-    <div class="col-md-3">
-      <select class="form-select shadow-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
-        <option value="">Todos los estados</option>
-        <option value="activo">Activo</option>
-        <option value="deteriorado">Deteriorado</option>
-        <option value="vencido">Vencido</option>
-        <option value="agotado">Agotado</option>
-      </select>
-    </div>
-    <div class="col-md-3 text-md-end">
-      <span class="badge bg-light text-dark p-2 shadow-sm">
-        <i class="bi bi-database me-1"></i> {{ lotesFiltrados.length }} registros
-      </span>
-    </div>
-  </div>
-
-  <!-- ======== TABLA ======== -->
-  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light" style="border-bottom: 2px solid #dee2e6;">
-            <tr>
-              <th style="width: 70px;">Imagen</th>
-              <th>Código</th>
-              <th>Nombre</th>
-              <th class="text-center">Stock</th>
-              <th>Lote</th>
-              <th>Vencimiento</th>
-              <th>Estado</th>
-              <th class="text-center" style="width: 140px;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngIf="cargando">
-              <td colspan="8" class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Cargando...</span>
-                </div>
-              </td>
-            </tr>
-            <tr *ngIf="!cargando && lotesFiltrados.length === 0">
-              <td colspan="8" class="text-center py-5 text-muted">
-                <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                No hay lotes registrados
-              </td>
-            </tr>
-            <tr *ngFor="let lote of lotesFiltrados">
-              <td>
-                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center"
-                  style="width: 50px; height: 50px;">
-                  <i class="bi bi-capsule text-secondary" style="font-size: 1.8rem;"></i>
-                </div>
-              </td>
-              <td><span class="fw-semibold">LOT-{{ lote.id }}</span></td>
-              <td>{{ lote.productoNombre || 'Producto #' + lote.productoId }}</td>
-              <td class="text-center">
-                <span class="fw-bold" [class.text-danger]="lote.cantidad <= 10">
-                  {{ lote.cantidad }}
-                </span>
-              </td>
-              <td><span class="badge bg-light text-dark">{{ lote.lote }}</span></td>
-              <td>{{ lote.fechaVencimiento | date:'dd/MM/yyyy' }}</td>
-              <td>
-                <span class="badge rounded-pill px-3 py-2" [ngClass]="getEstadoBadge(lote.estado!)">
-                  {{ lote.estado | titlecase }}
-                </span>
-              </td>
-              <td>
-                <div class="d-flex justify-content-center gap-1">
-                  <!-- Editar abre modal centrado -->
-                  <button class="btn btn-outline-primary btn-sm rounded-circle" title="Editar"
-                    style="width: 32px; height: 32px; padding: 0;" (click)="abrirModalEditar(lote.id!)">
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                  <!-- Ajustar stock abre modal centrado -->
-                  <button class="btn btn-outline-info btn-sm rounded-circle" title="Ajustar stock"
-                    style="width: 32px; height: 32px; padding: 0;" (click)="abrirModalAjustar(lote.id!)">
-                    <i class="bi bi-arrow-down-up"></i>
-                  </button>
-                  <button *ngIf="lote.estado === 'activo'" class="btn btn-outline-warning btn-sm rounded-circle"
-                    title="Marcar como deteriorado" (click)="marcarDeteriorado(lote.id!)"
-                    style="width: 32px; height: 32px; padding: 0;">
-                    <i class="bi bi-exclamation-triangle"></i>
-                  </button>
-                  <button class="btn btn-outline-danger btn-sm rounded-circle" title="Eliminar"
-                    (click)="eliminar(lote.id!)" style="width: 32px; height: 32px; padding: 0;">
-                    <i class="bi bi-trash"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ======== ALERTAS ======== -->
-  <div class="row g-4 mt-4" *ngIf="stockBajo.length > 0 || proximoVencer.length > 0">
-    <div class="col-md-6" *ngIf="stockBajo.length > 0">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-body">
-          <h6 class="card-title d-flex align-items-center">
-            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
-            Stock Mínimo
-            <span class="badge bg-warning text-dark ms-2 rounded-pill">{{ stockBajo.length }}</span>
-          </h6>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between align-items-center"
-              *ngFor="let item of stockBajo">
-              <div>
-                <span class="fw-semibold">{{ item.productoNombre || 'Producto' }}</span>
-                <span class="badge bg-danger ms-2">{{ item.cantidad }} unidades</span>
-              </div>
-              <button class="btn btn-sm btn-outline-primary" (click)="abrirModalAjustar(item.id!)">Reponer</button>
-            </li>
-          </ul>
+      <div class="modal-productos-lista" #productosScroll>
+        <div *ngFor="let p of productosModal" class="modal-producto-item" (click)="seleccionarProducto(p)">
+          <div class="d-flex align-items-center gap-3">
+            <div class="producto-imagen-mini">
+              <img [src]="p.imagen ? obtenerUrlCompleta(p.imagen) : 'assets/placeholder-producto.svg'" alt="Producto"
+                class="img-fluid rounded-3" (error)="onImageError($event)">
+            </div>
+            <div>
+              <div class="fw-semibold">{{ p.nombre }}</div>
+              <div class="text-muted small">ID: {{ p.id }}</div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-    <div class="col-md-6" *ngIf="proximoVencer.length > 0">
-      <div class="card border-0 shadow-sm rounded-4 h-100">
-        <div class="card-body">
-          <h6 class="card-title d-flex align-items-center">
-            <i class="bi bi-clock-history text-danger me-2"></i>
-            Próximos a Vencer
-            <span class="badge bg-danger text-white ms-2 rounded-pill">{{ proximoVencer.length }}</span>
-          </h6>
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item d-flex justify-content-between align-items-center"
-              *ngFor="let item of proximoVencer">
-              <div>
-                <span class="fw-semibold">{{ item.productoNombre || 'Producto' }}</span>
-                <span class="badge bg-warning text-dark ms-2">{{ diasParaVencer(item.fechaVencimiento) }} días</span>
-              </div>
-              <button class="btn btn-sm btn-outline-danger" (click)="abrirModalEditar(item.id!)">Revisar</button>
-            </li>
-          </ul>
+        <div *ngIf="cargandoProductosModal" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-secondary"></div>
+        </div>
+        <div *ngIf="!cargandoProductosModal && productosModal.length === 0" class="text-center py-4 text-muted">
+          <i class="bi bi-inbox display-6 d-block mb-2"></i>
+          No hay productos
         </div>
       </div>
     </div>
   </div>
 
-</div>
-
-<!-- ============================================================ -->
-<!-- ======== OFFCANVAS CREAR LOTE (Panel lateral derecho) ======== -->
-<!-- ============================================================ -->
-<!-- ============================================================ -->
-<!-- ======== OFFCANVAS CREAR LOTE (Panel lateral derecho) ======== -->
-<!-- ============================================================ -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasCrearLote" [class.show]="offcanvasCrearAbierto" style="width: 500px; visibility: visible; background-color: white; 
-            box-shadow: -5px 0 15px rgba(0,0,0,0.1); position: fixed; top:0; right:0; height:100%; z-index: 1050;"
-  *ngIf="offcanvasCrearAbierto">
-  <div class="offcanvas-header border-bottom">
-    <div class="d-flex align-items-center">
-      <i class="bi bi-plus-circle-fill text-primary me-2" style="font-size: 2rem;"></i>
-      <div>
-        <h5 class="offcanvas-title fw-bold">Nuevo Lote</h5>
-        <p class="text-muted small mb-0">Registra un lote para un producto existente</p>
-      </div>
+  <!-- ========================================================== -->
+  <!-- MODAL DE SELECCIÓN DE PROVEEDOR (centrado)                -->
+  <!-- ========================================================== -->
+  <div class="modal-overlay" [class.active]="modalProveedoresAbierto" (click)="cerrarModalProveedores()"></div>
+  <div class="modal-seleccion" [class.active]="modalProveedoresAbierto">
+    <div class="modal-seleccion-header">
+      <h5 class="modal-seleccion-title"><i class="bi bi-truck me-2" style="color:#f59e0b;"></i>Seleccionar Proveedor
+      </h5>
+      <button class="modal-seleccion-close" (click)="cerrarModalProveedores()">&times;</button>
     </div>
-    <button type="button" class="btn-close" (click)="cerrarOffcanvasCrear()"></button>
-  </div>
-  <div class="offcanvas-body">
-    <form #formCrear="ngForm" (ngSubmit)="guardarLote()">
-      <!-- ===== PRODUCTO ===== -->
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Producto *</label>
-        <select class="form-select shadow-sm" [(ngModel)]="nuevoLote.productoId" name="productoId" required>
-          <option value="">Selecciona un producto...</option>
-          <option *ngFor="let prod of productos" [value]="prod.id">{{ prod.nombre }}</option>
-        </select>
-      </div>
-
-      <!-- ===== PROVEEDOR (NUEVO) ===== -->
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Proveedor *</label>
-        <select class="form-select shadow-sm" [(ngModel)]="nuevoLote.proveedorId" name="proveedorId" required>
-          <option value="">Selecciona un proveedor...</option>
-          <option *ngFor="let prov of proveedores" [value]="prov.id">{{ prov.razonSocial }}</option>
-        </select>
-      </div>
-
-      <!-- ===== NÚMERO DE LOTE ===== -->
-      <div class="mb-3">
-        <label class="form-label fw-semibold">Número de Lote *</label>
-        <input type="text" class="form-control shadow-sm" placeholder="Ej: LOT-2025-001" [(ngModel)]="nuevoLote.lote"
-          name="lote" required>
-      </div>
-
-      <!-- ===== FECHAS ===== -->
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Fecha de Ingreso *</label>
-          <input type="date" class="form-control shadow-sm" [(ngModel)]="nuevoLote.fechaIngreso" name="fechaIngreso"
-            required>
-        </div>
-        <div class="col-md-6">
-          <label class="form-label fw-semibold">Fecha de Vencimiento *</label>
-          <input type="date" class="form-control shadow-sm" [(ngModel)]="nuevoLote.fechaVencimiento"
-            name="fechaVencimiento" required>
-        </div>
-      </div>
-
-      <!-- ===== PRECIOS Y CANTIDAD ===== -->
-      <div class="row g-3 mt-2">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Cantidad *</label>
-          <input type="number" class="form-control shadow-sm" placeholder="0" [(ngModel)]="nuevoLote.cantidad"
-            name="cantidad" required min="1">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Precio Compra (S/) *</label>
-          <input type="number" class="form-control shadow-sm" placeholder="0.00" [(ngModel)]="nuevoLote.precioCompra"
-            name="precioCompra" required min="0" step="0.01">
-        </div>
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">Precio Venta (S/) *</label>
-          <input type="number" class="form-control shadow-sm" placeholder="0.00" [(ngModel)]="nuevoLote.precioVenta"
-            name="precioVenta" required min="0" step="0.01">
-        </div>
-      </div>
-
-      <div class="d-flex justify-content-end gap-2 mt-4">
-        <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-          (click)="cerrarOffcanvasCrear()">Cancelar</button>
-        <button type="submit" class="btn btn-primary rounded-pill px-4" [disabled]="guardando">
-          <span *ngIf="guardando" class="spinner-border spinner-border-sm me-1"></span>
-          <i class="bi bi-check-circle me-1" *ngIf="!guardando"></i> Guardar
+    <div class="modal-seleccion-body">
+      <div class="input-group mb-3">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Buscar proveedor..."
+          [(ngModel)]="filtroProveedorModal" (input)="buscarProveedoresModal()">
+        <button class="btn btn-outline-secondary" (click)="filtroProveedorModal=''; buscarProveedoresModal()">
+          <i class="bi bi-x-circle"></i>
         </button>
       </div>
-    </form>
-  </div>
-</div>
-
-<!-- Fondo oscuro para el offcanvas -->
-<div *ngIf="offcanvasCrearAbierto"
-  style="position: fixed; top:0; left:0; width:100%; height:100%; background-color: rgba(0,0,0,0.4); z-index: 1040;"
-  (click)="cerrarOffcanvasCrear()">
-</div>
-
-<!-- ============================================================ -->
-<!-- ======== MODAL EDITAR LOTE (centrado) ======== -->
-<!-- ============================================================ -->
-<div class="modal fade" id="modalEditarLote" tabindex="-1" [ngClass]="{'show d-block': modalEditarAbierto}"
-  style="background-color: rgba(0,0,0,0.5); display: block;" *ngIf="modalEditarAbierto">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content shadow-lg border-0 rounded-4">
-      <div class="modal-header border-0 pb-0">
-        <div class="d-flex align-items-center">
-          <i class="bi bi-pencil-square text-primary me-2" style="font-size: 2rem;"></i>
-          <div>
-            <h5 class="modal-title fw-bold">Editar Lote</h5>
-            <p class="text-muted small mb-0">Actualiza los datos del lote</p>
-          </div>
+      <div class="modal-proveedores-lista" #proveedoresScroll>
+        <div *ngFor="let prov of proveedoresModal" class="modal-proveedor-item" (click)="seleccionarProveedor(prov)">
+          <div class="fw-semibold">{{ prov.razonSocial }}</div>
+          <div class="text-muted small">RUC: {{ prov.ruc }}</div>
         </div>
-        <button type="button" class="btn-close" (click)="cerrarModalEditar()"></button>
-      </div>
-      <div class="modal-body">
-        <form [formGroup]="formEditar" (ngSubmit)="actualizarLote()">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Producto</label>
-            <select class="form-select shadow-sm" formControlName="productoId">
-              <option value="">Selecciona un producto...</option>
-              <option *ngFor="let prod of productos" [value]="prod.id">{{ prod.nombre }}</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Proveedor</label>
-            <select class="form-select shadow-sm" formControlName="proveedorId">
-              <option value="">Selecciona un proveedor...</option>
-              <!-- Asegúrate de usar la propiedad correcta de Proveedor (ej: razonSocial) -->
-              <option *ngFor="let prov of proveedores" [value]="prov.id">{{ prov.razonSocial }}</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Número de Lote</label>
-            <input type="text" class="form-control shadow-sm" formControlName="lote">
-          </div>
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Fecha de Ingreso</label>
-              <input type="date" class="form-control shadow-sm" formControlName="fechaIngreso">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Fecha de Vencimiento</label>
-              <input type="date" class="form-control shadow-sm" formControlName="fechaVencimiento">
-            </div>
-          </div>
-          <div class="row g-3 mt-1">
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Cantidad</label>
-              <input type="number" class="form-control shadow-sm" formControlName="cantidad">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Precio Compra (S/)</label>
-              <input type="number" class="form-control shadow-sm" formControlName="precioCompra" step="0.01">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Precio Venta (S/)</label>
-              <input type="number" class="form-control shadow-sm" formControlName="precioVenta" step="0.01">
-            </div>
-          </div>
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-              (click)="cerrarModalEditar()">Cancelar</button>
-            <button type="submit" class="btn btn-primary rounded-pill px-4" [disabled]="guardandoEditar">
-              <span *ngIf="guardandoEditar" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-check-circle me-1" *ngIf="!guardandoEditar"></i> Actualizar
-            </button>
-          </div>
-        </form>
+        <div *ngIf="cargandoProveedoresModal" class="text-center py-3">
+          <div class="spinner-border spinner-border-sm text-secondary"></div>
+        </div>
+        <div *ngIf="!cargandoProveedoresModal && proveedoresModal.length === 0" class="text-center py-4 text-muted">
+          <i class="bi bi-inbox display-6 d-block mb-2"></i>
+          No hay proveedores
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- ============================================================ -->
-<!-- ======== MODAL AJUSTAR STOCK (centrado) ======== -->
-<!-- ============================================================ -->
-<div class="modal fade" id="modalAjustarStock" tabindex="-1" [ngClass]="{'show d-block': modalAjustarAbierto}"
-  style="background-color: rgba(0,0,0,0.5); display: block;" *ngIf="modalAjustarAbierto">
-  <div class="modal-dialog modal-dialog-centered modal-md">
-    <div class="modal-content shadow-lg border-0 rounded-4">
-      <div class="modal-header border-0 pb-0">
-        <div class="d-flex align-items-center">
-          <i class="bi bi-arrow-left-right text-info me-2" style="font-size: 2rem;"></i>
-          <div>
-            <h5 class="modal-title fw-bold">Ajustar Stock</h5>
-            <p class="text-muted small mb-0">Modifica la cantidad del lote</p>
-          </div>
+  <!-- ========================================================== -->
+  <!-- OFFCANVAS DETALLE                                          -->
+  <!-- ========================================================== -->
+  <div class="offcanvas-overlay" [class.active]="modalDetalleAbierto" (click)="cerrarDetalle()"></div>
+  <div class="offcanvas-slide" [class.active]="modalDetalleAbierto">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title"><i class="bi bi-info-circle me-2" style="color:#0d9488;"></i>Detalle del Lote</h5>
+      <button class="offcanvas-close" (click)="cerrarDetalle()">&times;</button>
+    </div>
+    <div class="offcanvas-body" *ngIf="loteDetalle">
+      <div class="text-center mb-3">
+        <div class="producto-imagen-grande mx-auto">
+          <img [src]="obtenerImagenProducto(loteDetalle) || 'assets/placeholder-producto.svg'" alt="Producto"
+            class="img-fluid rounded-4" (error)="onImageError($event)">
         </div>
-        <button type="button" class="btn-close" (click)="cerrarModalAjustar()"></button>
       </div>
-      <div class="modal-body">
-        <div *ngIf="loteAjustar" class="mb-3">
-          <p><strong>Producto:</strong> {{ loteAjustar.productoNombre || 'Producto #' + loteAjustar.productoId }}</p>
-          <p><strong>Lote:</strong> {{ loteAjustar.lote }}</p>
-          <p><strong>Stock actual:</strong> {{ loteAjustar.cantidad }} unidades</p>
+      <div class="row g-3">
+        <div class="col-6">
+          <label class="text-muted small">Producto</label>
+          <div class="fw-semibold">{{ getProductoNombre(loteDetalle.productoId) }}</div>
         </div>
-        <form [formGroup]="formAjustar" (ngSubmit)="guardarAjusteStock()">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Tipo de movimiento</label>
-            <select class="form-select shadow-sm" formControlName="tipoMovimiento">
-              <option value="ajuste">Aumentar stock</option>
-              <option value="merma">Disminuir stock (merma)</option>
-            </select>
+        <div class="col-6">
+          <label class="text-muted small">Proveedor</label>
+          <div class="fw-semibold">{{ getProveedorNombre(loteDetalle.proveedorId) || 'No especificado' }}</div>
+        </div>
+        <div class="col-6">
+          <label class="text-muted small">Lote</label>
+          <div class="fw-semibold">{{ loteDetalle.lote }}</div>
+        </div>
+        <div class="col-6">
+          <label class="text-muted small">Cantidad</label>
+          <div class="fw-bold" [ngClass]="{
+            'text-danger': loteDetalle.cantidad === 0,
+            'text-warning': loteDetalle.cantidad > 0 && loteDetalle.cantidad <= 10,
+            'text-success': loteDetalle.cantidad > 10
+          }">{{ loteDetalle.cantidad }}</div>
+        </div>
+        <div class="col-6">
+          <label class="text-muted small">Fecha Ingreso</label>
+          <div>{{ loteDetalle.fechaIngreso | date:'dd/MM/yyyy' }}</div>
+        </div>
+        <div class="col-6">
+          <label class="text-muted small">Fecha Vencimiento</label>
+          <div [class.text-danger]="diasParaVencer(loteDetalle.fechaVencimiento) < 0">
+            {{ loteDetalle.fechaVencimiento | date:'dd/MM/yyyy' }}
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Cantidad</label>
-            <input type="number" class="form-control shadow-sm" formControlName="cantidad" placeholder="0" min="1">
+        </div>
+        <div class="col-6">
+          <label class="text-muted small">Precio Compra (S/)</label>
+          <div>{{ loteDetalle.precioCompra | number:'1.2-2' }}</div>
+        </div>
+        <div class="col-6">
+          <label class="text-muted small">Precio Venta (S/)</label>
+          <div>{{ loteDetalle.precioVenta | number:'1.2-2' }}</div>
+        </div>
+        <div class="col-12">
+          <label class="text-muted small">Estado</label>
+          <div>
+            <span class="badge rounded-pill px-3 py-2" [ngClass]="getEstadoBadge(loteDetalle.estado || 'activo')">
+              {{ (loteDetalle.estado || 'activo') | titlecase }}
+            </span>
           </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Observación</label>
-            <textarea class="form-control shadow-sm" formControlName="observacion" rows="2"
-              placeholder="Motivo del ajuste..."></textarea>
-          </div>
-          <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-              (click)="cerrarModalAjustar()">Cancelar</button>
-            <button type="submit" class="btn btn-info rounded-pill px-4 text-white" [disabled]="guardandoAjustar">
-              <span *ngIf="guardandoAjustar" class="spinner-border spinner-border-sm me-1"></span>
-              <i class="bi bi-check-circle me-1" *ngIf="!guardandoAjustar"></i> Ajustar
-            </button>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- ========================================================== -->
+  <!-- OFFCANVAS AJUSTAR STOCK                                    -->
+  <!-- ========================================================== -->
+  <div class="offcanvas-overlay" [class.active]="modalAjustarAbierto" (click)="cerrarModalAjustar()"></div>
+  <div class="offcanvas-slide" [class.active]="modalAjustarAbierto">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title"><i class="bi bi-sliders me-2" style="color:#f59e0b;"></i>Ajustar Stock</h5>
+      <button class="offcanvas-close" (click)="cerrarModalAjustar()">&times;</button>
+    </div>
+    <div class="offcanvas-body">
+      <form [formGroup]="formAjustar">
+        <!-- Información del lote (solo lectura) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Producto</label>
+          <div class="fw-bold">{{ getProductoNombre(loteAjustar?.productoId) }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Lote</label>
+          <div class="fw-bold">{{ loteAjustar?.lote }}</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Stock Actual</label>
+          <div class="fw-bold">{{ loteAjustar?.cantidad }}</div>
+        </div>
+
+        <!-- Tipo de movimiento (oculto, siempre "ajuste") -->
+        <input type="hidden" formControlName="tipoMovimiento">
+
+        <!-- Cantidad a ajustar -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Cantidad a ajustar</label>
+          <input type="number" class="form-control" formControlName="cantidad" min="1" step="1" placeholder="Ej: 5">
+          <div class="invalid-feedback"
+            *ngIf="formAjustar.get('cantidad')?.invalid && formAjustar.get('cantidad')?.touched">
+            Ingresa una cantidad válida (mayor a 0).
+          </div>
+        </div>
+
+        <!-- Observación -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Observación</label>
+          <input type="text" class="form-control" formControlName="observacion"
+            placeholder="Motivo del ajuste (opcional)">
+        </div>
+
+        <button class="btn btn-warning w-100" (click)="guardarAjusteStock()"
+          [disabled]="guardandoAjustar || formAjustar.invalid">
+          <span *ngIf="guardandoAjustar" class="spinner-border spinner-border-sm me-1"></span>
+          {{ guardandoAjustar ? 'Guardando...' : 'Actualizar Stock' }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================== -->
+  <!-- OFFCANVAS EDITAR LOTE                                      -->
+  <!-- ========================================================== -->
+  <div class="offcanvas-overlay" [class.active]="modalEditarAbierto" (click)="cerrarModalEditar()"></div>
+  <div class="offcanvas-slide" [class.active]="modalEditarAbierto">
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title"><i class="bi bi-pencil me-2" style="color:#3b82f6;"></i>Editar Lote</h5>
+      <button class="offcanvas-close" (click)="cerrarModalEditar()">&times;</button>
+    </div>
+    <div class="offcanvas-body">
+      <form [formGroup]="formEditar">
+        <!-- Producto (solo lectura) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Producto</label>
+          <input type="text" class="form-control" [value]="getProductoNombre(formEditar.get('productoId')?.value)"
+            readonly>
+        </div>
+        <!-- Proveedor (solo lectura) -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Proveedor</label>
+          <input type="text" class="form-control"
+            [value]="getProveedorNombre(formEditar.get('proveedorId')?.value) || 'No especificado'" readonly>
+        </div>
+        <!-- Número de Lote -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Número de Lote</label>
+          <input type="text" class="form-control" formControlName="lote" placeholder="Ej: LOT2026-001">
+        </div>
+        <!-- Fechas -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Fecha Ingreso</label>
+            <input type="date" class="form-control" formControlName="fechaIngreso">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Fecha Vencimiento</label>
+            <input type="date" class="form-control" formControlName="fechaVencimiento">
+          </div>
+        </div>
+        <!-- Cantidad -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold required">Cantidad</label>
+          <input type="number" class="form-control" formControlName="cantidad" min="0">
+        </div>
+        <!-- Precios -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Precio Compra (S/)</label>
+            <input type="number" class="form-control" formControlName="precioCompra" step="0.01" min="0">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold required">Precio Venta (S/)</label>
+            <input type="number" class="form-control" formControlName="precioVenta" step="0.01" min="0">
+          </div>
+        </div>
+
+        <button class="btn btn-primary w-100" style="background-color:#3b82f6;border-color:#3b82f6;"
+          (click)="actualizarLote()" [disabled]="guardandoEditar || formEditar.invalid">
+          <span *ngIf="guardandoEditar" class="spinner-border spinner-border-sm me-1"></span>
+          {{ guardandoEditar ? 'Guardando...' : 'Guardar Cambios' }}
+        </button>
+      </form>
+    </div>
+  </div>
+
 </div>

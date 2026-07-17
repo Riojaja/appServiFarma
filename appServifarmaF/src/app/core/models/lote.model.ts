@@ -14,4 +14,5 @@ export interface Lote {
   proveedorRazonSocial?: string;
   createdAt?: string;
   updatedAt?: string;
+  productoImagen?: string;
 }

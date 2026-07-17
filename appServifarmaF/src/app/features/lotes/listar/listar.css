@@ -1,493 +1,353 @@
-/* ============================================================ */
-/* ESTILOS PARA EL LISTADO DE LOTES                             */
-/* ============================================================ */
-
-/* --- Contenedor principal --- */
-.container-fluid {
-  padding: 0 1.5rem;
-}
-
-/* --- Encabezado --- */
-h2 {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-h2 i {
-  font-size: 2rem;
-}
-
-.text-muted.small {
-  font-size: 0.85rem;
-}
-
-/* --- Botones redondeados --- */
-.btn.rounded-pill {
-  padding: 0.6rem 1.8rem;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  border-radius: 50px !important;
-}
-
-.btn-primary.rounded-pill {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
-  border: none;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-  transition: all 0.3s ease;
-}
-
-.btn-primary.rounded-pill:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-}
-
-/* --- Inputs y selects con sombra --- */
-.shadow-sm {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
-}
-
-.input-group .form-control {
-  border-radius: 0 8px 8px 0;
-}
-
-.input-group .input-group-text {
-  border-radius: 8px 0 0 8px;
-}
-
-.form-select.shadow-sm,
-.form-control.shadow-sm {
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.form-select.shadow-sm:focus,
-.form-control.shadow-sm:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-}
-
-/* --- Badges --- */
-.badge.bg-light.text-dark {
-  background-color: #f1f5f9 !important;
-  color: #1e293b !important;
-  font-weight: 500;
-  padding: 0.5rem 1rem;
-  border-radius: 50px;
-}
-
-.badge.rounded-pill {
-  font-weight: 500;
-  letter-spacing: 0.3px;
-  padding: 0.5rem 1.2rem;
-  min-width: 80px;
-  text-align: center;
-}
-
-/* Colores de estado personalizados */
-.bg-success.text-white {
-  background-color: #22c55e !important;
-}
-.bg-warning.text-dark {
-  background-color: #f59e0b !important;
-  color: #1e293b !important;
-}
-.bg-danger.text-white {
-  background-color: #ef4444 !important;
-}
-.bg-secondary.text-white {
-  background-color: #64748b !important;
-}
-
-/* --- Tabla --- */
-.card {
-  border-radius: 1rem !important;
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+.inventario-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
+  padding: 1rem;
 }
 
-.card-body {
-  padding: 0;
+/* ============================================================
+   CABECERA FIJA (sticky)
+   ============================================================ */
+.inventario-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 10;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.table {
-  margin-bottom: 0;
+/* ============================================================
+   CUERPO SCROLLABLE
+   ============================================================ */
+.inventario-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 0.5rem 2rem;
 }
 
-.table > :not(caption) > * > * {
-  padding: 0.9rem 0.7rem;
-  vertical-align: middle;
-}
-
-.table thead th {
-  background-color: #f8fafc;
-  font-weight: 600;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #475569;
-  border-bottom: 2px solid #e2e8f0;
-}
-
-.table tbody tr:hover {
-  background-color: #f8fafc;
-  transition: background-color 0.15s ease;
-}
-
-.table tbody td {
-  font-size: 0.9rem;
-  color: #1e293b;
-}
-
-/* --- Celdas específicas --- */
-.table td .fw-semibold {
-  font-weight: 600;
-  color: #0f172a;
-}
-
-.table td .badge.bg-light.text-dark {
-  background-color: #f1f5f9 !important;
-  color: #334155 !important;
-  font-weight: 500;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-}
-
-/* --- Botones circulares de acción --- */
-.btn-sm.rounded-circle {
+/* ============================================================
+   BOTONES
+   ============================================================ */
+.btn-farma-nuevo,
+.btn-farma-refrescar {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  font-size: 0.9rem;
-  border-radius: 50% !important;
-  transition: all 0.2s ease;
-  border-width: 1.5px;
+  padding: 0.4rem 1rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  gap: 0.3rem;
+}
+.btn-farma-nuevo {
+  background: #0d9488;
+  color: white;
+}
+.btn-farma-nuevo:hover {
+  background: #0f766e;
+}
+.btn-farma-refrescar {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+.btn-farma-refrescar:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+.btn-farma-refrescar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-.btn-sm.rounded-circle:hover {
-  transform: scale(1.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.btn-outline-primary {
-  color: #4f46e5;
-  border-color: #4f46e5;
-}
-
-.btn-outline-primary:hover {
-  background-color: #4f46e5;
-  color: #fff;
-}
-
-.btn-outline-info {
-  color: #0ea5e9;
-  border-color: #0ea5e9;
-}
-
-.btn-outline-info:hover {
-  background-color: #0ea5e9;
-  color: #fff;
-}
-
-.btn-outline-warning {
-  color: #f59e0b;
-  border-color: #f59e0b;
-}
-
-.btn-outline-warning:hover {
-  background-color: #f59e0b;
-  color: #fff;
-}
-
-.btn-outline-danger {
-  color: #ef4444;
-  border-color: #ef4444;
-}
-
-.btn-outline-danger:hover {
-  background-color: #ef4444;
-  color: #fff;
-}
-
-/* --- Alertas (Stock Mínimo y Próximos a Vencer) --- */
-.card.border-0.shadow-sm.rounded-4 {
-  border-radius: 1rem !important;
-}
-
-.card-body {
-  padding: 1.25rem 1.5rem;
-}
-
-.card-title {
-  font-size: 1rem;
+/* ============================================================
+   TABLA DE INVENTARIO
+   ============================================================ */
+.inventario-tabla th {
   font-weight: 600;
   color: #1e293b;
-  margin-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 0.8rem 0.5rem;
+  background: #f8fafc;
+}
+.inventario-tabla td {
+  padding: 0.7rem 0.5rem;
+  vertical-align: middle;
+}
+.inventario-tabla tbody tr:hover {
+  background-color: #f0fdfa;
+  cursor: pointer;
 }
 
-.card-title .badge {
-  font-size: 0.7rem;
-  padding: 0.3rem 0.7rem;
+/* Mini imagen en tabla */
+.producto-imagen-mini {
+  width: 50px;
+  height: 50px;
+  background: #f8fafc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.producto-imagen-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
 }
 
-.list-group-item {
-  padding: 0.6rem 0;
+/* ============================================================
+   TARJETAS MÓVILES
+   ============================================================ */
+.lote-card-mobile {
+  border-left: 4px solid #0d9488;
+}
+.lote-card-mobile .card-body {
+  padding: 0.75rem 1rem;
+}
+
+/* ============================================================
+   ALERTAS
+   ============================================================ */
+.alert {
   border: none;
-  background-color: transparent;
+  border-radius: 30px;
+  font-size: 0.85rem;
+}
+.alert-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+.alert-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+/* ============================================================
+   BADGES DE ESTADO
+   ============================================================ */
+.badge {
+  font-weight: 500;
+  padding: 0.35rem 0.75rem;
+  border-radius: 30px;
+}
+
+/* ============================================================
+   OFFCANVAS LATERALES
+   ============================================================ */
+.offcanvas-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1040;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.offcanvas-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.offcanvas-slide {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 480px;
+  max-width: 92vw;
+  height: 100vh;
+  background: white;
+  z-index: 1050;
+  box-shadow: -8px 0 40px rgba(0,0,0,0.15);
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.offcanvas-slide.active {
+  transform: translateX(0);
+}
+
+.offcanvas-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
-
-.list-group-item .fw-semibold {
-  font-weight: 500;
-  color: #0f172a;
-}
-
-.list-group-item .badge {
-  font-size: 0.75rem;
-  padding: 0.3rem 0.6rem;
-}
-
-.list-group-item .btn-sm {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.8rem;
-  border-radius: 50px;
-}
-
-/* --- Spinner --- */
-.spinner-border {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-width: 0.25rem;
-}
-
-/* ============================================================ */
-/* ESTILOS PARA MODALES                                        */
-/* ============================================================ */
-
-/* Fondo oscuro y centrado */
-.modal.show {
-  display: block;
-  overflow-y: auto;
-  background-color: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.modal-dialog-centered {
-  min-height: calc(100% - 3.5rem);
-}
-
-.modal-content {
-  border-radius: 1.25rem !important;
-  border: none;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  background: #ffffff;
-}
-
-.modal-header {
-  padding: 1.5rem 1.75rem 0.5rem 1.75rem;
-  border-bottom: none;
-}
-
-.modal-header .d-flex {
-  gap: 0.75rem;
-}
-
-.modal-header i {
-  font-size: 2rem;
-}
-
-.modal-header .modal-title {
-  font-size: 1.25rem;
+.offcanvas-title {
+  font-size: 1.1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #1a1a2e;
+  margin: 0;
 }
-
-.modal-header .text-muted {
-  font-size: 0.85rem;
+.offcanvas-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  transition: transform 0.2s ease;
 }
-
-.modal-header .btn-close {
-  font-size: 1.2rem;
-  padding: 0.5rem;
-  background: transparent;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-
-.modal-header .btn-close:hover {
-  opacity: 1;
-}
-
-.modal-body {
-  padding: 1.5rem 1.75rem 2rem 1.75rem;
-}
-
-.modal-body .form-label {
-  font-weight: 600;
-  font-size: 0.9rem;
+.offcanvas-close:hover {
+  transform: rotate(90deg);
   color: #1e293b;
-  margin-bottom: 0.4rem;
 }
 
-.modal-body .form-control,
-.modal-body .form-select {
-  border-radius: 0.75rem;
-  border: 1px solid #e2e8f0;
-  padding: 0.6rem 1rem;
-  font-size: 0.95rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
+.offcanvas-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
 }
 
-.modal-body .form-control:focus,
-.modal-body .form-select:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+/* ============================================================
+   MODALES DE SELECCIÓN (centrados)
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1060;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
 }
 
-.modal-body .form-control.is-invalid {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+.modal-seleccion {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 600px;
+  max-width: 92vw;
+  max-height: 80vh;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  z-index: 1070;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.modal-seleccion.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
 }
 
-.modal-body textarea.form-control {
-  resize: vertical;
-  min-height: 70px;
+.modal-seleccion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
 }
-
-/* Botones dentro del modal */
-.modal-body .btn {
-  font-weight: 500;
-  padding: 0.5rem 1.5rem;
-  border-radius: 50px !important;
-  transition: all 0.2s ease;
+.modal-seleccion-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
 }
-
-.modal-body .btn-primary {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+.modal-seleccion-close {
+  background: none;
   border: none;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+  font-size: 1.5rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0 0.5rem;
+  transition: transform 0.2s ease;
+}
+.modal-seleccion-close:hover {
+  transform: rotate(90deg);
+  color: #1e293b;
 }
 
-.modal-body .btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+.modal-seleccion-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
-.modal-body .btn-primary:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+.modal-productos-lista,
+.modal-proveedores-lista {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
 }
 
-.modal-body .btn-outline-secondary {
-  border-color: #cbd5e1;
-  color: #475569;
+.modal-producto-item,
+.modal-proveedor-item {
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+.modal-producto-item:hover,
+.modal-proveedor-item:hover {
+  background: #f0fdfa;
 }
 
-.modal-body .btn-outline-secondary:hover {
-  background-color: #f1f5f9;
-  border-color: #94a3b8;
+/* ============================================================
+   FORMULARIOS
+   ============================================================ */
+.form-label.required::after {
+  content: '*';
+  color: #dc2626;
+  margin-left: 0.25rem;
+}
+.form-control.is-invalid {
+  border-color: #dc2626;
+}
+.invalid-feedback {
+  display: block;
+  font-size: 0.8rem;
+  color: #dc2626;
 }
 
-.modal-body .btn-info {
-  background: linear-gradient(135deg, #0ea5e9, #3b82f6);
-  border: none;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
-}
-
-.modal-body .btn-info:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
-}
-
-.modal-body .btn-info:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-/* Spinner dentro de botones */
-.modal-body .spinner-border-sm {
-  width: 1rem;
-  height: 1rem;
-  border-width: 0.2rem;
-}
-
-/* --- Responsive ajustes --- */
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 @media (max-width: 768px) {
-  .container-fluid {
-    padding: 0 0.75rem;
+  .inventario-container {
+    padding: 0.5rem;
   }
-
-  h2 {
-    font-size: 1.3rem;
+  .offcanvas-slide {
+    width: 100%;
+    max-width: 100%;
   }
-
-  .btn.rounded-pill {
-    padding: 0.4rem 1rem;
-    font-size: 0.85rem;
+  .producto-imagen-mini {
+    width: 40px;
+    height: 40px;
   }
-
-  .table > :not(caption) > * > * {
-    padding: 0.5rem 0.3rem;
-    font-size: 0.8rem;
-  }
-
-  .table thead th {
-    font-size: 0.65rem;
-    letter-spacing: 0.3px;
-  }
-
-  .btn-sm.rounded-circle {
-    width: 28px;
-    height: 28px;
-    font-size: 0.7rem;
-  }
-
-  .modal-dialog {
-    margin: 0.5rem;
-  }
-
-  .modal-header {
-    padding: 1rem 1.25rem 0.25rem 1.25rem;
-  }
-
-  .modal-body {
-    padding: 1rem 1.25rem 1.5rem 1.25rem;
-  }
-
-  .modal-body .form-control,
-  .modal-body .form-select {
-    font-size: 0.85rem;
-    padding: 0.4rem 0.75rem;
-  }
-
-  .modal-body .btn {
-    padding: 0.4rem 1rem;
-    font-size: 0.85rem;
-  }
-
-  .badge.rounded-pill {
-    min-width: 60px;
-    font-size: 0.7rem;
-    padding: 0.3rem 0.8rem;
-  }
-}
-
-@media (max-width: 576px) {
-  .row.g-3 > [class*="col-"] {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-  }
-  .card-body .list-group-item {
-    flex-wrap: wrap;
-    gap: 0.3rem;
-  }
-  .list-group-item .btn-sm {
-    margin-left: auto;
+  .modal-seleccion {
+    width: 95vw;
+    max-height: 90vh;
   }
 }
