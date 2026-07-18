@@ -21,7 +21,11 @@
 		<java.version>21</java.version>
 		<maven.compiler.source>21</maven.compiler.source>
 		<maven.compiler.target>21</maven.compiler.target>
-		<lombok.version>1.18.36</lombok.version>
+		<!-- Actualizado de 1.18.36 a 1.18.42: la 1.18.36 no soporta JDK24/25
+		     y provoca "ExceptionInInitializerError: com.sun.tools.javac.code.TypeTag :: UNKNOWN"
+		     cuando el javac usado (p.ej. el JDK embebido del Language Server de Java
+		     de VS Code) es más nuevo que el que usaba STS. 1.18.40+ agrega soporte JDK25. -->
+		<lombok.version>1.18.42</lombok.version>
 		<mapstruct.version>1.6.0</mapstruct.version>
 		<jjwt.version>0.12.6</jjwt.version>
 		<springdoc.version>2.6.0</springdoc.version>
@@ -46,6 +50,8 @@
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 
+		<!-- Se eliminó la declaración duplicada de itextpdf que Maven reportaba
+		     como warning ("must be unique"). Se deja una sola. -->
 		<dependency>
 			<groupId>com.itextpdf</groupId>
 			<artifactId>itextpdf</artifactId>
@@ -69,12 +75,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>com.itextpdf</groupId>
-			<artifactId>itextpdf</artifactId>
-			<version>5.5.13.3</version>
 		</dependency>
 
 		<dependency>
