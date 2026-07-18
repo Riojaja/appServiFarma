@@ -54,7 +54,7 @@
   cursor: pointer;
 }
 
-/* Botón Crear Usuario – AZUL */
+/* ✅ Botón Crear Usuario – AZUL */
 .btn-usuarios-nuevo {
   background: #2563eb;
   color: white;
@@ -538,14 +538,16 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ✅ BOTÓN GUARDAR – AZUL (para que sea visible) */
 .btn-guardar {
-  background: var(--primary);
+  background: #2563eb;
   color: white;
   flex: 2;
   justify-content: center;
 }
 .btn-guardar:hover:not(:disabled) {
-  background: var(--primary-dark);
+  background: #1d4ed8;
   box-shadow: var(--shadow-md);
 }
 .btn-guardar:disabled {
