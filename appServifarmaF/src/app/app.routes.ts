@@ -28,16 +28,12 @@ export const routes: Routes = [
         path: 'categorias',
         children: [
           { path: '', loadComponent: () => import('./features/categorias/listar/listar').then(m => m.ListarComponent) },
-          { path: 'crear', loadComponent: () => import('./features/categorias/crear/crear').then(m => m.CrearComponent) },
-          { path: 'editar/:id', loadComponent: () => import('./features/categorias/editar/editar').then(m => m.EditarComponent) }
         ]
       },
       {
         path: 'fabricantes',
         children: [
           { path: '', loadComponent: () => import('./features/fabricantes/listar/listar').then(m => m.ListarFabricantesComponent) },
-          { path: 'crear', loadComponent: () => import('./features/fabricantes/crear/crear').then(m => m.CrearComponent) },
-          { path: 'editar/:id', loadComponent: () => import('./features/fabricantes/editar/editar').then(m => m.EditarComponent) }
         ]
       },
       {
@@ -56,16 +52,12 @@ export const routes: Routes = [
         path: 'clientes',
         children: [
           { path: '', loadComponent: () => import('./features/clientes/listar/listar').then(m => m.ListarComponent) },
-          { path: 'crear', loadComponent: () => import('./features/clientes/crear/crear').then(m => m.CrearComponent) },
-          { path: 'editar/:id', loadComponent: () => import('./features/clientes/editar/editar').then(m => m.EditarComponent) }
         ]
       },
       {
         path: 'productos',
         children: [
           { path: '', loadComponent: () => import('./features/productos/listar/listar').then(m => m.ListarComponent) },
-          { path: 'crear', loadComponent: () => import('./features/productos/crear/crear').then(m => m.CrearComponent) },
-          { path: 'editar/:id', loadComponent: () => import('./features/productos/editar/editar').then(m => m.EditarComponent) }
         ]
       },
 
@@ -76,8 +68,6 @@ export const routes: Routes = [
         path: 'lotes',
         children: [
           { path: '', loadComponent: () => import('./features/lotes/listar/listar').then(m => m.ListarComponent) },
-          { path: 'crear', loadComponent: () => import('./features/lotes/crear/crear').then(m => m.CrearComponent) },
-          { path: 'editar/:id', loadComponent: () => import('./features/lotes/editar/editar').then(m => m.EditarComponent) },
           // Reutiliza el mismo listar con un filtro aplicado (igual que antes en lotes-routing-module.ts)
           { path: 'proximos-a-vencer', loadComponent: () => import('./features/lotes/listar/listar').then(m => m.ListarComponent) }
         ]
@@ -93,9 +83,7 @@ export const routes: Routes = [
       {
         path: 'ventas',
         children: [
-          { path: 'registrar', loadComponent: () => import('./features/ventas/registrar/registrar').then(m => m.RegistrarComponent) },
           { path: 'listar', loadComponent: () => import('./features/ventas/listar/listar').then(m => m.ListarComponent) },
-          { path: 'anular/:id', loadComponent: () => import('./features/ventas/anular/anular').then(m => m.AnularComponent) },
           { path: '', redirectTo: 'listar', pathMatch: 'full' }
         ]
       },
@@ -109,7 +97,6 @@ export const routes: Routes = [
       {
         path: 'bitacora',
         children: [
-          { path: 'crear', loadComponent: () => import('./features/bitacora/crear/crear').then(m => m.CrearComponent) },
           { path: 'listar', loadComponent: () => import('./features/bitacora/listar/listar').then(m => m.ListarComponent) },
           { path: '', redirectTo: 'listar', pathMatch: 'full' }
         ]
