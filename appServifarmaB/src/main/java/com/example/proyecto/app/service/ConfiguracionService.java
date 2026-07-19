@@ -1,5 +1,7 @@
 package com.example.proyecto.app.service;
 
+import java.time.LocalTime;
+import java.util.List;
 import java.util.Map;
 
 public interface ConfiguracionService {
@@ -8,4 +10,5 @@ public interface ConfiguracionService {
     void setValor(String clave, String valor);
     Map<String, String> obtenerTodas();
     void actualizarConfiguracion(Map<String, String> configuraciones);
+    List<LocalTime> getHorasCierreTurno();
 }

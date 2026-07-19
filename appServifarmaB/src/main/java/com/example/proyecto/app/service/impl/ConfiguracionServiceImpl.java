@@ -9,8 +9,15 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -60,4 +67,38 @@ public class ConfiguracionServiceImpl implements ConfiguracionService {
     public void actualizarConfiguracion(Map<String, String> configuraciones) {
         configuraciones.forEach(this::setValor);
     }
+
+    @Override
+    public List<LocalTime> getHorasCierreTurno() {
+        String valor = getValor("horas_cierre_turno");
+        if (valor == null || valor.trim().isEmpty())
+            return Collections.emptyList();
+
+        return Arrays.stream(valor.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(this::parsearHora)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    private LocalTime parsearHora(String horaStr) {
+    try {
+        // Acepta "HH:MM" (ej: "15:30")
+        return LocalTime.parse(horaStr);
+    } catch (DateTimeParseException e) {
+        // Si viene "15.30", convertirlo a "15:30"
+        if (horaStr.contains(".")) {
+            String corregida = horaStr.replace('.', ':');
+            try {
+                return LocalTime.parse(corregida);
+            } catch (DateTimeParseException ex) {
+                log.warn("Formato de hora inválido: {}", horaStr);
+                return null;
+            }
+        }
+        log.warn("Formato de hora inválido: {}", horaStr);
+        return null;
+    }
+}
 }

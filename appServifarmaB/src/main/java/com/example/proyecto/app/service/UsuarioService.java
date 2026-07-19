@@ -23,4 +23,5 @@ public interface UsuarioService {
     // ========== NUEVOS MÉTODOS PARA SESIONES ==========
     void cerrarSesionesPorTurno();
     void cerrarSesionesPorUsuario(Integer usuarioId);
+
 }

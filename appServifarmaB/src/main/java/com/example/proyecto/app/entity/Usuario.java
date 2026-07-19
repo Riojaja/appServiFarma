@@ -82,5 +82,5 @@ public class Usuario {
 
     public boolean isBloqueado() {
         return bloqueadoHasta != null && bloqueadoHasta.isAfter(LocalDateTime.now());
-    }
+    }    
 }

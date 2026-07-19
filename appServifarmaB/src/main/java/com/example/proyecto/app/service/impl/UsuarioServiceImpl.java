@@ -13,6 +13,7 @@ import com.example.proyecto.app.repository.SesionUsuarioRepository;
 import com.example.proyecto.app.repository.UsuarioRepository;
 import com.example.proyecto.app.service.BitacoraComunicacionService;
 import com.example.proyecto.app.service.ConfiguracionService;
+import com.example.proyecto.app.service.TokenBlacklistService;
 import com.example.proyecto.app.service.UsuarioService;
 import com.example.proyecto.app.util.SecurityUtils;
 import lombok.RequiredArgsConstructor;
@@ -40,7 +41,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     private final SesionUsuarioRepository sesionRepository;
     private final BitacoraComunicacionService bitacoraService;
     private final SecurityUtils securityUtils;
-    private final ConfiguracionService configuracionService; // ✅ Inyectado
+    private final ConfiguracionService configuracionService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // ========== CRUD ==========
 
@@ -52,7 +54,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
 
         Rol rol = rolRepository.findById(request.getRolId())
-                .orElseThrow(() -> new ResourceNotFoundException("Rol con ID " + request.getRolId() + " no encontrado."));
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Rol con ID " + request.getRolId() + " no encontrado."));
 
         Usuario usuario = usuarioMapper.toEntity(request);
         usuario.setRol(rol);
@@ -84,7 +87,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         if (!usuario.getRol().getId().equals(request.getRolId())) {
             Rol nuevoRol = rolRepository.findById(request.getRolId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Rol con ID " + request.getRolId() + " no encontrado."));
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Rol con ID " + request.getRolId() + " no encontrado."));
             usuario.setRol(nuevoRol);
         }
 
@@ -97,7 +101,8 @@ public class UsuarioServiceImpl implements UsuarioService {
 
         Usuario updated = usuarioRepository.save(usuario);
         log.info("Usuario actualizado: {} (ID: {})", updated.getUsuario(), updated.getId());
-        registrarBitacora("✏️ Usuario actualizado: " + nombreAnterior + " → " + updated.getUsuario() + " (ID: " + id + ")",
+        registrarBitacora(
+                "✏️ Usuario actualizado: " + nombreAnterior + " → " + updated.getUsuario() + " (ID: " + id + ")",
                 BitacoraComunicacion.Tipo.novedad);
         return usuarioMapper.toResponse(updated);
     }
@@ -194,42 +199,42 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     /**
      * Cierra todas las sesiones de los vendedores activos (para cambio de turno).
-     * Lee la configuración "horas_cierre_turno" para saber a qué horas debe ejecutarse.
+     * Lee la configuración "horas_cierre_turno" para saber a qué horas debe
+     * ejecutarse.
      */
     @Override
     @Transactional
     public void cerrarSesionesPorTurno() {
         log.info("Ejecutando cierre de sesiones por cambio de turno");
 
-        // Obtener horas de cierre desde configuración (ej: "13,18")
         String horasStr = configuracionService.getValor("horas_cierre_turno");
         List<Integer> horasCierre = parseHoras(horasStr);
-
-        // Si no hay configuración, usar valores por defecto
         if (horasCierre.isEmpty()) {
             horasCierre = Arrays.asList(13, 18);
             log.warn("No se encontró configuración de horas de cierre, usando valores por defecto: 13,18");
         }
 
-        // Obtener la hora actual
         int horaActual = java.time.LocalDateTime.now().getHour();
-
-        // Solo ejecutar si la hora actual coincide con una de las configuradas
         if (!horasCierre.contains(horaActual)) {
-            log.debug("No es hora de cierre de turno (hora actual: {}). Horas configuradas: {}", horaActual, horasCierre);
+            log.debug("No es hora de cierre de turno (hora actual: {}). Horas configuradas: {}", horaActual,
+                    horasCierre);
             return;
         }
 
-        // Cerrar sesiones de todos los vendedores activos
         List<Usuario> vendedores = usuarioRepository.findByRolNombreAndActivoTrue("VENDEDOR");
         int contador = 0;
         for (Usuario v : vendedores) {
+            // ✅ Invalidar en blacklist
+            tokenBlacklistService.invalidateAllTokensByUser(v.getId());
+            // Invalidar en sesiones
             sesionRepository.invalidarSesionesPorUsuario(v.getId());
             contador++;
         }
         log.info("Cierre de sesiones por turno completado: {} sesiones cerradas a las {}:00", contador, horaActual);
         if (contador > 0) {
-            registrarBitacora("🔄 Cierre automático de " + contador + " sesiones por cambio de turno (hora " + horaActual + ":00)",
+            registrarBitacora(
+                    "🔄 Cierre automático de " + contador + " sesiones por cambio de turno (hora " + horaActual
+                            + ":00)",
                     BitacoraComunicacion.Tipo.novedad);
         }
     }
@@ -240,8 +245,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Override
     @Transactional
     public void cerrarSesionesPorUsuario(Integer usuarioId) {
+        // 1. Invalidar en la blacklist (todos los tokens de este usuario)
+        tokenBlacklistService.invalidateAllTokensByUser(usuarioId);
+
+        // 2. Invalidar en la tabla de sesiones (si existe)
         sesionRepository.invalidarSesionesPorUsuario(usuarioId);
-        log.info("Sesiones cerradas para usuario ID: {}", usuarioId);
+
+        log.info("✅ Sesiones cerradas para usuario ID: {} (tokens invalidados)", usuarioId);
     }
 
     // ========== MÉTODO AUXILIAR ==========
@@ -266,12 +276,12 @@ public class UsuarioServiceImpl implements UsuarioService {
     private void registrarBitacora(String mensaje, BitacoraComunicacion.Tipo tipo) {
         try {
             Integer usuarioId = securityUtils.getUsuarioIdAutenticado();
-            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest request =
-                    com.example.proyecto.app.dto.request.BitacoraComunicacionRequest.builder()
-                            .usuarioId(usuarioId)
-                            .mensaje(mensaje)
-                            .tipo(tipo)
-                            .build();
+            com.example.proyecto.app.dto.request.BitacoraComunicacionRequest request = com.example.proyecto.app.dto.request.BitacoraComunicacionRequest
+                    .builder()
+                    .usuarioId(usuarioId)
+                    .mensaje(mensaje)
+                    .tipo(tipo)
+                    .build();
             bitacoraService.crearMensaje(request);
         } catch (Exception e) {
             log.error("Error al registrar en bitácora: {}", e.getMessage());

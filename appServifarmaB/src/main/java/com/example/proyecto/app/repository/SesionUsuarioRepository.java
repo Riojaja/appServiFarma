@@ -2,6 +2,7 @@ package com.example.proyecto.app.repository;
 
 import com.example.proyecto.app.entity.SesionUsuario;
 import com.example.proyecto.app.entity.Usuario;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +31,16 @@ public interface SesionUsuarioRepository extends JpaRepository<SesionUsuario, Lo
     @Transactional
     @Query("UPDATE SesionUsuario s SET s.activa = false WHERE s.fechaExpiracion < :fecha")
     void invalidarSesionesExpiradas(@Param("fecha") LocalDateTime fecha);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE SesionUsuario s SET s.activa = false WHERE s.activa = true AND s.ultimaActividad < :limite")
+    void cerrarSesionesInactivas(@Param("limite") LocalDateTime limite);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE SesionUsuario s SET s.activa = false WHERE s.activa = true AND s.usuario.rol.nombre = 'VENDEDOR'")
+    void cerrarSesionesDeVendedores();
 
     List<SesionUsuario> findByActivaTrueAndFechaExpiracionBefore(LocalDateTime fecha);
 }

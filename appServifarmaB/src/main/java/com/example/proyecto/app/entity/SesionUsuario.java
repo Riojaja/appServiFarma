@@ -16,18 +16,29 @@ public class SesionUsuario {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "usuario_id", nullable = false)
-    private Usuario usuario;
-
-    @Column(nullable = false, unique = true)
-    private String token;
+    
+    @Builder.Default
+    private Boolean activa = true;
 
     private String dispositivo;
     private String ip;
+
+    @Column(name = "fecha_inicio")
     private LocalDateTime fechaInicio;
+
+    @Column(name = "fecha_expiracion")
     private LocalDateTime fechaExpiracion;
-    private boolean activa;
-    private String refreshToken;
+
+    @Column(name = "ultima_actividad")
     private LocalDateTime ultimaActividad;
+
+    @Column(name = "refresh_token", length = 500)
+    private String refreshToken;
+
+    @Column(columnDefinition = "TEXT")
+    private String token;
+
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
 }

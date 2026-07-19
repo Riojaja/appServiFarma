@@ -32,12 +32,13 @@ public class AuthController {
         AuthResponse response = authService.autenticar(request);
         return ResponseEntity.ok(response);
     }
-
+    
     /**
      * Renueva el token JWT utilizando un refresh token.
      * Endpoint público (no requiere autenticación).
      * 
-     * @throws UnsupportedOperationException Si el refresh token no está implementado.
+     * @throws UnsupportedOperationException Si el refresh token no está
+     *                                       implementado.
      */
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
@@ -62,20 +63,22 @@ public class AuthController {
             log.warn("Intento de cambio de contraseña sin autenticación");
             return ResponseEntity.status(401).body(new MensajeResponse("No autenticado"));
         }
-        
+
         String username = authentication.getName();
         log.debug("Solicitud de cambio de contraseña para usuario: {}", username);
-        
+
         authService.cambiarContrasena(request, username);
         return ResponseEntity.ok(new MensajeResponse("Contraseña actualizada correctamente"));
     }
 
     /**
-     * Cierra la sesión del usuario (invalida el token en el servidor si se implementa).
+     * Cierra la sesión del usuario (invalida el token en el servidor si se
+     * implementa).
      * Requiere token JWT válido.
      */
     @PostMapping("/logout")
-    public ResponseEntity<MensajeResponse> logout(@RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
+    public ResponseEntity<MensajeResponse> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             String token = authorizationHeader.substring(7);
             authService.cerrarSesion(token);

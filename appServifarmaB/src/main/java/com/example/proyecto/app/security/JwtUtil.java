@@ -20,7 +20,7 @@ public class JwtUtil {
     @Value("${jwt.secret:defaultSecretKey123456789012345678901234567890}")
     private String secret;
 
-    @Value("${jwt.expiration:86400000}") // 24 horas en milisegundos
+    @Value("${jwt.expiration:86400000}")
     private long expiration;
 
     private SecretKey key;
@@ -32,11 +32,18 @@ public class JwtUtil {
     }
 
     // ==============================
-    // GENERACIÓN DE TOKENS
+    // GENERACIÓN DE TOKENS (AHORA CON userId)
     // ==============================
 
-    public String generateToken(String username) {
+    /**
+     * Genera un token JWT incluyendo el ID del usuario en los claims.
+     * @param username Nombre de usuario
+     * @param userId ID del usuario (se guarda en el claim "id" como Integer)
+     * @return Token JWT firmado
+     */
+    public String generateToken(String username, Integer userId) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("id", userId);
         return createToken(claims, username);
     }
 
@@ -45,12 +52,12 @@ public class JwtUtil {
         Date expiryDate = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .claims(claims)                 // Establece los claims
+                .claims(claims)                 // Claims (incluye "id")
                 .subject(subject)               // Sujeto (usuario)
                 .issuedAt(now)                  // Fecha de emisión
                 .expiration(expiryDate)         // Fecha de expiración
                 .signWith(key)                  // Firma con clave secreta
-                .compact();                     // Construye el token
+                .compact();
     }
 
     // ==============================
@@ -83,6 +90,27 @@ public class JwtUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
+    /**
+     * Extrae el ID del usuario del token.
+     * Si el claim "id" no existe o es nulo, devuelve null sin lanzar excepción.
+     *
+     * IMPORTANTE: el claim se guarda como Integer en generateToken()
+     * (claims.put("id", userId)), así que debe leerse con Integer.class.
+     * Antes se pedía claims.get("id", String.class), lo cual NO coincide con
+     * el tipo real que JJWT tiene almacenado internamente — esto hacía que la
+     * llamada lanzara una excepción SIEMPRE (capturada aquí abajo), devolviendo
+     * null en cada request sin que se notara. Eso podía hacer fallar
+     * silenciosamente la verificación de blacklist por usuario en
+     * JwtAuthenticationFilter (usuarioId llegaba null todo el tiempo).
+     */
+    public Integer extractUserId(String token) {
+        try {
+            return extractClaim(token, claims -> claims.get("id", Integer.class));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -97,7 +125,7 @@ public class JwtUtil {
                 .verifyWith(key)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload();  // En lugar de getBody() en versiones modernas
+                .getPayload();  // En versiones modernas de JJWT se usa getPayload()
     }
 
     // ==============================

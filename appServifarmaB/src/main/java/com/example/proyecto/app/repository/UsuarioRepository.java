@@ -45,4 +45,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByUsuarioWithRol(@Param("usuario") String usuario);
 
     long countByRolId(Integer rolId);
+    
 }
