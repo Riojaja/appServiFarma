@@ -226,10 +226,10 @@ CREATE TABLE sesion_usuario (
     INDEX idx_usuario_activa (usuario_id, activa)
 );
 
-
 INSERT INTO roles (nombre, descripcion) VALUES
 ('admin', 'Administrador del sistema con acceso total'),
 ('vendedor', 'Personal de atención al público con acceso restringido');
+
 
 
 -- ============================================================
