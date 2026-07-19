@@ -201,3 +201,43 @@ ALTER TABLE usuarios
 ADD COLUMN intentos_fallidos INT DEFAULT 0,
 ADD COLUMN bloqueado_hasta DATETIME,
 ADD COLUMN ultimo_acceso DATETIME;
+
+INSERT INTO roles (nombre, descripcion) VALUES
+('admin', 'Administrador del sistema con acceso total'),
+('vendedor', 'Personal de atención al público con acceso restringido');
+
+
+-- ============================================================
+-- ADMINISTRADOR
+-- ============================================================
+INSERT INTO usuarios (rol_id, nombre_completo, usuario, contrasena, activo)
+SELECT 
+    r.id,
+    'Administrador del Sistema',
+    'admin',
+    '$2a$12$3vY0DqkUjYMPr4s.RrG5e4ZD0ELikY3g5o.0o2oNwZ.S8o2s2g8aK', -- remplazar con tu hasmapp para tu contraseña de administrador
+    TRUE
+FROM roles r
+WHERE r.nombre = 'admin'
+AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'admin');
+
+-- VENDEDOR
+INSERT INTO usuarios (rol_id, nombre_completo, usuario, contrasena, activo)
+SELECT 
+    r.id,
+    'Vendedor de Mostrador',
+    'vendedor',
+    '$2a$12$XnL6/d6ho0M4d46mAoSlHueSo2Bdm0ssLbC2I7CGMkuSCMQoPmc9m', -- remplazar con tu hasmapp coon tu contraseña para vendedor
+    TRUE
+FROM roles r
+WHERE r.nombre = 'vendedor'
+AND NOT EXISTS (SELECT 1 FROM usuarios WHERE usuario = 'vendedor');
+
+INSERT INTO parametros_sistema (clave, valor, descripcion) VALUES
+('smtp.host', 'smtp.gmail.com', 'Servidor SMTP para envío de correos'),
+('smtp.port', '587', 'Puerto SMTP'),
+('smtp.username', '${SMTP_USERNAME}', 'Usuario SMTP (correo de farmacia)'), 
+('smtp.password', '${SMTP_PASSWORD}', 'Contraseña SMTP (configurar en variable de entorno)'),
+('smtp.auth', 'true', 'Autenticación SMTP'),
+('smtp.starttls', 'true', 'Habilitar STARTTLS');
+
