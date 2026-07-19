@@ -151,7 +151,7 @@
 
             <div class="acciones-usuario mt-2">
               <button class="btn-accion btn-accion-editar" title="Editar" (click)="abrirModalEditar(u.id)" [disabled]="estaBloqueado(u.id)">
-                <i class="bi bi-pencil"></i> Editar
+                <i class="bi bi-pencil"></i>
               </button>
               <button *ngIf="isAdmin" class="btn-accion btn-accion-sesiones" title="Cerrar sesiones"
                 [disabled]="estaBloqueado(u.id)" (click)="cerrarSesiones(u.id)">
