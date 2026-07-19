@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router'; // ✅ Importar Router
 import { InactividadService } from './core/services/inactividad';
 import { AuthService } from './core/auth';
 
@@ -15,12 +15,14 @@ export class AppComponent implements OnInit {
 
   constructor(
     private inactividadService: InactividadService,
-    private authService: AuthService
-  ) {}
+    private authService: AuthService,
+    private router: Router 
+  ) { }
 
   ngOnInit(): void {
-    // El servicio de inactividad se inicia automáticamente al ser inyectado.
-    // Si el usuario no está autenticado, el servicio no hará nada (ya que en resetTimer verifica isAuthenticated).
-    // Pero podemos forzar una verificación inicial si queremos.
+    const token = this.authService.getToken();
+    if (!token) {
+      this.router.navigate(['/login']);
+    }
   }
 }

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { Router } from '@angular/router';
 
 export interface LoginRequest {
   usuario: string;
@@ -28,7 +29,26 @@ export class AuthService {
   private readonly USER_ID_KEY = 'usuarioId';
   private readonly NOMBRE_KEY = 'nombreCompleto';
 
-  constructor(private http: HttpClient) { }
+  // ⚠️ CAMBIO IMPORTANTE: se usa sessionStorage en vez de localStorage.
+  //
+  // localStorage se comparte entre TODAS las pestañas del mismo navegador para
+  // el mismo origen. En una botica es común que dos empleados usen la misma
+  // computadora en pestañas distintas (ej. el administrador deja su sesión
+  // abierta en una pestaña y un vendedor inicia sesión en otra). Con
+  // localStorage, el segundo login SOBRESCRIBE el token/rol del primero para
+  // TODAS las pestañas — la pestaña del admin sigue viéndose como admin en
+  // pantalla, pero cualquier petición que haga ya viaja con el token del
+  // vendedor (o al revés). Esto es exactamente lo que causaba que "el
+  // vendedor tome las acciones del administrador" de forma intermitente.
+  //
+  // sessionStorage es exclusivo de cada pestaña/ventana: cada una mantiene su
+  // propia sesión de forma aislada, y se limpia sola al cerrar esa pestaña.
+  private storage: Storage = sessionStorage;
+
+  constructor(
+    private http: HttpClient,
+    private router: Router
+  ) { }
 
   /**
    * Inicia sesión con las credenciales del usuario.
@@ -45,29 +65,29 @@ export class AuthService {
   }
 
   /**
-   * Guarda los datos de la sesión en localStorage.
+   * Guarda los datos de la sesión (aislados a esta pestaña/ventana).
    * El backend (AuthResponse.java) ya devuelve el id real del usuario
    * desde el login, así que ya no se usa ningún valor por defecto.
    * @param authResult Respuesta del login.
    */
   private setSession(authResult: AuthResponse): void {
-    localStorage.setItem(this.TOKEN_KEY, authResult.token);
-    localStorage.setItem(this.USER_KEY, authResult.usuario);
-    localStorage.setItem(this.ROL_KEY, authResult.rol);
-    localStorage.setItem(this.USER_ID_KEY, authResult.id.toString());
-    localStorage.setItem(this.NOMBRE_KEY, authResult.nombreCompleto);
+    this.storage.setItem(this.TOKEN_KEY, authResult.token);
+    this.storage.setItem(this.USER_KEY, authResult.usuario);
+    this.storage.setItem(this.ROL_KEY, authResult.rol);
+    this.storage.setItem(this.USER_ID_KEY, authResult.id.toString());
+    this.storage.setItem(this.NOMBRE_KEY, authResult.nombreCompleto);
   }
 
   /**
-   * Cierra sesión eliminando los datos del localStorage.
+   * Cierra sesión eliminando los datos de esta pestaña/ventana.
    */
   logout(): void {
-    localStorage.removeItem(this.TOKEN_KEY);
-    localStorage.removeItem(this.USER_KEY);
-    localStorage.removeItem(this.ROL_KEY);
-    localStorage.removeItem(this.USER_ID_KEY);
-    localStorage.removeItem(this.NOMBRE_KEY);
-    
+    this.storage.removeItem(this.TOKEN_KEY);
+    this.storage.removeItem(this.USER_KEY);
+    this.storage.removeItem(this.ROL_KEY);
+    this.storage.removeItem(this.USER_ID_KEY);
+    this.storage.removeItem(this.NOMBRE_KEY);
+    this.router.navigate(['/login']);
   }
 
   /**
@@ -75,7 +95,7 @@ export class AuthService {
    * @returns Token o null si no existe.
    */
   getToken(): string | null {
-    return localStorage.getItem(this.TOKEN_KEY);
+    return this.storage.getItem(this.TOKEN_KEY);
   }
 
   /**
@@ -83,7 +103,7 @@ export class AuthService {
    * @returns Nombre de usuario o null.
    */
   getUsuario(): string | null {
-    return localStorage.getItem(this.USER_KEY);
+    return this.storage.getItem(this.USER_KEY);
   }
 
   /**
@@ -91,7 +111,7 @@ export class AuthService {
    * @returns Rol o null.
    */
   getRol(): string | null {
-    return localStorage.getItem(this.ROL_KEY);
+    return this.storage.getItem(this.ROL_KEY);
   }
 
   /**
@@ -99,7 +119,7 @@ export class AuthService {
    * @returns ID del usuario o null.
    */
   getUsuarioId(): string | null {
-    return localStorage.getItem(this.USER_ID_KEY);
+    return this.storage.getItem(this.USER_ID_KEY);
   }
 
   /**
@@ -127,6 +147,6 @@ export class AuthService {
   }
 
   getNombreCompleto(): string | null {
-    return localStorage.getItem(this.NOMBRE_KEY);
+    return this.storage.getItem(this.NOMBRE_KEY);
   }
 }

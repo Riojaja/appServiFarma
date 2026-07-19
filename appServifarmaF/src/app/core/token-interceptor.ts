@@ -22,42 +22,35 @@ export class TokenInterceptor implements HttpInterceptor {
   ) { }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    const token = localStorage.getItem('token');
-    
-    console.log('🔑 Token obtenido:', token ? '✅ Existe' : '❌ No existe');
-    console.log('📤 URL de la petición:', req.url);
+    // ⚠️ Antes se leía localStorage.getItem('token') directamente aquí, en vez
+    // de usar authService.getToken(). Eso hacía que, aunque AuthService pase a
+    // usar sessionStorage (aislado por pestaña), el interceptor siguiera
+    // leyendo el token "global" de localStorage — reintroduciendo el mismo
+    // problema de sesiones cruzadas entre pestañas. Ahora ambos usan la misma
+    // fuente de verdad (AuthService), que ya está aislada por pestaña.
+    const token = this.authService.getToken();
 
     let authReq = req;
 
-    if (token) {
+    if (token && token.trim() !== '') {
       authReq = req.clone({
         setHeaders: {
-          Authorization: `Bearer ${token}`
+          Authorization: `Bearer ${token.trim()}`
         }
       });
-      console.log('✅ Header Authorization agregado');
-    } else {
-      console.warn('⚠️ No hay token, request sin autorización');
     }
 
     return next.handle(authReq).pipe(
       catchError((error: HttpErrorResponse) => {
-        console.error('❌ Error en la petición:', error.status, error.message);
-        console.error('❌ URL:', req.url);
-        console.error('❌ Body del error:', error.error);
+        console.error('❌ Error en la petición:', error.status, req.url, error.error);
 
-        // 401: sesión inválida o expirada -> cerrar sesión y redirigir a login
         if (error.status === 401 && !req.url.includes('/auth/login')) {
+          // logout() ya limpia la sesión de esta pestaña y redirige
           this.authService.logout();
-          this.router.navigate(['/login']);
           this.notificacionService.advertencia('Tu sesión expiró. Inicia sesión de nuevo.');
-        }
-        // 403: el backend rechazó la acción por rol/permisos (@PreAuthorize)
-        else if (error.status === 403) {
+        } else if (error.status === 403) {
           const mensaje = error.error?.mensaje || 'No tienes permisos para realizar esta acción.';
           this.notificacionService.error(mensaje);
-          // ⚠️ IMPORTANTE: NO hacer logout aquí, solo mostrar error.
-          // Si el backend invalida el token, el siguiente 401 hará logout.
         }
         return throwError(() => error);
       })

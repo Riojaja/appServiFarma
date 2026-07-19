@@ -202,6 +202,31 @@ ADD COLUMN intentos_fallidos INT DEFAULT 0,
 ADD COLUMN bloqueado_hasta DATETIME,
 ADD COLUMN ultimo_acceso DATETIME;
 
+CREATE TABLE tokens_invalidados (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    token VARCHAR(500) NOT NULL UNIQUE,
+    usuario_id INT NOT NULL,
+    fecha_invalidacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+);
+
+CREATE TABLE sesion_usuario (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    activa BOOLEAN DEFAULT TRUE,
+    dispositivo VARCHAR(255),
+    fecha_expiracion DATETIME,
+    fecha_inicio DATETIME DEFAULT CURRENT_TIMESTAMP,
+    ip VARCHAR(45),
+    refresh_token VARCHAR(500),
+    token TEXT,
+    ultima_actividad DATETIME DEFAULT CURRENT_TIMESTAMP,
+    usuario_id INT NOT NULL,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    INDEX idx_token (token(100)),
+    INDEX idx_usuario_activa (usuario_id, activa)
+);
+
+
 INSERT INTO roles (nombre, descripcion) VALUES
 ('admin', 'Administrador del sistema con acceso total'),
 ('vendedor', 'Personal de atención al público con acceso restringido');

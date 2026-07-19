@@ -16,8 +16,7 @@
 
   <!-- ======== SKELETON MIENTRAS CARGA ======== -->
   <div *ngIf="cargando" class="row g-4">
-    <div class="col-md-6"><div class="skeleton-card"></div></div>
-    <div class="col-md-6"><div class="skeleton-card"></div></div>
+    <div class="col-md-12"><div class="skeleton-card"></div></div>
   </div>
 
   <!-- ======== MENSAJE DE ERROR AL CARGAR ======== -->
@@ -30,13 +29,13 @@
     </button>
   </div>
 
-  <!-- ======== FORMULARIO (solo si no hay error de carga) ======== -->
+  <!-- ======== FORMULARIO ======== -->
   <form #formConfig="ngForm" *ngIf="!cargando && !errorCarga">
     <div class="row g-4">
 
       <!-- ======== SECCIÓN: SESIÓN Y TURNOS ======== -->
-      <div class="col-md-6">
-        <div class="card seccion-card shadow-sm border-0 rounded-4 h-100">
+      <div class="col-md-12">
+        <div class="card seccion-card shadow-sm border-0 rounded-4">
           <div class="card-body p-4">
             <div class="seccion-header d-flex align-items-center gap-3 mb-3">
               <div class="seccion-icono">
@@ -66,43 +65,6 @@
                        name="horas" placeholder="13,18" required [disabled]="operacionEnCurso">
               </div>
               <small class="text-muted">Horas (formato 24h) separadas por coma. Ej: 13,18</small>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ======== SECCIÓN: ACCESO Y BLOQUEO ======== -->
-      <div class="col-md-6">
-        <div class="card seccion-card shadow-sm border-0 rounded-4 h-100">
-          <div class="card-body p-4">
-            <div class="seccion-header d-flex align-items-center gap-3 mb-3">
-              <div class="seccion-icono seccion-icono-alerta">
-                <i class="bi bi-shield-exclamation"></i>
-              </div>
-              <div>
-                <h6 class="fw-bold mb-0">Acceso y Bloqueo</h6>
-                <p class="text-muted small mb-0">Protección contra intentos fallidos de inicio de sesión</p>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold">Intentos fallidos máximos</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-x-octagon"></i></span>
-                <input type="number" class="form-control" [(ngModel)]="config.intentos_fallidos_maximos"
-                       name="intentos" required min="1" [disabled]="operacionEnCurso">
-              </div>
-              <small class="text-muted">Número de intentos fallidos antes de bloquear al usuario</small>
-            </div>
-
-            <div>
-              <label class="form-label fw-semibold">Minutos de bloqueo</label>
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-lock"></i></span>
-                <input type="number" class="form-control" [(ngModel)]="config.bloqueo_minutos"
-                       name="bloqueo" required min="1" [disabled]="operacionEnCurso">
-              </div>
-              <small class="text-muted">Tiempo de bloqueo tras superar los intentos fallidos</small>
             </div>
           </div>
         </div>

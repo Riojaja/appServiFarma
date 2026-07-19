@@ -190,9 +190,10 @@ export class ConfiguracionSeguridadComponent implements OnInit, AfterViewInit {
       return 'El tiempo de inactividad debe ser un número entero mayor a 0 (ej. 5).';
     }
 
-    const horas = this.config.horas_cierre_turno.split(',').map((h: string) => parseInt(h.trim(), 10));
-    if (horas.length === 0 || horas.some((h: number) => isNaN(h) || h < 0 || h > 23)) {
-      return 'Las horas de cierre deben ser números entre 0 y 23, separados por coma (ej. 18,20,22).';
+    // Validar horas de cierre (formato HH:MM o HH:MM,HH:MM)
+    const horasArray = this.config.horas_cierre_turno.split(',').map(h => h.trim());
+    if (horasArray.length === 0 || horasArray.some(h => !this.esHoraValida(h))) {
+      return 'Formato inválido. Usa horas en formato HH:MM separadas por coma (ej. 12:30,18:45)';
     }
 
     const intentos = parseInt(this.config.intentos_fallidos_maximos, 10);
@@ -206,6 +207,14 @@ export class ConfiguracionSeguridadComponent implements OnInit, AfterViewInit {
     }
 
     return null;
+  }
+
+  private esHoraValida(hora: string): boolean {
+    const partes = hora.split(':');
+    if (partes.length !== 2) return false;
+    const h = parseInt(partes[0], 10);
+    const m = parseInt(partes[1], 10);
+    return !isNaN(h) && !isNaN(m) && h >= 0 && h < 24 && m >= 0 && m < 60;
   }
 
   reiniciarFormulario(): void {

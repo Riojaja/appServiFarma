@@ -189,47 +189,47 @@ export class ListarUsuariosComponent implements OnInit, OnDestroy {
     this.showModal = true;
     this.cdr.detectChanges();
   }
-
   abrirModalEditar(id: number): void {
     if (this.cargando || this.procesandoId !== null) return;
+
+    // 1. Buscar el usuario en la lista ya cargada
+    const usuario = this.usuarios.find(u => u.id === id);
+    if (!usuario) {
+      Swal.fire({
+        title: 'Error',
+        text: 'Usuario no encontrado',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      return;
+    }
+
+    // 2. Configurar el modal
     this.esEdicion = true;
     this.usuarioId = id;
-    this.cargandoModal = true;
     this.showModal = true;
+    this.cargandoModal = false; // ¡No hay carga!
+
+    // 3. Rellenar el formulario con los datos del usuario
+    // Nota: maneja si el rol está en usuario.rolId o usuario.rol.id
+    let rolId = 2; // valor por defecto (Vendedor)
+    if (usuario.rolId) {
+      rolId = usuario.rolId;
+    } else if (usuario.rol?.id) {
+      rolId = usuario.rol.id;
+    }
+
+    this.usuarioForm = {
+      nombreCompleto: usuario.nombreCompleto || '',
+      usuario: usuario.usuario || '',
+      contrasena: '', // La contraseña se deja vacía para editar
+      rolId: rolId,
+      activo: usuario.activo !== undefined ? usuario.activo : true
+    };
+
+    // 4. Forzar detección de cambios
     this.cdr.detectChanges();
-
-    this.usuarioService.obtener(id)
-      .pipe(
-        takeUntil(this.destroy$),
-        finalize(() => {
-          this.cargandoModal = false;
-          this.cdr.detectChanges();
-        })
-      )
-      .subscribe({
-        next: (data) => {
-          // ✅ CORREGIDO: usar data.rol?.id en lugar de data.rolId
-          this.usuarioForm = {
-            nombreCompleto: data.nombreCompleto || '',
-            usuario: data.usuario || '',
-            contrasena: '',
-            rolId: data.rol?.id || 2,
-            activo: data.activo !== undefined ? data.activo : true
-          };
-          this.cdr.detectChanges();
-        },
-        error: () => {
-          Swal.fire({
-            title: 'Error',
-            text: 'No se pudo cargar el usuario',
-            icon: 'error',
-            customClass: { popup: 'swal-farmaceutico' }
-          });
-          this.cerrarModal();
-        }
-      });
   }
-
   cerrarModal(): void {
     this.showModal = false;
     this.cdr.detectChanges();
