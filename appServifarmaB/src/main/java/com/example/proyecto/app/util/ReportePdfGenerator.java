@@ -25,13 +25,13 @@ public final class ReportePdfGenerator {
 
     private static final Color COLOR_PRIMARIO = new Color(13, 148, 136);   // #0d9488
     private static final Color COLOR_SECUNDARIO = new Color(59, 130, 246); // #3b82f6
-    private static final Color COLOR_ENCABEZADO = new Color(240, 253, 250);
+   
     private static final Color COLOR_ALTERNO = new Color(248, 250, 252);
     private static final Color COLOR_TEXTO = new Color(30, 41, 59);
     private static final Color COLOR_TEXTO_CLARO = new Color(100, 116, 139);
     private static final Color COLOR_BORDE = new Color(203, 213, 225);
     private static final Color COLOR_POSITIVO = new Color(34, 197, 94);
-    private static final Color COLOR_NEGATIVO = new Color(239, 68, 68);
+ 
     private static final Color COLOR_ADVERTENCIA = new Color(245, 158, 11);
 
     private static final Font FUENTE_TITULO = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, COLOR_PRIMARIO);

@@ -156,6 +156,12 @@ public class VentaController {
             @Valid @RequestBody CorreoRequest request) {
         log.debug("Solicitud de envío de boleta de venta ID: {} al correo: {}", id, request.getDestino());
 
+        // Validar que el destino no esté vacío
+        if (request.getDestino() == null || request.getDestino().trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new MensajeResponse("El correo destino no puede estar vacío"));
+        }
+
         try {
             // 1. Obtener la venta con sus datos
             VentaResponse ventaResponse = ventaService.obtenerVentaPorId(id);
@@ -184,8 +190,8 @@ public class VentaController {
                     ventaResponse.getTotal() != null ? ventaResponse.getTotal() : BigDecimal.ZERO
             );
 
-            // 5. Enviar el correo con el PDF adjunto
-            emailService.enviarCorreoConAdjunto(
+            // 5. Enviar el correo con el PDF adjunto (usando el método que solo requiere destino, asunto, mensaje, adjunto y nombre)
+            emailService.enviarBoleta(
                     request.getDestino(),
                     asunto,
                     mensaje,
@@ -193,11 +199,11 @@ public class VentaController {
                     "boleta_" + id + ".pdf"
             );
 
-            log.info("Boleta de venta ID {} enviada exitosamente a {}", id, request.getDestino());
+            log.info("✅ Boleta de venta ID {} enviada exitosamente a {}", id, request.getDestino());
             return ResponseEntity.ok(new MensajeResponse("Boleta enviada exitosamente al correo " + request.getDestino()));
 
         } catch (Exception e) {
-            log.error("Error al enviar boleta de venta ID {}: {}", id, e.getMessage(), e);
+            log.error("❌ Error al enviar boleta de venta ID {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new MensajeResponse("Error al enviar la boleta: " + e.getMessage()));
         }

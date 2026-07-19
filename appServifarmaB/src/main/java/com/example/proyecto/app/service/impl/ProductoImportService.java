@@ -4,7 +4,6 @@ import com.example.proyecto.app.dto.importacion.ErrorImportacion;
 import com.example.proyecto.app.dto.importacion.ProductoImportDTO;
 import com.example.proyecto.app.dto.importacion.ResultadoImportacion;
 import com.example.proyecto.app.dto.request.ProductoRequest;
-import com.example.proyecto.app.dto.response.ProductoResponse;
 import com.example.proyecto.app.entity.Categoria;
 import com.example.proyecto.app.entity.Fabricante;
 import com.example.proyecto.app.entity.Producto;

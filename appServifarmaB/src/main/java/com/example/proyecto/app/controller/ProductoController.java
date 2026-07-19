@@ -3,7 +3,6 @@ package com.example.proyecto.app.controller;
 import com.example.proyecto.app.dto.request.ProductoRequest;
 import com.example.proyecto.app.dto.response.MensajeResponse;
 import com.example.proyecto.app.dto.response.ProductoResponse;
-import com.example.proyecto.app.entity.Producto;
 import com.example.proyecto.app.service.ProductoService;
 import com.example.proyecto.app.service.impl.ProductoImportService;
 import jakarta.validation.Valid;
@@ -19,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
-import java.net.URI;
 import java.util.List;
 
 @Slf4j
