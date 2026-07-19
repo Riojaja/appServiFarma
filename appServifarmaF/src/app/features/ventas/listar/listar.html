@@ -8,7 +8,8 @@
       </h2>
       <p class="text-muted small mb-0">Historial de transacciones</p>
     </div>
-    <button class="btn btn-nueva-venta rounded-pill px-4" (click)="abrirModalRegistro()" [disabled]="modalRegistroAbierto">
+    <button class="btn btn-nueva-venta rounded-pill px-4" (click)="abrirModalRegistro()"
+      [disabled]="modalRegistroAbierto">
       <i class="bi bi-plus-circle me-1"></i> Nueva Venta
     </button>
   </div>
@@ -54,7 +55,7 @@
               <th>Total (S/)</th>
               <th>Pago</th>
               <th>Estado</th>
-              <th class="text-center" style="width: 120px;">Acciones</th>
+              <th class="text-center" style="width: 160px;">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -65,16 +66,16 @@
                 </div>
               </td>
             </tr>
-            <tr *ngIf="!cargando && ventasFiltradas.length === 0">
+            <tr *ngIf="!cargando && ventasPaginadas.length === 0">
               <td colspan="8" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox display-4 d-block mb-2"></i>
                 No hay ventas registradas
               </td>
             </tr>
-            <tr *ngFor="let venta of ventasFiltradas">
+            <tr *ngFor="let venta of ventasPaginadas">
               <td>{{ venta.id }}</td>
               <td>{{ venta.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
-              <td>{{ venta.clienteId || 'Anónimo' }}</td>
+              <td>{{ getNombreCliente(venta.clienteId) }}</td>
               <td>{{ venta.usuarioId || 'Sistema' }}</td>
               <td>{{ venta.total | number:'1.2-2' }}</td>
               <td>{{ venta.medioPago || 'efectivo' }}</td>
@@ -85,10 +86,20 @@
               </td>
               <td>
                 <div class="d-flex justify-content-center gap-1">
+                  <!-- Ver detalle -->
                   <button class="btn btn-outline-info btn-sm rounded-circle" title="Ver detalle"
                     style="width: 32px; height: 32px; padding: 0;" (click)="abrirModalDetalle(venta)">
                     <i class="bi bi-eye"></i>
                   </button>
+
+                  <!-- 🔄 Reimprimir boleta (solo completadas) -->
+                  <button *ngIf="venta.estado === 'completada'" class="btn btn-outline-secondary btn-sm rounded-circle"
+                    title="Reimprimir boleta" style="width: 32px; height: 32px; padding: 0;"
+                    (click)="reimprimirBoleta(venta)" [disabled]="generandoPDF || enviandoCorreo">
+                    <i class="bi bi-printer"></i>
+                  </button>
+
+                  <!-- Anular -->
                   <button *ngIf="venta.estado === 'completada'" class="btn btn-outline-danger btn-sm rounded-circle"
                     title="Anular" style="width: 32px; height: 32px; padding: 0;" [disabled]="anulando"
                     (click)="irAnular(venta.id!)">
@@ -99,6 +110,28 @@
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- ======== PAGINACIÓN ======== -->
+      <div *ngIf="!cargando && ventasFiltradas.length > 0"
+        class="d-flex justify-content-between align-items-center p-3 border-top">
+        <span class="text-muted small">
+          Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
+          {{ Math.min(paginaActual * itemsPorPagina, ventasFiltradas.length) }}
+          de {{ ventasFiltradas.length }} ventas
+        </span>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary btn-sm" (click)="anteriorPagina()" [disabled]="paginaActual === 1">
+            <i class="bi bi-chevron-left"></i> Anterior
+          </button>
+          <span class="badge bg-light text-dark d-flex align-items-center px-3">
+            Página {{ paginaActual }} de {{ totalPaginas }}
+          </span>
+          <button class="btn btn-outline-secondary btn-sm" (click)="siguientePagina()"
+            [disabled]="paginaActual === totalPaginas">
+            Siguiente <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -132,7 +165,8 @@
               <label class="form-label fw-semibold">DNI del Cliente</label>
               <div class="input-group">
                 <input type="text" class="form-control shadow-sm" placeholder="Ingrese DNI" [(ngModel)]="dniBusqueda"
-                  [ngModelOptions]="{standalone: true}" (keyup.enter)="buscarCliente()" [disabled]="buscarClienteCargando">
+                  [ngModelOptions]="{standalone: true}" (keyup.enter)="buscarCliente()"
+                  [disabled]="buscarClienteCargando">
                 <button class="btn btn-outline-secondary" type="button" (click)="buscarCliente()"
                   [disabled]="buscarClienteCargando">
                   <span *ngIf="buscarClienteCargando" class="spinner-border spinner-border-sm"></span>
@@ -249,8 +283,8 @@
         </div>
 
         <div class="d-flex justify-content-end gap-2 mt-3">
-          <button type="button" class="btn btn-outline-secondary rounded-pill px-4"
-            [disabled]="enviandoRegistro" (click)="cerrarModalRegistro()">Cancelar</button>
+          <button type="button" class="btn btn-outline-secondary rounded-pill px-4" [disabled]="enviandoRegistro"
+            (click)="cerrarModalRegistro()">Cancelar</button>
           <button type="button" class="btn btn-primary rounded-pill px-4" (click)="registrarVenta()"
             [disabled]="enviandoRegistro || carrito.length === 0">
             <span *ngIf="enviandoRegistro" class="spinner-border spinner-border-sm me-1"></span>
@@ -307,8 +341,8 @@
           </div>
           <div *ngFor="let p of productosModal"
             class="producto-item-modal d-flex align-items-center p-3 mb-2 border rounded-3 cursor-pointer"
-            [class.disabled]="agregandoProducto"
-            (click)="seleccionarProductoModal(p)" style="cursor: pointer; transition: all 0.2s;">
+            [class.disabled]="agregandoProducto" (click)="seleccionarProductoModal(p)"
+            style="cursor: pointer; transition: all 0.2s;">
             <div class="producto-imagen-mini me-3"
               style="width: 60px; height: 60px; overflow: hidden; border-radius: 10px; flex-shrink: 0;">
               <img [src]="p.imagen ? obtenerUrlCompleta(p.imagen) : 'assets/placeholder-producto.svg'" alt="Producto"
@@ -352,30 +386,45 @@
             <p class="text-muted small mb-0">Seleccione una opción para la boleta</p>
           </div>
         </div>
-        <button type="button" class="btn-close" (click)="cerrarModalBoleta()" [disabled]="enviandoCorreo || generandoPDF"></button>
+        <button type="button" class="btn-close" (click)="cerrarModalBoleta()"
+          [disabled]="enviandoCorreo || generandoPDF"></button>
       </div>
       <div class="modal-body">
-        <div class="d-grid gap-3">
-          <button class="btn btn-primary btn-lg rounded-pill" (click)="exportarPDF()" [disabled]="generandoPDF">
-            <span *ngIf="generandoPDF" class="spinner-border spinner-border-sm me-2"></span>
-            <i class="bi bi-file-pdf me-2" *ngIf="!generandoPDF"></i>
-            {{ generandoPDF ? 'Generando...' : 'Ver / Descargar PDF' }}
-          </button>
-          <button class="btn btn-info btn-lg rounded-pill text-white" (click)="enviarBoletaCorreo()"
-            [disabled]="enviandoCorreo">
-            <span *ngIf="enviandoCorreo" class="spinner-border spinner-border-sm me-2"></span>
-            <i class="bi bi-envelope me-2" *ngIf="!enviandoCorreo"></i>
-            {{ enviandoCorreo ? 'Enviando...' : 'Enviar por Correo' }}
-          </button>
-          <button class="btn btn-outline-secondary rounded-pill" (click)="cerrarModalBoleta()" [disabled]="enviandoCorreo || generandoPDF">
-            <i class="bi bi-x-circle me-2"></i> Cerrar
-          </button>
+        <!-- Spinner mientras carga detalles -->
+        <div *ngIf="cargandoDetalles" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+          </div>
+          <p class="text-muted mt-2">Cargando detalles de la venta...</p>
         </div>
-        <div class="mt-3 text-center" *ngIf="emailCliente">
-          <small class="text-muted">El correo registrado es: <strong>{{ emailCliente }}</strong></small>
-        </div>
-        <div class="mt-3 text-center" *ngIf="!emailCliente">
-          <small class="text-warning">⚠️ El cliente no tiene correo registrado.</small>
+
+        <!-- Contenido normal cuando ya están cargados -->
+        <div *ngIf="!cargandoDetalles">
+          <div class="d-grid gap-3">
+            <button class="btn btn-primary btn-lg rounded-pill" (click)="exportarPDF()" [disabled]="generandoPDF">
+              <span *ngIf="generandoPDF" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-file-pdf me-2" *ngIf="!generandoPDF"></i>
+              {{ generandoPDF ? 'Generando...' : 'Ver / Descargar PDF' }}
+            </button>
+            <button class="btn btn-info btn-lg rounded-pill text-white" (click)="enviarBoletaCorreo()"
+              [disabled]="enviandoCorreo">
+              <span *ngIf="enviandoCorreo" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="bi bi-envelope me-2" *ngIf="!enviandoCorreo"></i>
+              {{ enviandoCorreo ? 'Enviando...' : 'Enviar por Correo' }}
+            </button>
+            <button class="btn btn-outline-secondary rounded-pill" (click)="cerrarModalBoleta()"
+              [disabled]="enviandoCorreo || generandoPDF">
+              <i class="bi bi-x-circle me-2"></i> Cerrar
+            </button>
+          </div>
+
+          <!-- Información del correo -->
+          <div class="mt-3 text-center" *ngIf="emailCliente">
+            <small class="text-muted">El correo registrado es: <strong>{{ emailCliente }}</strong></small>
+          </div>
+          <div class="mt-3 text-center" *ngIf="!emailCliente">
+            <small class="text-warning">⚠️ El cliente no tiene correo registrado.</small>
+          </div>
         </div>
       </div>
     </div>
@@ -404,7 +453,7 @@
           <div class="row">
             <div class="col-md-6">
               <p><strong>Fecha:</strong> {{ venta.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
-              <p><strong>Cliente:</strong> {{ venta.clienteId || 'Anónimo' }}</p>
+              <p><strong>Cliente:</strong> {{ getNombreCliente(venta.clienteId) }}</p>
               <p><strong>Vendedor:</strong> {{ venta.usuarioId || 'Sistema' }}</p>
             </div>
             <div class="col-md-6">

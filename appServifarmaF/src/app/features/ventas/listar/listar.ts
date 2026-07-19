@@ -25,6 +25,7 @@ const RUC_BOTICA = '10474101156';
 const TELEFONO_BOTICA = '992859321';
 const LOGO_BOTICA = '/logoServifarma.jpeg';
 
+
 @Component({
   selector: 'app-listar-ventas',
   standalone: true,
@@ -36,6 +37,8 @@ export class ListarComponent implements OnInit {
   // ======== PROPIEDADES DEL LISTADO ========
   ventas: Venta[] = [];
   ventasFiltradas: Venta[] = [];
+  ventasPaginadas: Venta[] = [];
+  public Math = Math;
   filtros = {
     fechaInicio: '',
     fechaFin: '',
@@ -46,6 +49,15 @@ export class ListarComponent implements OnInit {
   cargando: boolean = false;
   esAdministrador: boolean = false;
   usuarioIdActual: number | null = null;
+  cargandoDetalles: boolean = false;
+
+  // ======== PAGINACIÓN ========
+  itemsPorPagina: number = 10;
+  paginaActual: number = 1;
+  totalPaginas: number = 1;
+
+  // ======== CACHÉ DE CONSULTAS DNI ========
+  private dniCache = new Map<string, ReniecResponse>();
 
   // ======== MODAL DE REGISTRO ========
   modalRegistroAbierto: boolean = false;
@@ -99,7 +111,7 @@ export class ListarComponent implements OnInit {
     private authService: AuthService,
     private fb: FormBuilder,
     private router: Router,
-    private cdr: ChangeDetectorRef // 🔹 Para forzar detección de cambios
+    private cdr: ChangeDetectorRef
   ) {
     this.formRegistro = this.fb.group({
       medioPago: ['', Validators.required]
@@ -131,7 +143,6 @@ export class ListarComponent implements OnInit {
         }
         this.aplicarFiltros();
         this.cargando = false;
-        // 🔹 Forzar actualización de la vista
         this.cdr.detectChanges();
         console.log('✅ Ventas cargadas:', this.ventas.length);
       },
@@ -169,13 +180,44 @@ export class ListarComponent implements OnInit {
     }
 
     this.ventasFiltradas = filtradas;
-    // 🔹 Forzar actualización de la vista después de filtrar
+    this.paginaActual = 1;
+    this.totalPaginas = Math.ceil(this.ventasFiltradas.length / this.itemsPorPagina);
+    this.actualizarPaginacion();
     this.cdr.detectChanges();
   }
 
   limpiarFiltros(): void {
     this.filtros = { fechaInicio: '', fechaFin: '', cliente: '', usuario: '', estado: '' };
     this.aplicarFiltros();
+  }
+
+  // ======== PAGINACIÓN ========
+  actualizarPaginacion(): void {
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    const fin = inicio + this.itemsPorPagina;
+    this.ventasPaginadas = this.ventasFiltradas.slice(inicio, fin);
+    this.cdr.detectChanges();
+  }
+
+  siguientePagina(): void {
+    if (this.paginaActual < this.totalPaginas) {
+      this.paginaActual++;
+      this.actualizarPaginacion();
+    }
+  }
+
+  anteriorPagina(): void {
+    if (this.paginaActual > 1) {
+      this.paginaActual--;
+      this.actualizarPaginacion();
+    }
+  }
+
+  // ======== OBTENER NOMBRE DE CLIENTE ========
+  getNombreCliente(clienteId: number | undefined): string {
+    if (!clienteId) return 'Anónimo';
+    const cliente = this.clientes.find(c => c.id === clienteId);
+    return cliente ? cliente.nombre : 'Anónimo';
   }
 
   getEstadoBadge(estado: string): string {
@@ -205,12 +247,14 @@ export class ListarComponent implements OnInit {
 
     this.cargarCajaAbierta();
     this.modalRegistroAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalRegistro(): void {
     if (this.enviandoRegistro) return;
     this.modalRegistroAbierto = false;
     this.enviandoRegistro = false;
+    this.cdr.detectChanges();
   }
 
   // ======== OBTENER CAJA ABIERTA ========
@@ -262,7 +306,7 @@ export class ListarComponent implements OnInit {
     });
   }
 
-  // ======== BÚSQUEDA DE CLIENTE CON RENIEC ========
+  // ======== BÚSQUEDA DE CLIENTE CON CACHÉ ========
   buscarCliente(): void {
     if (this.buscarClienteCargando) return;
 
@@ -272,6 +316,26 @@ export class ListarComponent implements OnInit {
       this.telefonoCliente = '';
       this.emailCliente = '';
       return;
+    }
+
+    // Verificar caché
+    if (this.dniCache.has(this.dniBusqueda)) {
+      const cached = this.dniCache.get(this.dniBusqueda)!;
+      if (cached.success && cached.data) {
+        this.nombreCliente = cached.data.nombreCompleto;
+        this.datosDesdeReniec = true;
+        this.telefonoCliente = '';
+        this.emailCliente = '';
+        Swal.fire({
+          title: 'Datos de RENIEC (caché)',
+          text: `Nombre: ${this.nombreCliente}`,
+          icon: 'info',
+          timer: 1500,
+          showConfirmButton: false,
+          customClass: { popup: 'swal-farmaceutico' }
+        });
+        return;
+      }
     }
 
     this.buscarClienteCargando = true;
@@ -291,6 +355,7 @@ export class ListarComponent implements OnInit {
           showConfirmButton: false,
           customClass: { popup: 'swal-farmaceutico' }
         });
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         if (err.status === 404) {
@@ -313,6 +378,8 @@ export class ListarComponent implements OnInit {
     this.reniecService.consultarPorDni(dni).subscribe({
       next: (response: ReniecResponse) => {
         this.buscarClienteCargando = false;
+        // Guardar en caché
+        this.dniCache.set(dni, response);
         if (response.success && response.data) {
           this.nombreCliente = response.data.nombreCompleto ||
             `${response.data.nombres} ${response.data.apellidoPaterno} ${response.data.apellidoMaterno}`;
@@ -337,6 +404,7 @@ export class ListarComponent implements OnInit {
             customClass: { popup: 'swal-farmaceutico' }
           });
         }
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.buscarClienteCargando = false;
@@ -353,6 +421,7 @@ export class ListarComponent implements OnInit {
         this.nombreCliente = '';
         this.telefonoCliente = '';
         this.emailCliente = '';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -377,10 +446,12 @@ export class ListarComponent implements OnInit {
     this.modalProductosAbierto = true;
     this.filtroProductoModal = '';
     this.productosModal = this.productos.slice();
+    this.cdr.detectChanges();
   }
 
   cerrarModalProductos(): void {
     this.modalProductosAbierto = false;
+    this.cdr.detectChanges();
   }
 
   buscarProductosModal(): void {
@@ -392,6 +463,7 @@ export class ListarComponent implements OnInit {
     this.productosModal = this.productos.filter(p =>
       p.nombre.toLowerCase().includes(term)
     );
+    this.cdr.detectChanges();
   }
 
   seleccionarProductoModal(producto: Producto): void {
@@ -414,11 +486,13 @@ export class ListarComponent implements OnInit {
     this.cerrarModalProductos();
     this.cantidadProducto = 1;
     this.agregandoProducto = false;
+    this.cdr.detectChanges();
   }
 
   eliminarDelCarrito(index: number): void {
     this.carrito.splice(index, 1);
     this.calcularTotal();
+    this.cdr.detectChanges();
   }
 
   calcularTotal(): void {
@@ -497,7 +571,6 @@ export class ListarComponent implements OnInit {
           next: (ventaCreada: Venta) => {
             this.enviandoRegistro = false;
             this.cerrarModalRegistroForzado();
-            // 🔹 Recargar ventas inmediatamente
             this.cargarVentas();
             this.ventaRecienCreada = ventaCreada;
             Swal.fire({
@@ -508,7 +581,6 @@ export class ListarComponent implements OnInit {
               showConfirmButton: false,
               customClass: { popup: 'swal-farmaceutico' }
             });
-            // 🔹 Mostrar opciones de boleta después de un breve retraso
             setTimeout(() => {
               this.mostrarOpcionesBoleta(ventaCreada);
             }, 500);
@@ -524,6 +596,7 @@ export class ListarComponent implements OnInit {
               icon: 'error',
               customClass: { popup: 'swal-farmaceutico' }
             });
+            this.cdr.detectChanges();
           }
         });
       };
@@ -570,6 +643,7 @@ export class ListarComponent implements OnInit {
             icon: 'error',
             customClass: { popup: 'swal-farmaceutico' }
           });
+          this.cdr.detectChanges();
         }
       });
     });
@@ -577,6 +651,7 @@ export class ListarComponent implements OnInit {
 
   private cerrarModalRegistroForzado(): void {
     this.modalRegistroAbierto = false;
+    this.cdr.detectChanges();
   }
 
   // ======== OPCIONES DE BOLETA ========
@@ -594,6 +669,8 @@ export class ListarComponent implements OnInit {
     this.ventaRecienCreada = null;
     this.enviandoCorreo = false;
     this.generandoPDF = false;
+    this.cargandoDetalles = false; // ✅ Resetear
+    this.cdr.detectChanges();
   }
 
   private cerrarModalBoletaForzado(): void {
@@ -601,7 +678,90 @@ export class ListarComponent implements OnInit {
     this.ventaRecienCreada = null;
     this.enviandoCorreo = false;
     this.generandoPDF = false;
+    this.cargandoDetalles = false; // ✅ Resetear
     this.cdr.detectChanges();
+  }
+
+  // ============================================================
+  // REIMPRESIÓN DE BOLETA (para ventas ya realizadas)
+  // ============================================================
+  reimprimirBoleta(venta: Venta): void {
+    if (!venta || !venta.id) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudo identificar la venta.',
+        icon: 'error',
+        customClass: { popup: 'swal-farmaceutico' }
+      });
+      return;
+    }
+
+    // Resetear y abrir modal con spinner
+    this.carrito = [];
+    this.total = 0;
+    this.ventaRecienCreada = venta;
+    this.nombreCliente = this.getNombreCliente(venta.clienteId) || 'Público en general';
+
+    // 🔥 OBTENER EL EMAIL DEL CLIENTE
+    if (venta.clienteId) {
+      this.clienteService.obtener(venta.clienteId).subscribe({
+        next: (cliente) => {
+          this.emailCliente = cliente.email || '';
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.emailCliente = '';
+          this.cdr.detectChanges();
+        }
+      });
+    } else {
+      this.emailCliente = '';
+    }
+
+    this.cargandoDetalles = true;
+    this.modalBoletaAbierto = true;
+    this.generandoPDF = false;
+    this.enviandoCorreo = false;
+    this.cdr.detectChanges();
+
+    // Cargar detalles de la venta
+    this.ventaService.obtener(venta.id).subscribe({
+      next: (ventaCompleta: Venta) => {
+        this.cargandoDetalles = false;
+        if (!ventaCompleta.detalles || ventaCompleta.detalles.length === 0) {
+          Swal.fire({
+            title: 'Sin productos',
+            text: 'Esta venta no tiene productos asociados.',
+            icon: 'warning',
+            customClass: { popup: 'swal-farmaceutico' }
+          });
+          this.cerrarModalBoleta();
+          return;
+        }
+
+        // Reconstruir carrito
+        this.carrito = ventaCompleta.detalles.map((d: any) => ({
+          productoId: d.productoId || d.loteId,
+          nombre: d.productoNombre || d.nombre || 'Producto',
+          cantidad: d.cantidad || 0,
+          precio: d.precioUnitario || d.precio || 0
+        }));
+        this.total = ventaCompleta.total || 0;
+        this.ventaRecienCreada = ventaCompleta;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.cargandoDetalles = false;
+        console.error('Error al obtener detalles:', err);
+        Swal.fire({
+          title: 'Error',
+          text: 'No se pudieron cargar los detalles de la venta. Intente nuevamente.',
+          icon: 'error',
+          customClass: { popup: 'swal-farmaceutico' }
+        });
+        this.cerrarModalBoleta();
+      }
+    });
   }
 
   // ============================================================
@@ -723,6 +883,7 @@ export class ListarComponent implements OnInit {
       document.body.removeChild(content);
       // ✅ Cerrar modal y limpiar estado
       this.cerrarModalBoletaForzado();
+      this.cdr.detectChanges();
     }).catch((error) => {
       console.error('Error al generar el PDF:', error);
       Swal.fire({
@@ -734,6 +895,7 @@ export class ListarComponent implements OnInit {
       if (content.parentNode) document.body.removeChild(content);
       this.generandoPDF = false;
       this.cerrarModalBoletaForzado();
+      this.cdr.detectChanges();
     });
   }
 
@@ -772,6 +934,7 @@ export class ListarComponent implements OnInit {
     }
 
     this.enviandoCorreo = true;
+    this.cdr.detectChanges();
 
     Swal.fire({
       title: 'Enviando boleta...',
@@ -791,6 +954,7 @@ export class ListarComponent implements OnInit {
           customClass: { popup: 'swal-farmaceutico' }
         });
         this.cerrarModalBoletaForzado();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.enviandoCorreo = false;
@@ -801,6 +965,8 @@ export class ListarComponent implements OnInit {
           icon: 'error',
           customClass: { popup: 'swal-farmaceutico' }
         });
+        // El modal permanece abierto para reintentar
+        this.cdr.detectChanges();
       }
     });
   }
@@ -810,11 +976,13 @@ export class ListarComponent implements OnInit {
     if (this.modalDetalleAbierto) return;
     this.ventaSeleccionada = venta;
     this.modalDetalleAbierto = true;
+    this.cdr.detectChanges();
   }
 
   cerrarModalDetalle(): void {
     this.modalDetalleAbierto = false;
     this.ventaSeleccionada = null;
+    this.cdr.detectChanges();
   }
 
   irAnular(id: number): void {

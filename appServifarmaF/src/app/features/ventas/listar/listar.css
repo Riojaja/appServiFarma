@@ -10,22 +10,22 @@
   display: block;
   overflow-y: auto;
 }
+
 .modal-dialog-centered {
   min-height: calc(100% - 3.5rem);
 }
+
 .form-control:focus,
 .form-select:focus {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
+
 .btn-sm.rounded-circle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-}
-.badge.rounded-pill {
-  min-width: 80px;
 }
 
 /* ============================================================
@@ -63,20 +63,47 @@ body {
   transition: var(--transition);
   box-shadow: 0 4px 6px -1px rgba(13, 148, 136, 0.3);
 }
+
 .btn-primary:hover:not(:disabled) {
   background-color: #0f766e !important;
   border-color: #0f766e !important;
   transform: translateY(-2px);
   box-shadow: 0 8px 15px -3px rgba(13, 148, 136, 0.4);
 }
+
 .btn-primary:active:not(:disabled) {
   transform: translateY(0px);
   box-shadow: 0 2px 4px -1px rgba(13, 148, 136, 0.3);
 }
+
 .btn-primary:disabled {
   opacity: 0.6;
   transform: none;
   box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   BOTÓN NUEVA VENTA (clase alternativa)
+   ============================================================ */
+.btn-nueva-venta {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-nueva-venta:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.btn-nueva-venta:disabled {
+  opacity: 0.6;
+  transform: none;
   cursor: not-allowed;
 }
 
@@ -86,6 +113,7 @@ body {
 .table {
   font-size: 0.875rem;
 }
+
 .table thead th {
   background: #f1f5f9;
   color: #475569;
@@ -96,11 +124,13 @@ body {
   padding: 0.75rem 1rem;
   border-bottom: 2px solid #e2e8f0;
 }
+
 .table tbody td {
   padding: 0.75rem 1rem;
   vertical-align: middle;
   border-bottom: 1px solid #e2e8f0;
 }
+
 .table tbody tr:hover {
   background: #f8fafc;
 }
@@ -111,12 +141,15 @@ body {
 .badge.bg-success {
   background-color: #10b981 !important;
 }
+
 .badge.bg-danger {
   background-color: #ef4444 !important;
 }
+
 .badge.bg-warning {
   background-color: #f59e0b !important;
 }
+
 .badge.bg-secondary {
   background-color: #64748b !important;
 }
@@ -129,10 +162,12 @@ body {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
+
 .modal-header {
   padding: 1.5rem 1.5rem 0.5rem 1.5rem;
   border-bottom: none;
 }
+
 .modal-body {
   padding: 1.5rem;
 }
@@ -146,16 +181,19 @@ body {
   transition: var(--transition);
   cursor: pointer;
 }
-.producto-item-modal:hover {
+
+.producto-item-modal:hover:not(.disabled) {
   background: #f1f5f9;
   border-color: #0d9488;
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
+
 /* Mientras se procesa el agregado al carrito (evita doble-click visual) */
 .producto-item-modal.disabled {
   opacity: 0.6;
   pointer-events: none;
+  cursor: not-allowed;
 }
 
 .producto-imagen-mini {
@@ -166,6 +204,7 @@ body {
   flex-shrink: 0;
   background: #f1f5f9;
 }
+
 .producto-imagen-mini img {
   width: 100%;
   height: 100%;
@@ -176,14 +215,17 @@ body {
 .productos-lista-modal::-webkit-scrollbar {
   width: 6px;
 }
+
 .productos-lista-modal::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 10px;
 }
+
 .productos-lista-modal::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 10px;
 }
+
 .productos-lista-modal::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
@@ -194,6 +236,7 @@ body {
 .table .table-active {
   background: #f1f5f9;
 }
+
 .table .table-active td {
   font-weight: 600;
 }
@@ -205,21 +248,64 @@ body {
   color: #0891b2;
   border-color: #0891b2;
 }
-.btn-outline-info:hover {
+
+.btn-outline-info:hover:not(:disabled) {
   background: #0891b2;
   color: white;
 }
+
 .btn-outline-danger {
   color: #dc2626;
   border-color: #dc2626;
 }
+
 .btn-outline-danger:hover:not(:disabled) {
   background: #dc2626;
   color: white;
 }
+
 .btn-outline-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* ============================================================
+   BOTÓN REIMPRIMIR (color secundario)
+   ============================================================ */
+.btn-outline-secondary {
+  color: #64748b;
+  border-color: #64748b;
+}
+
+.btn-outline-secondary:hover:not(:disabled) {
+  background: #64748b;
+  color: white;
+}
+
+.btn-outline-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   BOTONES DE PAGINACIÓN
+   ============================================================ */
+.btn-outline-secondary.btn-sm {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   MÁS ESTILOS PARA MODALES (validación y mensajes)
+   ============================================================ */
+.invalid-feedback {
+  font-size: 0.8rem;
+  color: #dc2626;
+}
+
+.required::after {
+  content: " *";
+  color: #dc2626;
 }
 
 /* ============================================================
@@ -229,35 +315,49 @@ body {
   .modal-dialog {
     margin: 0.5rem;
   }
+
   .modal-body {
     padding: 1rem;
   }
+
   .producto-item-modal {
     flex-direction: column;
     align-items: flex-start !important;
   }
+
   .producto-imagen-mini {
     width: 100%;
     height: 120px;
     margin-bottom: 0.5rem;
   }
+
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+
+  .table thead th,
+  .table tbody td {
+    padding: 0.5rem 0.5rem;
+  }
+
+  .btn-primary {
+    font-size: 0.8rem;
+    padding: 0.4rem 1rem;
+  }
+
+  .d-flex.gap-1 {
+    gap: 0.25rem !important;
+  }
+
+  .btn-sm.rounded-circle {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.7rem;
+  }
 }
 
-.btn-nueva-venta {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
-  font-weight: 500;
-  transition: all 0.2s ease-in-out;
-}
-.btn-nueva-venta:hover:not(:disabled) {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-}
-.btn-nueva-venta:disabled {
-  opacity: 0.6;
-  transform: none;
-  cursor: not-allowed;
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .modal-dialog {
+    max-width: 95%;
+  }
 }
