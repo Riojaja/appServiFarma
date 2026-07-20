@@ -42,7 +42,13 @@ export class ListarProveedoresComponent implements OnInit {
   eliminandoId: number | null = null;
 
   // Filtro región
-  regiones: string[] = [];
+  regiones: string[] = [
+    'Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho',
+    'Cajamarca', 'Callao', 'Cusco', 'Huancavelica', 'Huánuco',
+    'Ica', 'Junín', 'La Libertad', 'Lambayeque', 'Lima',
+    'Loreto', 'Madre de Dios', 'Moquegua', 'Pasco', 'Piura',
+    'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'
+  ];
   filtroRegion: string = '';
 
   // Permisos
