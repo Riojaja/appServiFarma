@@ -37,30 +37,15 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Endpoints públicos
+                        // 🔥 NUEVO: Permitir health checks de Railway
+                        .requestMatchers("/", "/actuator/health", "/actuator/**").permitAll()
+                        
+                        // Endpoints públicos originales
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers("/uploads/**").permitAll() // Imágenes públicas
+                        .requestMatchers("/uploads/**").permitAll()
 
-                        // 🔥 NUEVO: Permitir Health Check y raíz (para Railway)
-                        .requestMatchers("/", "/actuator/health", "/actuator/**").permitAll()
-                        // 🔥 Fin de la modificación
-
-                        // ⚠️ IMPORTANTE: se cambió hasAuthority("ADMIN") por hasRole("ADMIN").
-                        // El proyecto ya usa @PreAuthorize("hasRole('ADMIN')") en varios
-                        // controllers (ej. ProductoController). hasRole() internamente busca
-                        // la autoridad "ROLE_ADMIN", mientras que hasAuthority("ADMIN") busca
-                        // literalmente "ADMIN" sin prefijo. Tener las DOS convenciones mezcladas
-                        // en el mismo proyecto hace que una de las dos falle siempre con 403,
-                        // dependiendo del formato real que entregue tu UserDetailsService.
-                        // Se unifica todo en hasRole(...) porque es la convención que ya
-                        // predomina en los @PreAuthorize existentes.
-                        //
-                        // ⚠️ Esto requiere que tu UserDetailsService le dé a cada usuario la
-                        // autoridad como "ROLE_ADMIN" / "ROLE_VENDEDOR" (con el prefijo
-                        // "ROLE_"). Si en tu UserDetailsService actual las autoridades se
-                        // arman como "ADMIN" (sin prefijo), hay que agregarle el prefijo ahí
-                        // — revisa ese archivo (ver nota al final de la respuesta).
+                        // Roles
                         .requestMatchers("/api/parametros/**").hasRole("ADMIN")
                         .requestMatchers("/api/usuarios/**").hasRole("ADMIN")
 
