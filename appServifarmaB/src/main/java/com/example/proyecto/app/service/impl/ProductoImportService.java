@@ -12,6 +12,7 @@ import com.example.proyecto.app.mapper.ProductoMapper;
 import com.example.proyecto.app.repository.CategoriaRepository;
 import com.example.proyecto.app.repository.FabricanteRepository;
 import com.example.proyecto.app.repository.ProductoRepository;
+import com.example.proyecto.app.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -25,12 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,10 +38,10 @@ public class ProductoImportService {
     private final CategoriaRepository categoriaRepository;
     private final FabricanteRepository fabricanteRepository;
     private final ProductoMapper productoMapper;
-    // ✅ Eliminada la dependencia a ProductoService para romper el ciclo
+    private final CloudinaryService cloudinaryService;
 
     // ============================================================
-    // GENERACIÓN DE PLANTILLA
+    // GENERACIÓN DE PLANTILLA (sin cambios)
     // ============================================================
 
     public ByteArrayInputStream generarPlantilla() throws IOException {
@@ -104,7 +99,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // LECTURA DE ARCHIVO
+    // LECTURA DE ARCHIVO (sin cambios)
     // ============================================================
 
     private List<ProductoImportDTO> leerArchivo(MultipartFile archivo) throws IOException {
@@ -144,7 +139,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // VALIDACIONES
+    // VALIDACIONES (sin cambios)
     // ============================================================
 
     private void validarFila(ProductoImportDTO dto) {
@@ -189,7 +184,7 @@ public class ProductoImportService {
     private boolean isEmpty(String str) { return str == null || str.trim().isEmpty(); }
 
     // ============================================================
-    // MAPEO A PRODUCTOREQUEST
+    // MAPEO A PRODUCTOREQUEST (sin cambios)
     // ============================================================
 
     private ProductoRequest mapearARequest(ProductoImportDTO dto) {
@@ -217,7 +212,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // CREACIÓN AUTOMÁTICA DE CATEGORÍAS Y FABRICANTES
+    // CREACIÓN AUTOMÁTICA DE CATEGORÍAS Y FABRICANTES (sin cambios)
     // ============================================================
 
     private Integer obtenerOCrearCategoria(String nombre) {
@@ -247,7 +242,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // IMPORTACIÓN (CON DESCARGA DE IMÁGENES)
+    // IMPORTACIÓN (CON CLOUDINARY)
     // ============================================================
 
     @Transactional
@@ -266,9 +261,7 @@ public class ProductoImportService {
                 validarFila(dto);
                 ProductoRequest request = mapearARequest(dto);
 
-                // 1. Mapear a entidad
                 Producto producto = productoMapper.toEntity(request);
-                // 2. Setear relaciones
                 if (request.getCategoriaId() != null) {
                     Categoria categoria = categoriaRepository.findById(request.getCategoriaId())
                             .orElseThrow(() -> new RuntimeException("Categoría no encontrada"));
@@ -279,27 +272,25 @@ public class ProductoImportService {
                             .orElseThrow(() -> new RuntimeException("Fabricante no encontrado"));
                     producto.setFabricante(fabricante);
                 }
-                // 3. Guardar producto (sin imagen aún)
+
                 Producto saved = productoRepository.save(producto);
                 log.debug("Producto guardado con ID: {}", saved.getId());
 
-                // 4. Procesar imagen (si es URL externa)
+                // Procesar imagen (si es URL externa)
                 String imagenOriginal = request.getImagen();
                 if (imagenOriginal != null && !imagenOriginal.isEmpty()
                         && (imagenOriginal.startsWith("http://") || imagenOriginal.startsWith("https://"))) {
                     try {
-                        String rutaLocal = guardarImagenDesdeUrl(imagenOriginal, saved.getId());
-                        saved.setImagen(rutaLocal);
+                        String cloudinaryUrl = cloudinaryService.uploadImageFromUrl(imagenOriginal);
+                        saved.setImagen(cloudinaryUrl);
                         productoRepository.save(saved);
-                        log.info("Imagen descargada desde URL para producto ID: {}", saved.getId());
+                        log.info("Imagen subida a Cloudinary para producto ID: {}", saved.getId());
                     } catch (Exception e) {
-                        log.warn("No se pudo descargar imagen para producto ID {}: {}", saved.getId(), e.getMessage());
-                        // Dejamos la imagen como null (no guardamos la URL original)
+                        log.warn("No se pudo subir imagen a Cloudinary para producto ID {}: {}", saved.getId(), e.getMessage());
+                        // Dejamos la imagen como null
                     }
                 }
-                // Si es ruta local o null, no hacemos nada
 
-                // 5. Agregar al resultado
                 resultado.getProductosImportados().add(productoMapper.toResponse(saved));
                 resultado.setImportados(resultado.getImportados() + 1);
                 log.debug("Producto importado: {} (ID: {})", dto.getNombre(), saved.getId());
@@ -324,7 +315,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // MÉTODOS AUXILIARES PARA LEER CELDAS
+    // MÉTODOS AUXILIARES PARA LEER CELDAS (sin cambios)
     // ============================================================
 
     private String getStringCell(Row row, int idx) {
@@ -357,7 +348,7 @@ public class ProductoImportService {
     }
 
     // ============================================================
-    // MANEJO DE IMÁGENES (LOCAL Y URL)
+    // MANEJO DE IMÁGENES CON CLOUDINARY (UNIFICADO)
     // ============================================================
 
     public String guardarImagenLocal(MultipartFile imagen, Integer productoId) throws IOException {
@@ -367,14 +358,9 @@ public class ProductoImportService {
         if (imagen.getSize() > 5 * 1024 * 1024) {
             throw new IllegalArgumentException("La imagen no puede superar los 5 MB");
         }
-        String extension = obtenerExtension(imagen.getOriginalFilename());
-        String nombreArchivo = "producto_" + productoId + "_" + System.currentTimeMillis() + "." + extension;
-        Path uploadDir = Paths.get("uploads/productos/");
-        if (!Files.exists(uploadDir)) Files.createDirectories(uploadDir);
-        Path destino = uploadDir.resolve(nombreArchivo);
-        Files.copy(imagen.getInputStream(), destino, StandardCopyOption.REPLACE_EXISTING);
-        log.info("Imagen guardada: {}", destino.toString());
-        return "/uploads/productos/" + nombreArchivo;
+        String imageUrl = cloudinaryService.uploadImage(imagen);
+        log.info("Imagen subida a Cloudinary para producto ID {}: {}", productoId, imageUrl);
+        return imageUrl;
     }
 
     public String guardarImagenDesdeUrl(String url, Integer productoId) throws IOException {
@@ -384,52 +370,8 @@ public class ProductoImportService {
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             throw new IllegalArgumentException("La URL debe ser válida (http o https)");
         }
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
-        connection.setRequestMethod("GET");
-        connection.setConnectTimeout(5000);
-        connection.setReadTimeout(10000);
-        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            throw new IOException("No se pudo descargar la imagen. Código: " + connection.getResponseCode());
-        }
-        byte[] imageBytes = connection.getInputStream().readAllBytes();
-        connection.disconnect();
-        String extension = obtenerExtensionDesdeUrl(url);
-        if (extension == null) {
-            String contentType = connection.getContentType();
-            if (contentType != null) {
-                if (contentType.contains("jpeg") || contentType.contains("jpg")) extension = "jpg";
-                else if (contentType.contains("png")) extension = "png";
-                else if (contentType.contains("gif")) extension = "gif";
-                else if (contentType.contains("webp")) extension = "webp";
-                else extension = "jpg";
-            } else {
-                extension = "jpg";
-            }
-        }
-        String nombreArchivo = "producto_" + productoId + "_" + System.currentTimeMillis() + "." + extension;
-        Path uploadDir = Paths.get("uploads/productos/");
-        if (!Files.exists(uploadDir)) Files.createDirectories(uploadDir);
-        Path destino = uploadDir.resolve(nombreArchivo);
-        Files.write(destino, imageBytes);
-        log.info("Imagen descargada desde URL y guardada: {}", destino.toString());
-        return "/uploads/productos/" + nombreArchivo;
-    }
-
-    private String obtenerExtension(String filename) {
-        if (filename == null) return "jpg";
-        int lastDot = filename.lastIndexOf('.');
-        return lastDot > 0 ? filename.substring(lastDot + 1).toLowerCase() : "jpg";
-    }
-
-    private String obtenerExtensionDesdeUrl(String url) {
-        if (url == null) return null;
-        int queryIndex = url.indexOf('?');
-        String path = queryIndex > 0 ? url.substring(0, queryIndex) : url;
-        int lastDot = path.lastIndexOf('.');
-        if (lastDot > 0) {
-            String ext = path.substring(lastDot + 1).toLowerCase();
-            if (ext.matches("jpg|jpeg|png|gif|webp|bmp|svg")) return ext;
-        }
-        return null;
+        String imageUrl = cloudinaryService.uploadImageFromUrl(url);
+        log.info("Imagen subida a Cloudinary desde URL para producto ID {}: {}", productoId, imageUrl);
+        return imageUrl;
     }
 }
