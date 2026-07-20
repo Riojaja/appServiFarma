@@ -42,6 +42,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // Imágenes públicas
 
+                        // 🔥 NUEVO: Permitir Health Check y raíz (para Railway)
+                        .requestMatchers("/", "/actuator/health", "/actuator/**").permitAll()
+                        // 🔥 Fin de la modificación
+
                         // ⚠️ IMPORTANTE: se cambió hasAuthority("ADMIN") por hasRole("ADMIN").
                         // El proyecto ya usa @PreAuthorize("hasRole('ADMIN')") en varios
                         // controllers (ej. ProductoController). hasRole() internamente busca
