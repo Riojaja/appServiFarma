@@ -39,6 +39,9 @@ public class CorsConfig {
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+        // 🔥 NUEVO: Log para ver qué orígenes está cargando el backend
+        System.out.println("🟢 CORS allowed origins: " + allowedOrigins);
+
         CorsConfiguration configuration = new CorsConfiguration();
 
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
